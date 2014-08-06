@@ -22,10 +22,6 @@ enum VertexType
     SINGULAR    = 0x02,
     POLE        = 0x04
 };
-// JUST BASIC STUFF -> into test.
-void                create_triangle_cube                    ( HMesh::Manifold& m, double edge_length    );
-void                create_quads_cube                       ( HMesh::Manifold& m, double edge_length    );
-void                create_basic_PAM                        ( HMesh::Manifold& m, double edge_length    );
 
 // SMOOTHING ALGORITHMS -> test.h
 void                inverse_distance_laplacian_smoothing    ( HMesh::Manifold& am                       );

@@ -51,39 +51,8 @@ void console_test_cotangent_smoothing( MeshEditor *me, const std::vector< std::s
     
 }
 
-void console_test_cube_triangles( MeshEditor *me, const std::vector< std::string > &args )
-{
-    double side = 0.6;
-    if(args.size() > 0){
-        istringstream a0(args[0]);
-        a0 >> side;
-    }
-    cout << "triangulated cube" << endl;
-    create_triangle_cube(me->active_mesh(), side);
-}
 
 
-void console_test_cube_quads( MeshEditor *me, const std::vector< std::string > &args )
-{
-    double side = 0.6;
-    if(args.size() > 0){
-        istringstream a0(args[0]);
-        a0 >> side;
-    }
-    cout << "quadrangulated cube" << endl;
-    create_quads_cube(me->active_mesh(), side);
-}
-
-void console_test_basic_PAM( MeshEditor *me, const std::vector< std::string > &args )
-{
-    double side = 0.6;
-    if(args.size() > 0){
-        istringstream a0(args[0]);
-        a0 >> side;
-    }
-    cout << "basic pam" << endl;
-    create_basic_PAM(me->active_mesh(), side);
-}
 
 // THE LOGIC OF THIS THING SHOULD BE MOVED INTO ANOTHER CLASS
 void console_test_add_branch( MeshEditor *me, const std::vector< std::string > &args )
@@ -532,11 +501,7 @@ void register_more_basic_console_funcs( GLGraphics::MeshEditor *me )
                                   console_test_cotangent_smoothing,
                                   "test.smoothing.cotangent <iterations>" );
 
-    me->register_console_function( "test.cube_t", console_test_cube_triangles, "test.cube_t" );
 
-    me->register_console_function( "test.cube_q", console_test_cube_quads, "test.cube_q" );
-    
-    me->register_console_function( "test.basic_PAM", console_test_basic_PAM, "test.basic_PAM" );
     
     me->register_console_function( "test.add_branch", console_test_add_branch,
                                   "test.add_branch" );

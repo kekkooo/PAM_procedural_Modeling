@@ -1,6 +1,7 @@
 #import "BasicOpenGLView.h"
 #include "additional_console_funcs.h"
 #include "PM_additiona_console_funcs.h"
+#include "Procedural/ConsoleFuncs/PM_basic_console_functions.h"
 #include <GEL/GLGraphics/MeshEditor.h>
 
 using namespace CGLA;
@@ -285,6 +286,7 @@ GLenum glReportError (int where = -1)
     me.init();
     register_console_funcs(&me);
     register_more_basic_console_funcs(&me);
+    Procedural::ConsoleFuncs::register_basic_console_funcs(&me);
     NSLog(@"OpenGL Initialized");
 }
 

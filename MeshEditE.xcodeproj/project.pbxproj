@@ -26,6 +26,8 @@
 		0D6FA573187B9D6500B26F84 /* LogMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0D6FA571187B9D6500B26F84 /* LogMap.cpp */; };
 		0D6FA577187C677000B26F84 /* HMeshParallelKit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0D6FA575187C677000B26F84 /* HMeshParallelKit.cpp */; };
 		0DD1DD1A18A29BC600D0069B /* heat_kernel_laplacian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0DD1DD1818A29BC600D0069B /* heat_kernel_laplacian.cpp */; };
+		595DC97519927F1300532C6A /* PM_basic_console_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC97319927F1300532C6A /* PM_basic_console_functions.cpp */; };
+		595DC979199281C000532C6A /* basic_shapes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC977199281C000532C6A /* basic_shapes.cpp */; };
 		5979AF6319825D92003E3697 /* Test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5979AF6119825D92003E3697 /* Test.cpp */; };
 		597D8D63198F84A300CF1C64 /* Plane.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 597D8D61198F84A300CF1C64 /* Plane.cpp */; };
 		597D8D6D198FB90600CF1C64 /* additional_console_funcs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 597D8D6B198FB90600CF1C64 /* additional_console_funcs.cpp */; };
@@ -78,6 +80,10 @@
 		0D6FA576187C677000B26F84 /* HMeshParallelKit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMeshParallelKit.h; sourceTree = "<group>"; };
 		0DD1DD1818A29BC600D0069B /* heat_kernel_laplacian.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = heat_kernel_laplacian.cpp; sourceTree = "<group>"; };
 		0DD1DD1918A29BC600D0069B /* heat_kernel_laplacian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = heat_kernel_laplacian.h; sourceTree = "<group>"; };
+		595DC97319927F1300532C6A /* PM_basic_console_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PM_basic_console_functions.cpp; sourceTree = "<group>"; };
+		595DC97419927F1300532C6A /* PM_basic_console_functions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PM_basic_console_functions.h; sourceTree = "<group>"; };
+		595DC977199281C000532C6A /* basic_shapes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = basic_shapes.cpp; sourceTree = "<group>"; };
+		595DC978199281C000532C6A /* basic_shapes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = basic_shapes.h; sourceTree = "<group>"; };
 		5979AF6119825D92003E3697 /* Test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test.cpp; sourceTree = "<group>"; };
 		5979AF6219825D92003E3697 /* Test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Test.h; sourceTree = "<group>"; };
 		597D8D61198F84A300CF1C64 /* Plane.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Plane.cpp; sourceTree = "<group>"; };
@@ -216,9 +222,20 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		595DC9761992818D00532C6A /* Operations */ = {
+			isa = PBXGroup;
+			children = (
+				595DC977199281C000532C6A /* basic_shapes.cpp */,
+				595DC978199281C000532C6A /* basic_shapes.h */,
+			);
+			name = Operations;
+			path = MeshEditE/Procedural/Operations;
+			sourceTree = SOURCE_ROOT;
+		};
 		597D8D5F198F808500CF1C64 /* Procedural */ = {
 			isa = PBXGroup;
 			children = (
+				595DC9761992818D00532C6A /* Operations */,
 				597D8D64198FB78600CF1C64 /* ConsoleFuncs */,
 				597D8D60198F80B700CF1C64 /* Helpers */,
 			);
@@ -238,6 +255,8 @@
 		597D8D64198FB78600CF1C64 /* ConsoleFuncs */ = {
 			isa = PBXGroup;
 			children = (
+				595DC97319927F1300532C6A /* PM_basic_console_functions.cpp */,
+				595DC97419927F1300532C6A /* PM_basic_console_functions.h */,
 			);
 			name = ConsoleFuncs;
 			path = MeshEditE/Procedural/ConsoleFuncs;
@@ -344,10 +363,12 @@
 			files = (
 				0D44677B180B0A7F00B27082 /* BasicOpenGLView.mm in Sources */,
 				0D0F5B74180878B9003557E2 /* AppDelegate.m in Sources */,
+				595DC979199281C000532C6A /* basic_shapes.cpp in Sources */,
 				0D0F5B7A180878B9003557E2 /* MeshEditE.xcdatamodeld in Sources */,
 				0D6FA573187B9D6500B26F84 /* LogMap.cpp in Sources */,
 				0D0F5B6D180878B9003557E2 /* main.m in Sources */,
 				597D8D63198F84A300CF1C64 /* Plane.cpp in Sources */,
+				595DC97519927F1300532C6A /* PM_basic_console_functions.cpp in Sources */,
 				5979AF6319825D92003E3697 /* Test.cpp in Sources */,
 				0D5467D0180B87D900DBC8B9 /* polarize.cpp in Sources */,
 				597D8D73198FB98A00CF1C64 /* PM_additiona_console_funcs.cpp in Sources */,
@@ -495,6 +516,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "MeshEditE/MeshEditE-Prefix.pch";
 				INFOPLIST_FILE = "MeshEditE/MeshEditE-Info.plist";
+				OTHER_CPLUSPLUSFLAGS = "-I.";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -515,6 +537,7 @@
 				GCC_PREFIX_HEADER = "MeshEditE/MeshEditE-Prefix.pch";
 				INFOPLIST_FILE = "MeshEditE/MeshEditE-Info.plist";
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CPLUSPLUSFLAGS = "-I.";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
