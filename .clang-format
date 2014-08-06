@@ -1,0 +1,20 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: ForIndentation
+BreakBeforeBraces: GNU
+AllowShortIfStatementsOnASingleLine: true
+IndentCaseLabels: false
+AllowShortBlocksOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLoopsOnASingleLine: true
+BinPackParameters: true
+BreakBeforeBinaryOperators: true
+BreakBeforeBraces: GNU
+ColumnLimit: 90
+Cpp11BracedListStyle: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: Never
+SpaceInEmptyParentheses: true
+SpacesInAngles: true
+SpacesInParentheses: true
+
