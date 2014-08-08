@@ -26,12 +26,18 @@
 		0D6FA573187B9D6500B26F84 /* LogMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0D6FA571187B9D6500B26F84 /* LogMap.cpp */; };
 		0D6FA577187C677000B26F84 /* HMeshParallelKit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0D6FA575187C677000B26F84 /* HMeshParallelKit.cpp */; };
 		0DD1DD1A18A29BC600D0069B /* heat_kernel_laplacian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0DD1DD1818A29BC600D0069B /* heat_kernel_laplacian.cpp */; };
+		593C563919951E1F0008EAC4 /* geometric_console_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 593C563719951E1F0008EAC4 /* geometric_console_functions.cpp */; };
+		593C563C19951F140008EAC4 /* structural_helpers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 593C563A19951F140008EAC4 /* structural_helpers.cpp */; };
 		595DC97519927F1300532C6A /* PM_basic_console_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC97319927F1300532C6A /* PM_basic_console_functions.cpp */; };
 		595DC979199281C000532C6A /* basic_shapes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC977199281C000532C6A /* basic_shapes.cpp */; };
+		595DC97C1994F2A200532C6A /* Algorithms.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC97A1994F2A200532C6A /* Algorithms.cpp */; };
+		595DC9821994F5B100532C6A /* structural_operations.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC9801994F5B100532C6A /* structural_operations.cpp */; };
+		595DC9851994FA9100532C6A /* geometric_properties.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC9831994FA9100532C6A /* geometric_properties.cpp */; };
+		595DC9881995131700532C6A /* geometric_operations.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC9861995131700532C6A /* geometric_operations.cpp */; };
+		595DC98E1995183400532C6A /* structural_console_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC98C1995183400532C6A /* structural_console_functions.cpp */; };
 		5979AF6319825D92003E3697 /* Test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5979AF6119825D92003E3697 /* Test.cpp */; };
 		597D8D63198F84A300CF1C64 /* Plane.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 597D8D61198F84A300CF1C64 /* Plane.cpp */; };
 		597D8D6D198FB90600CF1C64 /* additional_console_funcs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 597D8D6B198FB90600CF1C64 /* additional_console_funcs.cpp */; };
-		597D8D73198FB98A00CF1C64 /* PM_additiona_console_funcs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 597D8D71198FB98A00CF1C64 /* PM_additiona_console_funcs.cpp */; };
 		59B75D89197D25B100DD6462 /* GEL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59B75D88197D25B100DD6462 /* GEL.framework */; };
 		59B75D8A197D274600DD6462 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0D5467C9180B805100DBC8B9 /* MainMenu.xib */; };
 /* End PBXBuildFile section */
@@ -80,18 +86,30 @@
 		0D6FA576187C677000B26F84 /* HMeshParallelKit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HMeshParallelKit.h; sourceTree = "<group>"; };
 		0DD1DD1818A29BC600D0069B /* heat_kernel_laplacian.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = heat_kernel_laplacian.cpp; sourceTree = "<group>"; };
 		0DD1DD1918A29BC600D0069B /* heat_kernel_laplacian.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = heat_kernel_laplacian.h; sourceTree = "<group>"; };
+		593C563719951E1F0008EAC4 /* geometric_console_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = geometric_console_functions.cpp; sourceTree = "<group>"; };
+		593C563819951E1F0008EAC4 /* geometric_console_functions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = geometric_console_functions.h; sourceTree = "<group>"; };
+		593C563A19951F140008EAC4 /* structural_helpers.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = structural_helpers.cpp; sourceTree = "<group>"; };
+		593C563B19951F140008EAC4 /* structural_helpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = structural_helpers.h; sourceTree = "<group>"; };
 		595DC97319927F1300532C6A /* PM_basic_console_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PM_basic_console_functions.cpp; sourceTree = "<group>"; };
 		595DC97419927F1300532C6A /* PM_basic_console_functions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PM_basic_console_functions.h; sourceTree = "<group>"; };
 		595DC977199281C000532C6A /* basic_shapes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = basic_shapes.cpp; sourceTree = "<group>"; };
 		595DC978199281C000532C6A /* basic_shapes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = basic_shapes.h; sourceTree = "<group>"; };
+		595DC97A1994F2A200532C6A /* Algorithms.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Algorithms.cpp; sourceTree = "<group>"; };
+		595DC97B1994F2A200532C6A /* Algorithms.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Algorithms.h; sourceTree = "<group>"; };
+		595DC9801994F5B100532C6A /* structural_operations.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = structural_operations.cpp; sourceTree = "<group>"; };
+		595DC9811994F5B100532C6A /* structural_operations.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = structural_operations.h; sourceTree = "<group>"; };
+		595DC9831994FA9100532C6A /* geometric_properties.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = geometric_properties.cpp; sourceTree = "<group>"; };
+		595DC9841994FA9100532C6A /* geometric_properties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = geometric_properties.h; sourceTree = "<group>"; };
+		595DC9861995131700532C6A /* geometric_operations.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = geometric_operations.cpp; sourceTree = "<group>"; };
+		595DC9871995131700532C6A /* geometric_operations.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = geometric_operations.h; sourceTree = "<group>"; };
+		595DC98C1995183400532C6A /* structural_console_functions.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = structural_console_functions.cpp; sourceTree = "<group>"; };
+		595DC98D1995183400532C6A /* structural_console_functions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = structural_console_functions.h; sourceTree = "<group>"; };
 		5979AF6119825D92003E3697 /* Test.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Test.cpp; sourceTree = "<group>"; };
 		5979AF6219825D92003E3697 /* Test.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Test.h; sourceTree = "<group>"; };
 		597D8D61198F84A300CF1C64 /* Plane.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Plane.cpp; sourceTree = "<group>"; };
 		597D8D62198F84A300CF1C64 /* Plane.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Plane.h; sourceTree = "<group>"; };
 		597D8D6B198FB90600CF1C64 /* additional_console_funcs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = additional_console_funcs.cpp; sourceTree = "<group>"; };
 		597D8D6C198FB90600CF1C64 /* additional_console_funcs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = additional_console_funcs.h; sourceTree = "<group>"; };
-		597D8D71198FB98A00CF1C64 /* PM_additiona_console_funcs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PM_additiona_console_funcs.cpp; sourceTree = "<group>"; };
-		597D8D72198FB98A00CF1C64 /* PM_additiona_console_funcs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PM_additiona_console_funcs.h; sourceTree = "<group>"; };
 		59B75D88197D25B100DD6462 /* GEL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GEL.framework; path = ../../../../Library/Frameworks/GEL.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -164,8 +182,6 @@
 		0D0F5B66180878B9003557E2 /* MeshEditE */ = {
 			isa = PBXGroup;
 			children = (
-				597D8D71198FB98A00CF1C64 /* PM_additiona_console_funcs.cpp */,
-				597D8D72198FB98A00CF1C64 /* PM_additiona_console_funcs.h */,
 				597D8D6B198FB90600CF1C64 /* additional_console_funcs.cpp */,
 				597D8D6C198FB90600CF1C64 /* additional_console_funcs.h */,
 				597D8D5F198F808500CF1C64 /* Procedural */,
@@ -227,6 +243,12 @@
 			children = (
 				595DC977199281C000532C6A /* basic_shapes.cpp */,
 				595DC978199281C000532C6A /* basic_shapes.h */,
+				595DC97A1994F2A200532C6A /* Algorithms.cpp */,
+				595DC97B1994F2A200532C6A /* Algorithms.h */,
+				595DC9801994F5B100532C6A /* structural_operations.cpp */,
+				595DC9811994F5B100532C6A /* structural_operations.h */,
+				595DC9861995131700532C6A /* geometric_operations.cpp */,
+				595DC9871995131700532C6A /* geometric_operations.h */,
 			);
 			name = Operations;
 			path = MeshEditE/Procedural/Operations;
@@ -248,6 +270,10 @@
 			children = (
 				597D8D61198F84A300CF1C64 /* Plane.cpp */,
 				597D8D62198F84A300CF1C64 /* Plane.h */,
+				595DC9831994FA9100532C6A /* geometric_properties.cpp */,
+				595DC9841994FA9100532C6A /* geometric_properties.h */,
+				593C563A19951F140008EAC4 /* structural_helpers.cpp */,
+				593C563B19951F140008EAC4 /* structural_helpers.h */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -257,6 +283,10 @@
 			children = (
 				595DC97319927F1300532C6A /* PM_basic_console_functions.cpp */,
 				595DC97419927F1300532C6A /* PM_basic_console_functions.h */,
+				595DC98C1995183400532C6A /* structural_console_functions.cpp */,
+				595DC98D1995183400532C6A /* structural_console_functions.h */,
+				593C563719951E1F0008EAC4 /* geometric_console_functions.cpp */,
+				593C563819951E1F0008EAC4 /* geometric_console_functions.h */,
 			);
 			name = ConsoleFuncs;
 			path = MeshEditE/Procedural/ConsoleFuncs;
@@ -362,19 +392,25 @@
 			buildActionMask = 2147483647;
 			files = (
 				0D44677B180B0A7F00B27082 /* BasicOpenGLView.mm in Sources */,
+				593C563919951E1F0008EAC4 /* geometric_console_functions.cpp in Sources */,
 				0D0F5B74180878B9003557E2 /* AppDelegate.m in Sources */,
 				595DC979199281C000532C6A /* basic_shapes.cpp in Sources */,
+				593C563C19951F140008EAC4 /* structural_helpers.cpp in Sources */,
+				595DC9821994F5B100532C6A /* structural_operations.cpp in Sources */,
+				595DC97C1994F2A200532C6A /* Algorithms.cpp in Sources */,
 				0D0F5B7A180878B9003557E2 /* MeshEditE.xcdatamodeld in Sources */,
+				595DC9851994FA9100532C6A /* geometric_properties.cpp in Sources */,
+				595DC98E1995183400532C6A /* structural_console_functions.cpp in Sources */,
 				0D6FA573187B9D6500B26F84 /* LogMap.cpp in Sources */,
 				0D0F5B6D180878B9003557E2 /* main.m in Sources */,
 				597D8D63198F84A300CF1C64 /* Plane.cpp in Sources */,
 				595DC97519927F1300532C6A /* PM_basic_console_functions.cpp in Sources */,
 				5979AF6319825D92003E3697 /* Test.cpp in Sources */,
 				0D5467D0180B87D900DBC8B9 /* polarize.cpp in Sources */,
-				597D8D73198FB98A00CF1C64 /* PM_additiona_console_funcs.cpp in Sources */,
 				0D6FA577187C677000B26F84 /* HMeshParallelKit.cpp in Sources */,
 				0DD1DD1A18A29BC600D0069B /* heat_kernel_laplacian.cpp in Sources */,
 				597D8D6D198FB90600CF1C64 /* additional_console_funcs.cpp in Sources */,
+				595DC9881995131700532C6A /* geometric_operations.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

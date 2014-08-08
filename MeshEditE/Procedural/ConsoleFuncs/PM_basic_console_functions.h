@@ -15,14 +15,12 @@ namespace GLGraphics {
     class MeshEditor;
 }
 
-namespace Procedural
-{
-    
-namespace ConsoleFuncs
-{
+namespace Procedural{
+    namespace ConsoleFuncs{
     
     void register_basic_console_funcs(GLGraphics::MeshEditor* me);
-}
-}
+    void register_algorithm_console_funcs(GLGraphics::MeshEditor* me);
+
+}}
 
 #endif /* defined(__MeshEditE__PM_basic_console_functions__) */

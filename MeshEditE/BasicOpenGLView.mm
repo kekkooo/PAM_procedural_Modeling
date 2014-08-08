@@ -1,7 +1,8 @@
 #import "BasicOpenGLView.h"
 #include "additional_console_funcs.h"
-#include "PM_additiona_console_funcs.h"
 #include "Procedural/ConsoleFuncs/PM_basic_console_functions.h"
+#include "Procedural/ConsoleFuncs/geometric_console_functions.h"
+#include "Procedural/ConsoleFuncs/structural_console_functions.h"
 #include <GEL/GLGraphics/MeshEditor.h>
 
 using namespace CGLA;
@@ -285,8 +286,12 @@ GLenum glReportError (int where = -1)
     [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval]; // set to vbl sync
     me.init();
     register_console_funcs(&me);
-    register_more_basic_console_funcs(&me);
+    // procedural modeling extensions.
     Procedural::ConsoleFuncs::register_basic_console_funcs(&me);
+    Procedural::ConsoleFuncs::register_algorithm_console_funcs(&me);
+    Procedural::ConsoleFuncs::register_geometric_console_funcs(&me);
+    Procedural::ConsoleFuncs::register_structural_console_funcs(&me);
+    
     NSLog(@"OpenGL Initialized");
 }
 

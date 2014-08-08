@@ -16,11 +16,9 @@
 
 using namespace CGLA;
 
-namespace Procedural
-{
-    
-namespace Geometry
-{
+namespace Procedural{
+    namespace Geometry{
+
 class Plane
 {
     
