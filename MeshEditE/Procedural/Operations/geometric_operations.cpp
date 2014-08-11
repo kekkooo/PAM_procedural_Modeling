@@ -195,9 +195,10 @@ void extrude_pole( HMesh::Manifold&m, HMesh::VertexID v, Vec3d direction, bool a
 {
     assert( is_pole( m, v ));
     move_vertex( m, v, direction );
+
     if( add_quads )
     {
-        add_ring_around_pole(m, v, scaling);
+        add_ring_around_pole( m, v, scaling );
     }
 }
 
@@ -267,58 +268,45 @@ void flatten_pole ( Manifold& m, VertexID pole )
             
 void add_ring_around_pole ( Manifold& m, VertexID pole, double scaling )
 {
-    typedef vector< pair< VertexID, VertexID > >        NeighborVector;
+    // Add the other ring of rib edge loops
+    HMesh::VertexAttributeVector<int> sel;
+    for( VertexID vid : m.vertices() ) { sel[vid] = 0; }
+    sel[pole] = 1;
+    refine_poles( m, sel );
     
-    auto new_vs = split_ring_of_quads( m, m.walker( pole ).halfedge( ));
-    // if it is selected to preserve the radius of the shape in the inserction point of the triangles fan
-    // THIS COULD BE DONE WITH the function to scale the ring.
-    if( scaling > 0 )
+    // find the starting half_edges, the rings, their barycenters, and the associated radii
+    vector< VertexID >  sourceRing,     destRing;
+    vector<double>      sourceRadii,    destRadii;
+    Walker w = m.walker(pole);
+    // starters
+    HalfEdgeID  destStart       = w.next().halfedge();
+    HalfEdgeID  sourceStart     = w.next().opp().next().next().halfedge();
+    // barycenters
+    Vec3d       destBarycenter  = ring_barycenter( m, destStart,    destRing );
+    Vec3d       sourceBarycenter= ring_barycenter( m, sourceStart,  sourceRing );
+    
+    // TEST TEST TEST
+    assert( destRing.size() == sourceRing.size( ));
+    for( int j = 0; j < destRing.size(); ++j )
     {
-        NeighborVector nb;
-        HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
-        // build corresponnces between the newly inserted vertices and
-        // the next in the spine edge's vertex chain (nsevc vertex)
-        for( VertexID new_v : new_vs )
+        bool found = false;
+        Walker www = m.walker( destRing[j] );
+        for ( ; !www.full_circle() && ! found; www = www.circulate_vertex_ccw( ))
         {
-            Walker w = m.walker(new_v);
-            bool done = false;
-            // must select the correct half edge, not the one that has the pole as its endpoint
-            for (; !w.full_circle() && !done; w = w.circulate_vertex_ccw())
-            {
-                if ( edge_info[w.halfedge()].is_spine() && w.vertex() != pole )
-                {
-                    nb.push_back( make_pair( new_v, w.vertex()));
-                    done = true;
-                }
-            }
+            found = www.vertex() == sourceRing[ j ];
         }
-        // find barycenter and distances from it for the nsevc vertices ring
-        Vec3d nsevc_barycenter(0), barycenter(0);
-        for( auto corr : nb) {  barycenter += m.pos(corr.first);
-            nsevc_barycenter += m.pos(corr.second); }
-        barycenter       /= nb.size();
-        nsevc_barycenter /= nb.size();
-        // this vector will store the distance of the nsevc vertex from the barycenter of its ring,
-        // but bonding it to the correspondent new vertex, also storing the direction in which the vertices must move
-        DistanceDirectionVector dists;
-        for( auto corr : nb)
-        {
-            assert( corr.first != pole && corr.second != pole );
-            
-            Vec3d dir = ( m.pos( corr.first ) - barycenter );
-            dir.normalize();
-            dists.push_back( make_tuple( corr.first, (m.pos(corr.second) - nsevc_barycenter).length( ), dir ));
-        }
-        
-        // update position according to original direction, previous ring distances from barycenter and preserving ratio
-        for( auto triple : dists )
-        {
-            //   cout << " dist " << get<1>( triple ) << endl;
-            m.pos( get<0>( triple )) = barycenter + ( get<2>( triple ) * get<1>( triple ) * scaling);
-        }
+        assert(found);
+    }
+    // #############
+    
+    for( int j = 0; j < destRing.size(); ++j )
+    {
+        Vec3d   dir     = m.pos( destRing[j] )   - destBarycenter;
+        dir.normalize();
+        double  length  = ( m.pos( sourceRing[j] ) - sourceBarycenter ).length();
+        m.pos( destRing[j] ) = destBarycenter + dir * length * scaling;
     }
 }
+    
 
-            
-            
 }}}

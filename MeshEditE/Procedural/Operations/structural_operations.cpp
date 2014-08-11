@@ -24,6 +24,39 @@ namespace Procedural{
     namespace Operations{
         namespace Structural{
 
+void add_branch ( HMesh::Manifold& m, HMesh::VertexID vid, int size, HMesh::VertexAttributeVector<int> &ring )
+{
+//    HMesh::VertexAttributeVector<int> ring( m.no_vertices(), 0 );
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    
+    // seleziona solo i punti   che non sono poli.
+    //                          che non hanno vicini poli
+    //                          che non hanno vicini selezionati
+        
+    map< HMesh::VertexID, CGLA::Vec3d > vert_pos;
+    if( !is_pole(m, vid) )
+    {
+        Walker w  = m.walker( vid );
+        ring[vid] = 1;
+        
+        for ( ; !w.full_circle(); w=w.circulate_vertex_ccw() )
+        {
+            if ( edge_info[w.halfedge()].is_rib() )
+            {
+                        ring[w.vertex()]    = 1;
+                Walker  side_w              = w;
+                for (int sides = 1; sides < size; ++sides )
+                {
+                    side_w = side_w.next().opp().next();
+                    ring[side_w.vertex()] = 1;
+                }
+            }
+            vert_pos[w.vertex()] = m.pos( w.vertex( ));
+        }
+        Vec3d centroid(0);
+        polar_add_branch( m, ring );
+    }
+}
             
 void cut_branch( Manifold& m, HalfEdgeID h, VertexID pole )
 {

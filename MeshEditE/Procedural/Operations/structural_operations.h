@@ -18,11 +18,10 @@ namespace Procedural{
     namespace Operations{
         namespace Structural{
 
-
+void                add_branch                              ( HMesh::Manifold& m, HMesh::VertexID, int size, HMesh::VertexAttributeVector<int> &ring );
 void                cut_branch                              ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
 void                cut_branch                              ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
                                                               HMesh::VertexID pole                      );
-            // this should be placed into geometric operationss
 
 }}}
 #endif /* defined(__MeshEditE__structural_opeations__) */

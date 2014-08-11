@@ -28,58 +28,32 @@ using namespace Procedural::Operations::Structural;
 void console_test_add_branch( MeshEditor *me, const std::vector< std::string > &args )
 {
     me->save_active_mesh();
-    
     Manifold&   m           = me->active_mesh();
-    auto        selection   = me->get_vertex_selection();
-    VertexID    used_vertex = InvalidVertexID;
     int         size        = 1;
+    vector< VertexID > selected;
 
     if( args.size() > 0 ){
         istringstream a0( args[0] );
         a0 >> size;
     }
-
-    HMesh::VertexAttributeVector<int> ring( selection.size(), 0 );
-    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
     
-    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit)
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit )
     {
-        VertexID vid = *vit;
-        map< HMesh::VertexID, CGLA::Vec3d > vert_pos;
-        // need to select each vertex of the face ring of the selected vertex
-        if( selection[vid] )
-        {
-            Walker w = m.walker(vid);
-            for ( ; !w.full_circle(); w=w.circulate_vertex_ccw() )
-            {
-                if ( edge_info[w.halfedge()].is_rib() )
-                {
-                    ring[w.vertex()]        = 1;
-                    ring[w.prev().vertex()] = 1;
-                }
-                vert_pos[ w.vertex()] = m.pos(w.vertex());
-            }
-            
-            // if the number of outgoint halfedges >4, it was selected a pole
-            if( w.no_steps() != 4 ) { return; }
-            
-            // vert_pos[vid] = m.pos( vid );
-            
-            polar_add_branch( m, ring );
-            for( auto kv : vert_pos )
-            {
-                m.pos( kv.first ) = kv.second;
-            }
-            
-            used_vertex = vid;
-        }
+        if( me->get_vertex_selection()[*vit] ) selected.push_back(*vit);
+    }
+    // seleziona solo i punti   che non sono poli.
+    //                          che non hanno vicini poli
+    //                          che non hanno vicini selezionati
+    for( VertexID vid : selected )
+    {
+        if( me->get_vertex_selection()[vid] )
+            { add_branch( m, vid, size, me->get_vertex_selection( )); }
     }
     
     me->active_visobj().clear_selection();
     m.cleanup();
     
     cout << "add branches to selected vertices" << endl;
-    
 }
 
 void console_test_cut_branch( MeshEditor *me, const std::vector< std::string > &args )

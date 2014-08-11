@@ -63,7 +63,6 @@ void                        add_noise               ( HMesh::Manifold& m, int ve
 void                        add_ring_around_pole    ( HMesh::Manifold& m, HMesh::VertexID pole,
                                                       double scaling );
 
-
             
 }}}
 #endif /* defined(__MeshEditE__geometric_operations__) */
