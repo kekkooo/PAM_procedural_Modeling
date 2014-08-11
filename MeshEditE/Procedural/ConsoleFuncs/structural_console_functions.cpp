@@ -20,7 +20,6 @@
 #include <MeshEditE/Procedural/Operations/structural_operations.h>
 
 using namespace GLGraphics;
-
 using namespace std;
 using namespace HMesh;
 using namespace Procedural::Operations::Structural;
@@ -30,17 +29,20 @@ void console_test_add_branch( MeshEditor *me, const std::vector< std::string > &
 {
     me->save_active_mesh();
     
-    Manifold& m = me->active_mesh();
-    auto selection = me->get_vertex_selection();
-    HMesh::VertexAttributeVector<int> ring( selection.size(), 0);
-    VertexID used_vertex = InvalidVertexID;
-    
+    Manifold&   m           = me->active_mesh();
+    auto        selection   = me->get_vertex_selection();
+    VertexID    used_vertex = InvalidVertexID;
+    int         size        = 1;
+
+    if( args.size() > 0 ){
+        istringstream a0( args[0] );
+        a0 >> size;
+    }
+
+    HMesh::VertexAttributeVector<int> ring( selection.size(), 0 );
     HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
     
-    //    for( VertexIDIterator vit = m.vertices_begin();
-    //        vit != m.vertices_end() && used_vertex == InvalidVertexID; ++vit)
-    for( VertexIDIterator vit = m.vertices_begin();
-        vit != m.vertices_end(); ++vit)
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit)
     {
         VertexID vid = *vit;
         map< HMesh::VertexID, CGLA::Vec3d > vert_pos;
@@ -48,11 +50,11 @@ void console_test_add_branch( MeshEditor *me, const std::vector< std::string > &
         if( selection[vid] )
         {
             Walker w = m.walker(vid);
-            for (; !w.full_circle(); w=w.circulate_vertex_ccw() )
+            for ( ; !w.full_circle(); w=w.circulate_vertex_ccw() )
             {
-                if ( edge_info[w.halfedge()].is_rib())
+                if ( edge_info[w.halfedge()].is_rib() )
                 {
-                    ring[w.vertex()] = 1;
+                    ring[w.vertex()]        = 1;
                     ring[w.prev().vertex()] = 1;
                 }
                 vert_pos[ w.vertex()] = m.pos(w.vertex());
@@ -61,9 +63,9 @@ void console_test_add_branch( MeshEditor *me, const std::vector< std::string > &
             // if the number of outgoint halfedges >4, it was selected a pole
             if( w.no_steps() != 4 ) { return; }
             
-            //            vert_pos[vid] = m.pos( vid );
+            // vert_pos[vid] = m.pos( vid );
             
-            polar_add_branch(m, ring);
+            polar_add_branch( m, ring );
             for( auto kv : vert_pos )
             {
                 m.pos( kv.first ) = kv.second;
@@ -83,15 +85,15 @@ void console_test_add_branch( MeshEditor *me, const std::vector< std::string > &
 void console_test_cut_branch( MeshEditor *me, const std::vector< std::string > &args )
 {
     me->save_active_mesh();
-    bool done = false;
-    Manifold& m = me->active_mesh();
-    vector< VertexID > selected;
-    typedef vector< VertexID >::iterator vertexID_iter;
-    VertexID selected_pole = InvalidVertexID;
+    bool        done            = false;
+    Manifold&   m               = me->active_mesh();
+    VertexID    selected_pole   = InvalidVertexID;
+    HalfEdgeID  selected_he     = InvalidHalfEdgeID;
     
-    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
-    HalfEdgeID selected_he = InvalidHalfEdgeID;
-    
+    vector< VertexID >                      selected;
+    typedef vector< VertexID >::iterator    vertexID_iter;
+    HalfEdgeAttributeVector<EdgeInfo>       edge_info = label_PAM_edges( m );
+
     // consider only selected vertices that are not poles
     for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit)
     {
@@ -139,8 +141,8 @@ namespace Procedural{
         
         void register_structural_console_funcs(GLGraphics::MeshEditor* me)
         {
-            me->register_console_function( "test.add_branch", console_test_add_branch, "test.add_branch" );
+            me->register_console_function( "test.structure.add_branch", console_test_add_branch, "test.structure.add_branch" );
             
-            me->register_console_function( "test.cut_branch", console_test_cut_branch, "test.cut_branch" );
+            me->register_console_function( "test.structure.cut_branch", console_test_cut_branch, "test.structure.cut_branch" );
         }
 }}
