@@ -9,12 +9,16 @@
 #include "geometric_operations.h"
 #include "polarize.h"
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+#include <MeshEditE/Procedural/Helpers/plane.h>
+#include <MeshEditE/Procedural/Operations/Algorithms.h>
+#include <MeshEditE/Procedural/Operations/Algorithms.h>
 #include "test.h"
 
 using namespace HMesh;
 using namespace CGLA;
 using namespace std;
 using namespace Procedural::Geometry;
+using namespace Procedural::Operations::Algorithms;
 
 namespace Procedural{
     namespace Operations{
@@ -260,10 +264,22 @@ void flatten_pole ( Manifold& m, VertexID pole )
     if( !is_pole(m, pole)) return;
     
     // take all the neighbors,
+    vector< VertexID > neighbors;
+    Walker w = m.walker(pole);
+    for( ; !w.full_circle(); w = w.circulate_vertex_ccw()) { neighbors.push_back(w.vertex()); }
     // find the combination of three that creates the biggest triangle
-    // take those 3 points as plane
+    // take those 3 points as plane - only an approximation ( maybe for now )
+    int pace = neighbors.size() / 3;
+    Vec3d p0 = m.pos( neighbors[0] );
+    Vec3d p1 = m.pos( neighbors[pace] );
+    Vec3d p2 = ( pace * 3 < neighbors.size( ) && neighbors.size() > 4 )
+               ? m.pos(neighbors[pace * 2 + pace / 2])
+               : m.pos(neighbors[pace * 2]);
     // move the pole in its projection onto the plane.
-    assert(false);
+    Procedural::Geometry::Plane p(p0, p1, p2);
+    Vec3d new_pole = p.ortho(p0, m.pos(pole));
+    m.pos(pole) = new_pole;
+    
 }
             
 void add_ring_around_pole ( Manifold& m, VertexID pole, double scaling )
@@ -306,6 +322,22 @@ void add_ring_around_pole ( Manifold& m, VertexID pole, double scaling )
         double  length  = ( m.pos( sourceRing[j] ) - sourceBarycenter ).length();
         m.pos( destRing[j] ) = destBarycenter + dir * length * scaling;
     }
+}
+            
+void smooth_pole ( Manifold& m, VertexID pole, HalfEdgeAttributeVector<EdgeInfo> edge_info )
+{
+    vector< VertexID > selected;
+    Walker w = m.walker( pole );
+    // found the start of the pole
+    while ( !edge_info[ w.next().halfedge() ].is_junction() )
+    {
+        w = w.next().opp().next();
+    }
+    Walker ring = w.next();
+    while( !ring.full_circle() ) { selected.push_back(ring.vertex());
+                                   ring = ring.next().opp().next(); }
+    
+    selected_vertices_cotangent_weights_laplacian( m, selected );
 }
     
 

@@ -87,6 +87,55 @@ void console_test_inverse_distance_smoothing( MeshEditor *me, const std::vector<
 // cotangent weights laplacian smoothing
 void console_test_cotangent_smoothing( MeshEditor *me, const std::vector< std::string > &args )
 {
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    int         times   = 1;
+    vector< VertexID > selected;
+
+    if(args.size() > 0){
+        istringstream a0(args[0]);
+        a0 >> times;
+    }
+    
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit )
+    {
+        if( me->get_vertex_selection()[*vit] ) selected.push_back(*vit);
+    }
+    for (int iter = 0; iter < times; iter++) {
+//        cotangent_weights_laplacian_smoothing( me->active_mesh( ));
+        selected_vertices_cotangent_weights_laplacian( m, selected );
+    }
+}
+
+// inverse distance laplacian smoothing
+void console_test_selected_inverse_distance_smoothing( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    int         times   = 1;
+    vector< VertexID > selected;
+    
+    if(args.size() > 0){
+        istringstream a0(args[0]);
+        a0 >> times;
+    }
+    
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit )
+    {
+        if( me->get_vertex_selection()[*vit] ) selected.push_back(*vit);
+    }
+    
+    for (int iter = 0; iter < times; iter++) {
+        selected_vertices_inverse_distance_laplacian( m, selected );
+//        inverse_distance_laplacian_smoothing( me->active_mesh( ));
+    }
+    
+
+}
+
+// cotangent weights laplacian smoothing
+void console_test_selected_cotangent_smoothing( MeshEditor *me, const std::vector< std::string > &args )
+{
     int times=1;
     if(args.size() > 0){
         istringstream a0(args[0]);
@@ -112,12 +161,25 @@ void register_basic_console_funcs(GLGraphics::MeshEditor* me)
 void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)
 {
     me->register_console_function(
-        "test.smoothing.inverse_distance", console_test_inverse_distance_smoothing,
-        "test.smoothing.inverse_distance <iterations>"                              );
+        "test.smoothing.inverse_distance",
+        console_test_inverse_distance_smoothing,
+        "test.smoothing.inverse_distance <iterations>"          );
     
     me->register_console_function(
-        "test.smoothing.cotangent",        console_test_cotangent_smoothing,
-        "test.smoothing.cotangent <iterations>"                                     );
+        "test.smoothing.cotangent",
+        console_test_cotangent_smoothing,
+        "test.smoothing.cotangent <iterations>"                 );
+
+    me->register_console_function(
+        "test.smoothing.selected_inverse_distance",
+        console_test_inverse_distance_smoothing,
+        "test.smoothing.selected_inverse_distance <iterations>" );
+    
+    me->register_console_function(
+        "test.smoothing.selected_cotangent",
+        console_test_cotangent_smoothing,
+        "test.smoothing.selected_cotangent <iterations>"        );
+
 }
 
 }}

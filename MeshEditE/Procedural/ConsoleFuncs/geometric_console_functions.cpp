@@ -339,6 +339,20 @@ void console_test_perturbate( MeshEditor *me, const std::vector< std::string > &
     add_noise(m, vtype, ratio, cutoff);
 }
 
+void console_test_flatten_pole( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit)
+    {
+        if (me->get_vertex_selection()[*vit])
+        {
+            flatten_pole(m, *vit);
+        }
+    }
+}
+
 namespace Procedural{
     namespace ConsoleFuncs{
         
@@ -367,5 +381,9 @@ namespace Procedural{
             
             me->register_console_function( "test.geometry.scale_selected_rings", console_test_scale_selected_rings,
                                            "test.geometry.scale_selected_rings" );
+            
+            me->register_console_function( "test.geometry.flatten_pole", console_test_flatten_pole,
+                                          "test.geometry.flatten_pole" );
+
         }
 }}

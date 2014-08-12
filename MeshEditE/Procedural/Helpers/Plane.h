@@ -122,6 +122,16 @@ public:
         return (( fabs(v) > PLANE_EPSILON ) and ( v < 0.0 ));
     }
     
+    Vec3d ortho( Vec3d point_on_plane, Vec3d point )
+    {
+        Vec3d n     = normal();
+        Vec3d v     = point - point_on_plane;
+        double dist = dot(v,  n);
+        n.normalize();
+        Vec3d p     = point - n * dist;
+        return p;
+    }
+    
 private:
     double  _a, _b, _c, _d;
     double TestPoint( Vec3d p ) { return (p[0] * _a + p[1] * _b + p[2] * _c - _d); }

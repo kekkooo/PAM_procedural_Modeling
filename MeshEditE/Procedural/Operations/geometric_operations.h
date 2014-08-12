@@ -14,6 +14,7 @@
 #include <tuple>
 #include <GEL/HMesh/Manifold.h>
 #include <GEL/CGLA/Vec3d.h>
+#include "polarize.h"
 
 using namespace std;
 
@@ -51,6 +52,8 @@ void                        flatten_pole            ( HMesh::Manifold& m, HMesh:
 void                        extrude_pole            ( HMesh::Manifold& m, HMesh::VertexID v,
                                                       double length = -1.0, bool pole_add_quads = false,
                                                       double radius_preserving_ratio = 1.0      );
+void                        smooth_pole             ( HMesh::Manifold& m, HMesh::VertexID pole,
+                                                      HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info );
 
 void                        extrude_pole            ( HMesh::Manifold&m, HMesh::VertexID v, CGLA::Vec3d direction,
                                                       bool add_quads, double scaling );

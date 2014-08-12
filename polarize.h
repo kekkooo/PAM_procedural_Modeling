@@ -24,8 +24,9 @@ struct EdgeInfo {
     EdgeType edge_type;
     int id;
     
-    bool is_rib() const { return edge_type == RIB|| edge_type == RIB_JUNCTION;}
-    bool is_spine() const {return edge_type == SPINE;}
+    bool is_rib()       const { return edge_type == RIB || edge_type == RIB_JUNCTION;}
+    bool is_spine()     const { return edge_type == SPINE;}
+    bool is_junction()  const { return edge_type == RIB_JUNCTION; }
     
     EdgeInfo(): edge_type(UNKNOWN), id(0) {}
     EdgeInfo(EdgeType _edge_type, int _id): edge_type(_edge_type), id(_id) {}

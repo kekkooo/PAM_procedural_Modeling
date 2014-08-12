@@ -16,8 +16,10 @@ namespace Procedural{
     namespace Operations{
         namespace Algorithms{
 
-    void        inverse_distance_laplacian_smoothing    ( HMesh::Manifold& am );
-    void        cotangent_weights_laplacian_smoothing   ( HMesh::Manifold& am );
+    void selected_vertices_cotangent_weights_laplacian  ( HMesh::Manifold&m, std::vector< HMesh::VertexID > vs );
+    void selected_vertices_inverse_distance_laplacian   ( HMesh::Manifold&m, std::vector< HMesh::VertexID > vs );
+    void inverse_distance_laplacian_smoothing           ( HMesh::Manifold& am );
+    void cotangent_weights_laplacian_smoothing          ( HMesh::Manifold& am );
 
 }}}
 
