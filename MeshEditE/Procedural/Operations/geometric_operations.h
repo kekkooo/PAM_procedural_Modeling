@@ -35,6 +35,7 @@ enum VertexType
 
 
 vector< HMesh::VertexID >   split_ring_of_quads     ( HMesh::Manifold& m, HMesh::HalfEdgeID h   );
+void                        split_ring_of_quads     ( HMesh::Manifold& m, HMesh::HalfEdgeID h, int slices );
 // h is a rib edge
 vector< HMesh::VertexID >   split_from_pole_to_pole ( HMesh::Manifold& m, HMesh::HalfEdgeID h   );
 

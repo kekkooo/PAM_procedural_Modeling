@@ -76,7 +76,7 @@ void add_noise ( HMesh::Manifold& m, int vertex_type_flags, double ratio, double
 
 // h must be a spine edge. Splits the specified half edge and all of it "parallel" edges,
 // that are all the edges reachable as current_he.next().next().opp()
-vector< VertexID > split_ring_of_quads( HMesh::Manifold& m, HMesh::HalfEdgeID h)
+vector< VertexID > split_ring_of_quads( HMesh::Manifold& m, HMesh::HalfEdgeID h )
 {
     vector< VertexID > inserted_vertices;
     // cannot split invalid half edge
@@ -101,6 +101,11 @@ vector< VertexID > split_ring_of_quads( HMesh::Manifold& m, HMesh::HalfEdgeID h)
     m.split_face_by_edge(faces_to_split.back(), inserted_vertices[inserted_vertices.size()-1], inserted_vertices.front());
     
     return inserted_vertices;
+}
+            
+void split_ring_of_quads ( HMesh::Manifold& m, HMesh::HalfEdgeID h, int slices )
+{
+    
 }
 
 // h must be a rib edge. splits each rib edge that lay in the same path "pole-to-pole" of h
@@ -326,15 +331,27 @@ void add_ring_around_pole ( Manifold& m, VertexID pole, double scaling )
             
 void smooth_pole ( Manifold& m, VertexID pole, HalfEdgeAttributeVector<EdgeInfo> edge_info )
 {
+    if ( !is_pole(m, pole) ) return;
     vector< VertexID > selected;
     Walker w = m.walker( pole );
     // found the start of the pole
+
+//#ifdef DEBUG
+//    for( HalfEdgeID he : m.halfedges()) { assert( edge_info[he].is_junction() == edge_info[ m.walker(he).opp().halfedge()].is_junction()); }
+//    for( HalfEdgeID he : m.halfedges()) { assert( !edge_info[he].is_junction() ); }
+//#endif
+    
+    
     while ( !edge_info[ w.next().halfedge() ].is_junction() )
     {
         w = w.next().opp().next();
+        Walker ring = m.walker( w.next().halfedge() );
+        while( !ring.full_circle() ) { selected.push_back( ring.vertex( ));
+            ring = ring.next().opp().next(); }
+
     }
-    Walker ring = w.next();
-    while( !ring.full_circle() ) { selected.push_back(ring.vertex());
+    Walker ring = m.walker( w.next().halfedge() );
+    while( !ring.full_circle() ) { selected.push_back( ring.vertex( ));
                                    ring = ring.next().opp().next(); }
     
     selected_vertices_cotangent_weights_laplacian( m, selected );

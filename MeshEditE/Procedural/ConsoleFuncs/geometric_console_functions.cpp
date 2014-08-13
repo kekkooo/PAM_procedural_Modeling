@@ -353,6 +353,29 @@ void console_test_flatten_pole( MeshEditor *me, const std::vector< std::string >
     }
 }
 
+void console_test_smooth_pole( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+
+    for(auto h: m.halfedges())
+        if(edge_info[h].is_rib()) {
+            number_rib_edges(m, edge_info, h);
+            break;
+        }
+
+    
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit)
+    {
+        if (me->get_vertex_selection()[*vit])
+        {
+            smooth_pole( m, *vit, edge_info );
+        }
+    }
+}
+
 namespace Procedural{
     namespace ConsoleFuncs{
         
@@ -369,6 +392,10 @@ namespace Procedural{
             
             me->register_console_function( "test.geometry.extrude_poles_alt", console_test_extrude_vertices_alt,
                                            "test.geometry.extrude_poles_alt" );
+            
+            me->register_console_function( "test.geometry.smooth_pole", console_test_smooth_pole,
+                                           "test.geometry.smooth_pole" );
+            
             
             me->register_console_function( "test.geometry.set_ring_radius", console_test_set_ring_radius,
                                            "test.geometry.set_ring_radius" );

@@ -58,6 +58,7 @@ void skeleton_retract(HMesh::Manifold& m, double frac, HMesh::VertexID v=HMesh::
 
 void polar_subdivide(HMesh::Manifold& mani, int MAX_ITER);
 void polar_segment(HMesh::Manifold& m, bool show_segments=false);
+int number_rib_edges(HMesh::Manifold& m,  HMesh::HalfEdgeAttributeVector<EdgeInfo>& edge_info, HMesh::HalfEdgeID h);
 
 
 Region trace_region(HMesh::Manifold& m, HMesh::HalfEdgeID hid);

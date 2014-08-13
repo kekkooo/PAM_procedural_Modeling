@@ -54,6 +54,60 @@ HalfEdgeID find_spine_edge( Manifold& m, VertexID v0, VertexID v1,
         return found;
     }
 }
+        
+RegionBoundaries FollowSpines ( Manifold& m, VertexID vid, HalfEdgeAttributeVector<EdgeInfo> edge_info )
+{
+    RegionBoundaries result = RegionBoundaries();
+    
+    if( is_pole( m, vid )) return result;
+
+    HalfEdgeID  spine1 = InvalidHalfEdgeID,
+                spine2 = InvalidHalfEdgeID;
+    // find the two spine edge starters
+    Walker w = m.walker( vid );
+    for( ; !w.full_circle(); w = w.circulate_vertex_ccw())
+    {
+        if( edge_info[w.halfedge()].is_spine() )
+        {
+            if( spine1 == InvalidHalfEdgeID) { spine1 = w.halfedge(); }
+            else spine2 = w.halfedge();
+        }
+    }
+    // follow each of the edge paths until you reach a pole or a junction
+    w = m.walker(spine1);
+    while( !edge_info[w.next().halfedge()].is_junction() && !is_pole(m, w.vertex()) )
+    {
+        w = w.next().opp().next();
+    }
+    bool spine1_ends_to_junction = !edge_info[w.next().halfedge()].is_junction();
+    // second starter
+    w = m.walker(spine2);
+    while( !edge_info[w.next().halfedge()].is_junction() && !is_pole(m, w.vertex()) )
+    {
+        w = w.next().opp().next();
+    }
+    bool spine2_ends_to_junction = !edge_info[w.next().halfedge()].is_junction();
+
+    // return the case.
+    result.FirstSpineEdge   = spine1;
+    result.FirstEndType     = ( spine1_ends_to_junction ? EndType::Junction : EndType::Pole );
+    result.FirstSpineEdge   = spine2;
+    result.FirstEndType     = ( spine2_ends_to_junction ? EndType::Junction : EndType::Pole );
+
+    return result;
+}
+        
+// ALERT : IS NOT THAT EASY. YOU NEED TO BUILD THE GRAPH IN ORDER TO FIND LOOPS
+HalfEdgeID BranchCutDirection( Manifold& m, VertexID vid, HalfEdgeAttributeVector<EdgeInfo> edge_info )
+{
+    HalfEdgeID result = InvalidHalfEdgeID;
+    RegionBoundaries boundaries = FollowSpines( m, vid, edge_info );
+    
+    if( boundaries.FirstEndType == EndType::Pole ) result = boundaries.FirstSpineEdge;
+    else if( boundaries.SecondEndType == EndType::Pole ) result = boundaries.SecondSpineEdge;
+    
+    return result;
+}
 
     
 }}
