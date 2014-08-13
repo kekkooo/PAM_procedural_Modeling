@@ -105,6 +105,65 @@ vector< VertexID > split_ring_of_quads( HMesh::Manifold& m, HMesh::HalfEdgeID h 
             
 void split_ring_of_quads ( HMesh::Manifold& m, HMesh::HalfEdgeID h, int slices )
 {
+    typedef pair<Vec3d, Vec3d> point_dir;
+    if( h == InvalidHalfEdgeID || slices <= 1 ) return;
+    
+    vector< VertexID >          inserted_vertices;
+    vector< vector< Vec3d > >   inserted_vertices_position;
+    vector< FaceID >            faces_to_split;
+    vector< point_dir >         points_dirs;
+
+    Walker w = m.walker(h);
+    for ( ; !w.full_circle(); w = w.next().next().opp() )
+    {
+        Vec3d from_vertex   = m.pos( w.prev().vertex()),
+              to_vertex     = m.pos( w.vertex());
+        Vec3d dir           = to_vertex - from_vertex;
+        points_dirs.push_back( make_pair( from_vertex, dir ));
+    }
+    
+    for (int i = 1; i < slices; ++i)
+    {
+        inserted_vertices_position.push_back( vector<Vec3d>( ));
+        for( point_dir pd : points_dirs )
+        {
+            inserted_vertices_position[i-1].push_back( pd.first + pd.second * ((double)i/(double)slices) );
+        }
+    }
+    
+    
+    
+    for (int i = 1; i < slices; ++i)
+    {
+        inserted_vertices.clear();
+        Walker w = m.walker(h);
+        int count = 0;
+        // split all the edges and keep track of all the faces that must be split
+        do
+        {
+            VertexID new_v = m.split_edge(w.halfedge());
+            inserted_vertices.push_back( new_v );
+            //update new_v position
+            m.pos(new_v) = inserted_vertices_position[i-1][count];
+            
+            faces_to_split.push_back(w.face());
+            w = w.next().next().opp();
+            
+            count++;
+        }while ( !w.full_circle( ));
+        
+        // split the faces
+        for (int i = 0; i < inserted_vertices.size() - 1; i++)
+        {
+            m.split_face_by_edge(faces_to_split[i], inserted_vertices[i], inserted_vertices[i+1]);
+        }
+        // split the last face ( the one that closes the loop
+        m.split_face_by_edge(faces_to_split.back(), inserted_vertices[inserted_vertices.size()-1], inserted_vertices.front());
+
+    }
+    
+    
+
     
 }
 

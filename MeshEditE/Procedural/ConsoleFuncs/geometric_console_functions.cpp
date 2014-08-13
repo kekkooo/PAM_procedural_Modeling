@@ -34,11 +34,11 @@ void console_test_split_quad_ring( MeshEditor *me, const std::vector< std::strin
     // as in a mergesort.
     // if the number is not power of two, you need to operate differentely.
     // maybe you can create 2 library calls.
-    int times = 1;
+    int slices = 2;
     
     if(args.size() > 0){
         istringstream a0(args[0]);
-        a0 >> times;
+        a0 >> slices;
     }
     
     me->save_active_mesh();
@@ -74,7 +74,8 @@ void console_test_split_quad_ring( MeshEditor *me, const std::vector< std::strin
             }
         }
     }
-    split_ring_of_quads( m, selected_he );
+    //split_ring_of_quads( m, selected_he );
+    split_ring_of_quads(m, selected_he, slices);
     me->active_visobj().clear_selection();
     m.cleanup();
 }
