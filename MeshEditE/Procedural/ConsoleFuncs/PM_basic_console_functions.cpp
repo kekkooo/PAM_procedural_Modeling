@@ -147,6 +147,25 @@ void console_test_selected_cotangent_smoothing( MeshEditor *me, const std::vecto
 }
 
 
+void console_test_slit_selection( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->active_mesh().slit_edges(me->get_vertex_selection());
+}
+
+
+void console_test_delete_vertices( MeshEditor *me, const std::vector< std::string > &args )
+{
+    auto *m = &(me->active_mesh());
+    for( VertexIDIterator vit = m->vertices_begin(); vit != m->vertices_end(); ++vit )
+    {
+        if( me->get_vertex_selection()[*vit] )
+            m->remove_vertex(*vit);
+    }
+    m->cleanup();
+}
+
+
+
 namespace Procedural{
     namespace ConsoleFuncs{
 
@@ -179,6 +198,18 @@ void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)
         "test.smoothing.selected_cotangent",
         console_test_cotangent_smoothing,
         "test.smoothing.selected_cotangent <iterations>"        );
+    
+    me->register_console_function(
+      "test.slit_selection",
+      console_test_slit_selection,
+      "test.slit_selection"        );
+    
+    me->register_console_function(
+      "test.delete_vertices",
+      console_test_delete_vertices,
+      "test.delete_vertices"        );
+
+
 
 }
 

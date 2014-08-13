@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <GEL/HMesh/Manifold.h>
+#include <polarize.h>
 
 
 
@@ -18,10 +19,10 @@ namespace Procedural{
     namespace Operations{
         namespace Structural{
 
-void                add_branch                              ( HMesh::Manifold& m, HMesh::VertexID, int size, HMesh::VertexAttributeVector<int> &ring );
-void                cut_branch                              ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
-void                cut_branch                              ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
-                                                              HMesh::VertexID pole                      );
+void add_branch     ( HMesh::Manifold& m, HMesh::VertexID, int size, HMesh::VertexAttributeVector<int> &ring );
+void cut_branch     ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
+void cut_branch     ( HMesh::Manifold& m, HMesh::HalfEdgeID h, HMesh::VertexID pole);
+void cut_branch     ( HMesh::Manifold& m, HMesh::VertexID v, HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info );
 
 }}}
 #endif /* defined(__MeshEditE__structural_opeations__) */

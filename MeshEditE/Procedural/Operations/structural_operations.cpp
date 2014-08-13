@@ -11,6 +11,7 @@
 #include <GEL/CGLA/Vec3d.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <MeshEditE/Procedural/Operations/geometric_operations.h>
+#include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include "polarize.h"
 
 using namespace HMesh;
@@ -18,6 +19,7 @@ using namespace std;
 using namespace CGLA;
 using namespace Procedural::Geometry;
 using namespace Procedural::Operations::Geometric;
+using namespace Procedural::Structure;
 
 
 namespace Procedural{
@@ -122,6 +124,28 @@ void cut_branch ( HMesh::Manifold& m, HMesh::HalfEdgeID h )
     //              call cut_branch( m, h, pole )
     // else cut creating two poles with a simple policy
 }
+            
+void cut_branch ( Manifold& m, VertexID v, HalfEdgeAttributeVector<EdgeInfo> edge_info )
+{
+    vector< VertexID > vertices;
+    HalfEdgeID he = get_ring_vertices( m, v, edge_info, vertices, false );
+    // early termination if the ring is not found
+    if ( vertices.size() == 0 ) return;
+    // save two references to the two sides ( from v )
+    Walker w = m.walker(he);
+    HalfEdgeID rib1 = w.next().next().halfedge();
+    HalfEdgeID rib2 = w.opp().next().next().halfedge();
+    for( VertexID vid : vertices ) { m.remove_vertex(vid); }
+    assert( m.walker(rib1).face() == InvalidFaceID );
+    assert( m.walker(rib2).face() == InvalidFaceID );
+    FaceID f1 = m.close_hole(rib1);
+    FaceID f2 = m.close_hole(rib2);
+    m.split_face_by_vertex(f1);
+    m.split_face_by_vertex(f2);
+    
+    // NEED TO DECIDE WHAT TO DO IN SOME CASES ( avoid separate components, etc )
+}
+            
    
             
 }}}

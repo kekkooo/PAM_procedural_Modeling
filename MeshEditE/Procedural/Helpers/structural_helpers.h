@@ -35,7 +35,14 @@ struct RegionBoundaries
     SecondSpineEdge(SecondEdge), SecondEndType(SecondEnd) { }
                      
 };
-        
+
+HMesh::HalfEdgeID   get_first_rib_edge  ( HMesh::Manifold& m, HMesh::VertexID v0,
+                                          HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                                          bool allow_junction = false );
+HMesh::HalfEdgeID   get_ring_vertices   ( HMesh::Manifold& m, HMesh::VertexID v0,
+                                          HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                                          std::vector< HMesh::VertexID > &vertices,
+                                          bool allow_junction = false );
 
 HMesh::HalfEdgeID   find_half_edge      ( HMesh::Manifold& m, HMesh::VertexID v0, HMesh::VertexID v1);
 

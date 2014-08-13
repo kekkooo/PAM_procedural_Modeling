@@ -9,6 +9,7 @@
 #include "structural_helpers.h"
 
 using namespace HMesh;
+using namespace std;
 
 namespace Procedural{
     namespace Structure{
@@ -25,6 +26,27 @@ HalfEdgeID find_half_edge( Manifold& m, VertexID v0, VertexID v1 )
         }
     }
     return found;
+}
+        
+HalfEdgeID get_first_rib_edge( Manifold& m, VertexID v0, HalfEdgeAttributeVector<EdgeInfo> edge_info, bool allow_junction )
+{
+    Walker      w   = m.walker( v0 );
+    HalfEdgeID  he  = InvalidHalfEdgeID;
+    for( ; !w.full_circle() && he == InvalidHalfEdgeID; w = w.circulate_vertex_ccw( ))
+    {
+        if( edge_info[w.halfedge()].is_rib() )
+        {
+            if( edge_info[w.halfedge()].is_junction() )
+            {
+                if( allow_junction ) { he = w.halfedge(); }
+            }
+            else
+            {
+                he = w.halfedge();
+            }
+        }
+    }
+    return he;
 }
 
 HalfEdgeID find_rib_edge( Manifold& m, VertexID v0, VertexID v1,
@@ -54,6 +76,23 @@ HalfEdgeID find_spine_edge( Manifold& m, VertexID v0, VertexID v1,
         return found;
     }
 }
+        
+
+HalfEdgeID get_ring_vertices ( Manifold& m, VertexID v0, HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                         vector< HMesh::VertexID > &vertices, bool allow_junction)
+{
+    HalfEdgeID he = get_first_rib_edge( m, v0, edge_info, allow_junction );
+    vertices.clear();
+    Walker w = m.walker( he );
+    for( ; !w.full_circle(); w = w.next().opp().next() )
+    {
+        vertices.push_back( w.vertex() );
+    }
+    return he;
+
+}
+
+        
         
 RegionBoundaries FollowSpines ( Manifold& m, VertexID vid, HalfEdgeAttributeVector<EdgeInfo> edge_info )
 {

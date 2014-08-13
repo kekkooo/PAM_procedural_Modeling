@@ -59,12 +59,8 @@ void console_test_add_branch( MeshEditor *me, const std::vector< std::string > &
 void console_test_cut_branch( MeshEditor *me, const std::vector< std::string > &args )
 {
     me->save_active_mesh();
-    bool        done            = false;
     Manifold&   m               = me->active_mesh();
-    VertexID    selected_pole   = InvalidVertexID;
-    HalfEdgeID  selected_he     = InvalidHalfEdgeID;
     
-    vector< VertexID >                      selected;
     typedef vector< VertexID >::iterator    vertexID_iter;
     HalfEdgeAttributeVector<EdgeInfo>       edge_info = label_PAM_edges( m );
 
@@ -73,39 +69,11 @@ void console_test_cut_branch( MeshEditor *me, const std::vector< std::string > &
     {
         if (me->get_vertex_selection()[*vit] )
         {
-            selected.push_back(*vit);
+            cut_branch(m, *vit, edge_info);
         }
     }
     
-    // take a couple of selected vertices that define a spine edge
-    //    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end() && !done; ++vit)
-    for( vertexID_iter vit = selected.begin();
-        vit != selected.end() && ( !done || selected_pole == InvalidVertexID ); ++vit)
-    {
-        
-        if( is_pole(m, *vit ))
-        {
-            selected_pole = *vit;
-        }
-        else if( !done )
-        {
-            Walker w = m.walker( *vit );
-            for (; !w.full_circle(); w = w.circulate_vertex_ccw())
-            {
-                assert(*vit != w.vertex());
-                // no need to check if it is not a pole because from a pole you can't have ribs
-                if( me->get_vertex_selection()[w.vertex()] && edge_info[w.halfedge()].is_rib()  )
-                {
-                    selected_he = w.halfedge();
-                    done = true;
-                }
-            }
-        }
-    }
-    assert(selected_he != InvalidHalfEdgeID);
-    assert( selected_pole != InvalidVertexID);
-    //    split_ring_of_quads(m, selected_he);
-    cut_branch(m, selected_he, selected_pole);
+//    cut_branch(m, selected_he, selected_pole);
     m.cleanup();
 }
 
