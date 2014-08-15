@@ -146,6 +146,49 @@ void cut_branch ( Manifold& m, VertexID v, HalfEdgeAttributeVector<EdgeInfo> edg
     // NEED TO DECIDE WHAT TO DO IN SOME CASES ( avoid separate components, etc )
 }
             
+void remove_branch ( HMesh::Manifold& m, HMesh::VertexID pole, HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info )
+{
+    // check if m.walker(pole).next().halfedge è di tipo junction
+    if ( !is_pole( m, pole )) return;
+    
+    LabelJunctions( m, edge_info );
+    
+    if ( !edge_info[ m.walker(pole).next().opp().halfedge()].is_junction() ) return;
+
+    typedef pair< HalfEdgeID, HalfEdgeID > ToStitchPair;
+    vector< ToStitchPair > to_stitch;
+
+    // save the pair of edges that must be stitched together
+    Walker w = m.walker(pole);
+    for( ; !w.full_circle() && !is_singularity(m, w.vertex()); w = w.circulate_vertex_ccw());
+    w = w.next();
+
+    assert( edge_info[w.halfedge()].is_junction( ));
+    // remove pole
+    m.remove_vertex( pole );
+    Walker wback = w.prev();
+        
+    assert( is_singularity(m, wback.vertex( )));
+    do
+    {
+        to_stitch.push_back( make_pair( w.halfedge(), wback.halfedge( )));
+        w       = w.next();
+        wback   = wback.prev();
+        assert( w.face()     == InvalidFaceID );
+        assert( wback.face() == InvalidFaceID );
+        
+    } while( valency( m, w.vertex()) != 5 );
+    
+    // stich pair of edges ( note that at the vertices with valence 6 you should stich
+    // togheter the junction outgoing edge and its prev ( around the hole )
+    for( ToStitchPair tsp : to_stitch )
+    {
+        m.stitch_boundary_edges( tsp.first, tsp.second );
+    }
+    
+    // trovare un modo per risistemare le posizioni dei vertici
+}
+    
    
             
 }}}

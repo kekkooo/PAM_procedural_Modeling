@@ -147,6 +147,18 @@ HalfEdgeID BranchCutDirection( Manifold& m, VertexID vid, HalfEdgeAttributeVecto
     
     return result;
 }
+        
+void LabelJunctions ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> &edge_info )
+{
+    for(auto h: m.halfedges())
+    {
+        if(edge_info[h].is_rib())
+        {
+            number_rib_edges(m, edge_info, h);
+            break;
+        }
+    }
+}
 
     
 }}

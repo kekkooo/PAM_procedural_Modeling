@@ -56,6 +56,10 @@ RegionBoundaries    FollowSpines        ( HMesh::Manifold& m, HMesh::VertexID,
 // ALERT : IS NOT THAT EASY. YOU NEED TO BUILD THE GRAPH IN ORDER TO FIND LOOPS
 HMesh::HalfEdgeID   BranchCutDirection  ( HMesh::Manifold& m, HMesh::VertexID,
                                           HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info );
+        
+void                LabelJunctions      ( HMesh::Manifold& m,
+                                          HMesh::HalfEdgeAttributeVector<EdgeInfo> &edge_info );
+        
 }}
 
 #endif /* defined(__MeshEditE__structural_helpers__) */
