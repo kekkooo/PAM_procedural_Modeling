@@ -23,7 +23,16 @@ Vec3d ring_barycenter ( HMesh::Manifold& m, HMesh::HalfEdgeID h )
     return ring_barycenter(m, h, vs);
 }
 
+
 Vec3d ring_barycenter ( Manifold& m, HalfEdgeID h, vector< VertexID > &vertices   )
+{
+    vector< HalfEdgeID > hes;
+    return ring_barycenter(m , h, vertices, hes );
+}
+
+
+Vec3d ring_barycenter ( Manifold& m, HalfEdgeID h, vector< VertexID > &vertices,
+                        vector< HalfEdgeID > &halfedges )
 {
     assert(h != InvalidHalfEdgeID);
     
@@ -33,6 +42,7 @@ Vec3d ring_barycenter ( Manifold& m, HalfEdgeID h, vector< VertexID > &vertices 
     while ( !w.full_circle( ))
     {
         vertices.push_back( w.vertex( ));
+        halfedges.push_back(w.halfedge());
         barycenter += m.pos( w.vertex() );
         w = w.next().opp().next();
     }
@@ -40,6 +50,14 @@ Vec3d ring_barycenter ( Manifold& m, HalfEdgeID h, vector< VertexID > &vertices 
     barycenter /= vertices.size();
     return barycenter;
 }
+        
+void ring_vertices_and_halfedges ( Manifold& m, HalfEdgeID h, vector< HMesh::VertexID > &vertices,
+                                    vector< HMesh::HalfEdgeID > &halfedges )
+{
+    ring_barycenter( m, h, vertices, halfedges );
+}
+
+
 
 int valence ( Manifold& m, VertexID v )
 {

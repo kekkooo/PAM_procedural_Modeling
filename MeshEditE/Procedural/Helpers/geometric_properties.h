@@ -21,7 +21,16 @@ CGLA::Vec3d         face_normal                             ( HMesh::Manifold& m
 CGLA::Vec3d         vertex_normal                           ( HMesh::Manifold& m, HMesh::VertexID v     );
 CGLA::Vec3d         ring_barycenter                         ( HMesh::Manifold& m, HMesh::HalfEdgeID h   );
 CGLA::Vec3d         ring_barycenter                         ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
-                                                             std::vector< HMesh::VertexID > &vertices  );
+                                                             std::vector< HMesh::VertexID > &vertices   );
+
+CGLA::Vec3d         ring_barycenter                         ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
+                                                             std::vector< HMesh::VertexID > &vertices,
+                                                             std::vector< HMesh::HalfEdgeID > &halfedges);
+
+void                ring_vertices_and_halfedges             ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
+                                                             std::vector< HMesh::VertexID > &vertices,
+                                                             std::vector< HMesh::HalfEdgeID > &halfedges);
+
 int                 valence                                 ( HMesh::Manifold& m, HMesh::VertexID v     );
 bool                is_singularity                          ( HMesh::Manifold& m, HMesh::VertexID v     );
 bool                is_2_neighbor_of_pole                   ( HMesh::Manifold& m, HMesh::VertexID v     );

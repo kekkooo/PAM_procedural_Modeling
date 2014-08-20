@@ -192,8 +192,8 @@ void remove_branch ( HMesh::Manifold& m, HMesh::VertexID pole, HMesh::HalfEdgeAt
         
         m.stitch_boundary_edges( tsp.first, tsp.second );
         cout << " is first? # "
-<<        m.in_use(vfirst) << " or is second? # "
-<<        m.in_use(vsecond) << endl;;
+             << m.in_use(vfirst) << " or is second? # "
+             << m.in_use(vsecond) << endl;;
         
         //debug
         
@@ -201,6 +201,51 @@ void remove_branch ( HMesh::Manifold& m, HMesh::VertexID pole, HMesh::HalfEdgeAt
     
     // trovare un modo per risistemare le posizioni dei vertici
     Procedural::Operations::Algorithms::along_spines(m, edge_info);
+}
+            
+            
+void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
+{
+    // early termination in case the input vertices are not poles
+    if( !is_pole( m, pole1 )) return;
+    if( !is_pole( m, pole2 )) return;
+    // get valency of the input vertices
+    int         pole1_valency  = valency( m, pole1 ),
+                pole2_valency  = valency( m, pole2 );
+    // choose the one that has lowest valency ( say low_val_pole )
+    VertexID    low_val_pole   = pole1_valency < pole1_valency ? pole1 : pole2;
+    VertexID    hi_val_pole    = low_val_pole == pole1         ? pole2 : pole1;
+    int         lvpole_valency = low_val_pole == pole1         ? pole1_valency : pole2_valency;
+    int         hvpole_valency = low_val_pole == pole1         ? pole2_valency : pole1_valency;
+    int         diff           = pole2_valency - pole1_valency;
+    // subdivide it for a number of times equal to the difference in valence
+    vector< VertexID >      vs;
+    vector< HalfEdgeID >    hes;
+    HalfEdgeID starter = m.walker( low_val_pole ).next().halfedge();
+    ring_vertices_and_halfedges( m, starter, vs, hes );
+    // could happen that the difference in valence is greater than the low_val_pole valency
+    bool done = false;
+    do
+    {
+        int limit = diff > hes.size() ? hes.size() : diff;
+        diff -= limit;
+        int pace = hes.size() / limit;
+        done = ( diff <= 0 );
+
+        for( int i = 0; i < limit; ++i )
+        {
+            
+        }
+        
+    } while( !done );
+    
+
+    
+    
+    // find adequate matchings between edges
+    // delete poles
+    // stich_boundary_edges between edges
+    
 }
     
    
