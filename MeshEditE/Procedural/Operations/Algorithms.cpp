@@ -187,5 +187,39 @@ void cotangent_weights_laplacian_smoothing( HMesh::Manifold& am)
     // update coordinates
     for( VertexID vid : am.vertices( ) )  { am.pos( vid ) = new_pos[vid]; }
 }
+            
+            
+void along_spines ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> &edge_info )
+{
+    map< VertexID, Vec3d > new_pos;
+    
+    for( VertexID vid : m.vertices( ) )
+    {
+        double weight_sum   = 0.0;
+        Walker w            = m.walker( vid );
+        Vec3d vid_pos       = m.pos( vid );
+        new_pos[vid]        = Vec3d( 0 );
+        
+        // iterate the one-ring of the vertex vid
+        for( ; !w.full_circle( ); w = w.circulate_vertex_ccw( ) )
+        {
+            // skip all ribs
+            if( edge_info[ w.halfedge() ].is_rib()) continue;
+            Vec3d   neighbor_pos    = m.pos( w.vertex() );
+            double  length          = ( vid_pos - neighbor_pos ).length();
+            
+            assert( vid_pos != neighbor_pos );
+            assert( !isnan( length ));
+            
+            double  weight          = 1.0 / length;
+            new_pos[vid]   += ( neighbor_pos * weight );
+            weight_sum += weight;
+        }
+        
+        new_pos[vid] /= weight_sum;
+    }
+    // update coordinates
+    for( VertexID vid : m.vertices( ) )  { m.pos( vid ) = new_pos[vid]; }
+}
 
 }}} // namespaces closing

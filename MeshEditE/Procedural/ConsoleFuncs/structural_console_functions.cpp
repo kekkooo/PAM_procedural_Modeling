@@ -8,14 +8,6 @@
 
 #include "structural_console_functions.h"
 #include <GEL/GLGraphics/MeshEditor.h>
-//#include <strstream>
-//#include <istream>
-//#include <fstream>
-//#include <string>
-//#include <regex>
-//#include <set>
-//#include <queue>
-//#include "Test.h"
 #include "polarize.h"
 #include <MeshEditE/Procedural/Operations/structural_operations.h>
 

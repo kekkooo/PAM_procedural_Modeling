@@ -7,6 +7,7 @@
 //
 
 #include "geometric_properties.h"
+#include "polarize.h"
 
 using namespace CGLA;
 using namespace std;
@@ -98,6 +99,26 @@ Vec3d vertex_normal ( Manifold& m, VertexID v)
     vn / w.no_steps();
     //    vn.normalize();
     return vn;
+}
+        
+bool is_2_neighbor_of_pole ( HMesh::Manifold& m, HMesh::VertexID v )
+{
+    bool itis = false;
+    
+    Walker w = m.walker( v );
+    // check all of the vertices in its 1-ring
+    for( ; !w.full_circle() && !itis; w = w.circulate_vertex_ccw( ))
+    {
+        itis = is_pole( m, w.vertex());
+        if( itis ) continue;
+        // circulate the 1-ring of the pointed vertex
+        Walker wn = m.walker(w.vertex());
+        for( ; !wn.full_circle() && !itis; wn = wn.circulate_vertex_ccw( ))
+        {
+            itis = is_pole( m, wn.vertex());
+        }
+    }
+    return itis;
 }
 
 

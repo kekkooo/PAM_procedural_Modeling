@@ -12,6 +12,7 @@
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <MeshEditE/Procedural/Operations/geometric_operations.h>
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
+#include <MeshEditE/Procedural/Operations/Algorithms.h>
 #include "polarize.h"
 
 using namespace HMesh;
@@ -36,7 +37,7 @@ void add_branch ( HMesh::Manifold& m, HMesh::VertexID vid, int size, HMesh::Vert
     //                          che non hanno vicini selezionati
         
     map< HMesh::VertexID, CGLA::Vec3d > vert_pos;
-    if( !is_pole(m, vid) )
+    if( !is_pole( m, vid ) && !is_2_neighbor_of_pole( m,vid ))
     {
         Walker w  = m.walker( vid );
         ring[vid] = 1;
@@ -178,15 +179,28 @@ void remove_branch ( HMesh::Manifold& m, HMesh::VertexID pole, HMesh::HalfEdgeAt
         assert( wback.face() == InvalidFaceID );
         
     } while( valency( m, w.vertex()) != 5 );
+//    to_stitch.push_back( make_pair( w.halfedge(), wback.halfedge( )));
     
     // stich pair of edges ( note that at the vertices with valence 6 you should stich
     // togheter the junction outgoing edge and its prev ( around the hole )
     for( ToStitchPair tsp : to_stitch )
     {
+        // debug
+        VertexID vfirst  = m.walker(tsp.first).vertex();
+        VertexID vsecond = m.walker(tsp.second).vertex();
+        
+        
         m.stitch_boundary_edges( tsp.first, tsp.second );
+        cout << " is first? # "
+<<        m.in_use(vfirst) << " or is second? # "
+<<        m.in_use(vsecond) << endl;;
+        
+        //debug
+        
     }
     
     // trovare un modo per risistemare le posizioni dei vertici
+    Procedural::Operations::Algorithms::along_spines(m, edge_info);
 }
     
    

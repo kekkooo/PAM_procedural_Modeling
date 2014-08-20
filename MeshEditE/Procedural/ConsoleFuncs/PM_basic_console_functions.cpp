@@ -165,7 +165,6 @@ void console_test_delete_vertices( MeshEditor *me, const std::vector< std::strin
 }
 
 
-
 namespace Procedural{
     namespace ConsoleFuncs{
 
@@ -198,7 +197,7 @@ void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)
         "test.smoothing.selected_cotangent",
         console_test_cotangent_smoothing,
         "test.smoothing.selected_cotangent <iterations>"        );
-    
+        
     me->register_console_function(
       "test.slit_selection",
       console_test_slit_selection,
