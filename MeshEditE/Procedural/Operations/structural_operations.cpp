@@ -276,23 +276,26 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
     for( int i = 0; i < hes_pole1.size(); ++i )
     {
         HalfEdgeID p1_he = hes_pole1[i];
-        Vec3d p1_to_v   = m.pos( m.walker( p1_he ).vertex());
-        Vec3d p1_from_v = m.pos( m.walker( p1_he ).prev().vertex());
+        Vec3d p1_a   = m.pos( m.walker( p1_he ).vertex());
+        Vec3d p1_b = m.pos( m.walker( p1_he ).prev().vertex());
         
         for( int j = 0; j < hes_pole2.size(); ++j )
         {
-            HalfEdgeID  p2_he       = hes_pole2[j];
-            Vec3d       p2_to_v     = m.pos( m.walker( p2_he ).vertex());
-            Vec3d       p2_from_v   = m.pos( m.walker( p2_he ).prev().vertex());
+            HalfEdgeID  p2_he  = hes_pole2[j];
+            Vec3d       p2_b   = m.pos( m.walker( p2_he ).vertex());
+            Vec3d       p2_a   = m.pos( m.walker( p2_he ).prev().vertex());
             // calculate the vectors
-            Vec3d       to_p1_p2    = p1_to_v - p2_to_v;
-            Vec3d       from_p1_p2  = p1_from_v - p2_from_v;
-            double      angle_to    = angle( to_p1_p2, pole_pole );
-            double      angle_from  = angle( to_p1_p2, pole_pole );
-            double      angle_sum   = angle_to + angle_from;
-            double      angle_diff  = fabs( angle_to - angle_from );
+            Vec3d       a_dir       = p1_a - p2_a;
+            Vec3d       b_dir       = p1_b - p2_b;
+            double      angle_a     = angle( a_dir, pole_pole );
+            double      angle_b     = angle( b_dir, pole_pole );
+            double      angle_sum   = angle_a + angle_b;
+            double      angle_diff  = fabs( angle_a - angle_b );
+            
+            cout << "current min " << min_angle_sum << " # " << min_angle_diff  << endl;
+            cout << "latest calc " << angle_sum     << " # " << angle_diff      << endl;
 
-            if( angle_sum < min_angle_sum && angle_diff < min_angle_diff )
+            if( angle_sum <= min_angle_sum && angle_diff <= min_angle_diff )
             {
                 min_angle_sum           = angle_sum;
                 min_angle_diff          = angle_diff;
@@ -311,62 +314,55 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
     // delete poles
     m.remove_vertex(pole1);
     m.remove_vertex(pole2);
-//    m.close_hole(hes_pole1[0]);
-//    m.close_hole(hes_pole2[0]);
-    HalfEdgeID last_he  = InvalidHalfEdgeID;
-    HalfEdgeID first_he = InvalidHalfEdgeID;
     
-//    Walker pole1_chain_walker = m.walker(hes_pole1[p1_offset]);
-//    Walker pole2_chain_walker = m.walker(hes_pole2[p2_offset]);
+    Walker pole1_chain_walker = m.walker(hes_pole1[p1_offset]);
+    Walker pole2_chain_walker = m.walker(hes_pole2[p2_offset]);
     
-    // stich_boundary_edges between edges
-    for( int i = 0; i < hes_pole1.size(); ++i )
+    hes_pole1.clear();
+    hes_pole2.clear();
+    
+    while(!pole1_chain_walker.full_circle())
     {
-        int p1_index = ( i + p1_offset ) % hes_pole1.size();
-        int p2_index = ( i + p2_offset ) % hes_pole2.size();
-        
-//        m.stitch_boundary_edges(hes_pole1[p1_index], hes_pole2[p2_index]);
-        vector<Vec3d> new_vs;
-        new_vs.push_back(m.pos(m.walker(hes_pole1[p1_index]).prev().vertex()));
-        new_vs.push_back(m.pos(m.walker(hes_pole1[p1_index]).vertex()));
-        // QUESTA COSA NON MI CONVINCE MOLTO! dovrebbe essere sempre PREV e NEXT
-        new_vs.push_back(m.pos(m.walker(hes_pole2[p2_index]).vertex()));
-        new_vs.push_back(m.pos(m.walker(hes_pole2[p2_index]).next().vertex()));
-
-
-
-
-
-
-        FaceID new_f        = m.add_face( new_vs );
-        Walker new_f_walker = m.walker( new_f );
-assert(
-        m.stitch_boundary_edges( hes_pole1[p1_index],
-                                new_f_walker.opp().halfedge())
-               );
-assert(
-        m.stitch_boundary_edges( hes_pole2[p2_index],
-                                new_f_walker.next().next().opp().halfedge())
-               );
-        
-//        if (i == 0)
-//        {
-//            first_he = new_f_walker.prev().opp().halfedge();
-//        }
-//        last_he = new_f_walker.next().opp().halfedge();
-//        if( i > 0 )
-//        {
-//            assert( last_he != InvalidHalfEdgeID );
-//        assert(
-//                   m.stitch_boundary_edges( last_he, new_f_walker.prev().opp().halfedge())
-//                   );
-//        }
-//        break;
+        hes_pole1.push_back( pole1_chain_walker.halfedge( ));
+        hes_pole2.push_back( pole2_chain_walker.halfedge( ));
+        pole1_chain_walker = pole1_chain_walker.next();
+        pole2_chain_walker = pole2_chain_walker.prev();
     }
+    assert( pole2_chain_walker.full_circle( ));
+    assert( hes_pole1.size() == hes_pole2.size( ));
+    
+    vector< pair< HalfEdgeID, HalfEdgeID > > he_to_stitch;
+    
+    // save pairs of edges that have to be stitched
+    for( int i = 0; i < hes_pole1.size(); i++ )
+    {
+        
+        vector<Vec3d> new_vs;
+        new_vs.push_back( m.pos( m.walker( hes_pole1[i] ).prev().vertex() )     );
+        new_vs.push_back( m.pos( m.walker( hes_pole1[i] ).vertex() )            );
+        new_vs.push_back( m.pos( m.walker( hes_pole2[i] ).prev().vertex() )     );
+        new_vs.push_back( m.pos( m.walker( hes_pole2[i] ).vertex() )            );
+        
+        FaceID new_f        = m.add_face( new_vs );
+        
+        Walker new_f_walker = m.walker( new_f );
+        HalfEdgeID  h1 = new_f_walker.opp().halfedge(),
+                    h3 = new_f_walker.next().next().opp().halfedge();
+        
+        he_to_stitch.push_back( make_pair( hes_pole1[i], h1 ));
+        he_to_stitch.push_back( make_pair( hes_pole2[i], h3 ));
+        
+    }
+    
+    assert(pole2_chain_walker.full_circle());
 
-    
-    
+    for( int i = 0; i < he_to_stitch.size(); i++ )
+    {
+        auto hep = he_to_stitch[i];
+        assert( m.stitch_boundary_edges( hep.first, hep.second ));
+    }
 }
+    
     
    
             

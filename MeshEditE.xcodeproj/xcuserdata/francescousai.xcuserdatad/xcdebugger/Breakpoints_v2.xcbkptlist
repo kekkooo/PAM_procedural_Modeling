@@ -51,5 +51,37 @@
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../GEL/src/GEL/HMesh/Manifold.cpp"
+            timestampString = "430348049.314318"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "472"
+            endingLineNumber = "472"
+            landmarkName = "Manifold::stitch_boundary_edges(HalfEdgeID h0, HalfEdgeID h1)"
+            landmarkType = "5">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "MeshEditE/Procedural/Operations/structural_operations.cpp"
+            timestampString = "430352651.826963"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "218"
+            endingLineNumber = "218"
+            landmarkName = "glue_poles ( Manifold&amp; m, VertexID pole1, VertexID pole2 )"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
    </Breakpoints>
 </Bucket>

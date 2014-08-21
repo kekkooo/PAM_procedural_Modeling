@@ -3,18 +3,15 @@
    version = "1.0">
    <ContextStates>
       <ContextState
-         contextName = "HMesh::ItemVector&lt;HMesh::HalfEdge&gt;::operator[](HMesh::ItemID&lt;HMesh::HalfEdge&gt;) const:ItemVector.h">
+         contextName = "console_test_extrude_vertices_alt(GLGraphics::MeshEditor*, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;):PM_additiona_console_funcs.cpp">
          <PersistentStrings>
             <PersistentString
-               value = "items.size()">
+               value = "w.no_steps()">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "console_test_cut_branch(GLGraphics::MeshEditor*, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;):PM_additiona_console_funcs.cpp">
-      </ContextState>
-      <ContextState
-         contextName = "ring_barycenter(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;, std::__1::vector&lt;HMesh::ItemID&lt;HMesh::Vertex&gt;, std::__1::allocator&lt;HMesh::ItemID&lt;HMesh::Vertex&gt; &gt; &gt;&amp;):Test.cpp">
+         contextName = "face_normal(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::Face&gt;):Test.cpp">
       </ContextState>
       <ContextState
          contextName = "Procedural::Operations::Geometric::smooth_pole(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::Vertex&gt;, HMesh::HalfEdgeAttributeVector&lt;EdgeInfo&gt;):geometric_operations.cpp">
@@ -25,12 +22,7 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "console_test_extrude_vertices_alt(GLGraphics::MeshEditor*, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;):PM_additiona_console_funcs.cpp">
-         <PersistentStrings>
-            <PersistentString
-               value = "w.no_steps()">
-            </PersistentString>
-         </PersistentStrings>
+         contextName = "console_test_cut_branch(GLGraphics::MeshEditor*, std::__1::vector&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt;, std::__1::allocator&lt;std::__1::basic_string&lt;char, std::__1::char_traits&lt;char&gt;, std::__1::allocator&lt;char&gt; &gt; &gt; &gt; const&amp;):PM_additiona_console_funcs.cpp">
       </ContextState>
       <ContextState
          contextName = "vertex_normal(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::Vertex&gt;):Test.cpp">
@@ -41,13 +33,10 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "split_ring_of_quads(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;):Test.cpp">
-      </ContextState>
-      <ContextState
          contextName = "HMesh::ItemVector&lt;HMesh::Vertex&gt;::operator[](HMesh::ItemID&lt;HMesh::Vertex&gt;) const:ItemVector.h">
       </ContextState>
       <ContextState
-         contextName = "face_normal(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::Face&gt;):Test.cpp">
+         contextName = "HMesh::Manifold::stitch_boundary_edges(HMesh::ItemID&lt;HMesh::HalfEdge&gt;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;):Manifold.cpp">
       </ContextState>
       <ContextState
          contextName = "split_from_pole_to_pole(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;):Test.cpp">
@@ -63,6 +52,37 @@
             </PersistentString>
             <PersistentString
                value = "w.vertex()">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "ring_barycenter(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;, std::__1::vector&lt;HMesh::ItemID&lt;HMesh::Vertex&gt;, std::__1::allocator&lt;HMesh::ItemID&lt;HMesh::Vertex&gt; &gt; &gt;&amp;):Test.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "Procedural::Operations::Structural::glue_poles(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::Vertex&gt;, HMesh::ItemID&lt;HMesh::Vertex&gt;):structural_operations.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "www">
+            </PersistentString>
+            <PersistentString
+               value = "www.face()">
+            </PersistentString>
+            <PersistentString
+               value = "www.opp().face()">
+            </PersistentString>
+            <PersistentString
+               value = "new_faces">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "split_ring_of_quads(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;):Test.cpp">
+      </ContextState>
+      <ContextState
+         contextName = "HMesh::ItemVector&lt;HMesh::HalfEdge&gt;::operator[](HMesh::ItemID&lt;HMesh::HalfEdge&gt;) const:ItemVector.h">
+         <PersistentStrings>
+            <PersistentString
+               value = "items.size()">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
