@@ -235,15 +235,16 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
             vector< HalfEdgeID >    hes;
             ring_vertices_and_halfedges( m, starter, vs, hes );
             
-            int limit = diff > hes.size() ? hes.size() : diff;
+            size_t limit = diff > hes.size() ? hes.size() : diff;
             diff -= limit;
-            int pace = hes.size() / limit;
+            size_t pace = hes.size() / limit;
             done = ( diff <= 0 );
             
-            for( int i = 0; i < limit; i+=pace )
+            for( int i = 0; i < limit; i++ )
             {
+                size_t index = i * pace;
                 assert(i < hes.size());
-                split_from_pole_to_pole(m, hes[i]);
+                split_from_pole_to_pole(m, hes[index]);
             }
             
         } while( !done );
