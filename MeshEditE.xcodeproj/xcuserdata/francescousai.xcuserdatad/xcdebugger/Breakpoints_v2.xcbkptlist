@@ -26,12 +26,28 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MeshEditE/Procedural/Operations/structural_operations.cpp"
-            timestampString = "429808083.963527"
+            timestampString = "430324890.719118"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "186"
-            endingLineNumber = "186"
+            startingLineNumber = "188"
+            endingLineNumber = "188"
             landmarkName = "remove_branch ( HMesh::Manifold&amp; m, HMesh::VertexID pole, HMesh::HalfEdgeAttributeVector&lt;EdgeInfo&gt; edge_info )"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "MeshEditE/Procedural/Helpers/geometric_properties.cpp"
+            timestampString = "430331841.960591"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "147"
+            endingLineNumber = "147"
+            landmarkName = "angle ( CGLA::Vec3d l, CGLA::Vec3d r)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

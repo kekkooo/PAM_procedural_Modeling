@@ -86,6 +86,29 @@ void console_test_remove_branch( MeshEditor *me, const std::vector< std::string 
     m.cleanup();
 }
 
+void console_test_glue_poles( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m               = me->active_mesh();
+    
+    typedef vector< VertexID >::iterator    vertexID_iter;
+//    HalfEdgeAttributeVector<EdgeInfo>       edge_info = label_PAM_edges( m );
+    vector< VertexID > poles;
+    
+    // consider only selected vertices that are not poles
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end() && poles.size() < 2; ++vit)
+    {
+        if (me->get_vertex_selection()[*vit] )
+        {
+            poles.push_back(*vit);
+        }
+    }
+    if( poles.size() == 2 )
+        glue_poles( m, poles[0], poles[1] );
+    
+    m.cleanup();
+}
+
 namespace Procedural{
     namespace ConsoleFuncs{
         
@@ -96,6 +119,8 @@ namespace Procedural{
             me->register_console_function( "test.structure.cut_branch", console_test_cut_branch, "test.structure.cut_branch" );
 
             me->register_console_function( "test.structure.remove_branch", console_test_remove_branch, "test.structure.remove_branch" );
+            
+            me->register_console_function( "test.structure.glue_poles", console_test_glue_poles, "test.structure.glue_poles" );
             
         }
 }}

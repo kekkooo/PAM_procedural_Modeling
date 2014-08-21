@@ -34,6 +34,7 @@ void                ring_vertices_and_halfedges             ( HMesh::Manifold& m
 int                 valence                                 ( HMesh::Manifold& m, HMesh::VertexID v     );
 bool                is_singularity                          ( HMesh::Manifold& m, HMesh::VertexID v     );
 bool                is_2_neighbor_of_pole                   ( HMesh::Manifold& m, HMesh::VertexID v     );
+double              angle                                   ( CGLA::Vec3d l, CGLA::Vec3d r);
 
 }}
 

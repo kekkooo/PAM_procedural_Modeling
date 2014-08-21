@@ -138,6 +138,15 @@ bool is_2_neighbor_of_pole ( HMesh::Manifold& m, HMesh::VertexID v )
     }
     return itis;
 }
+   
+// should be in a separate class
+double angle ( CGLA::Vec3d l, CGLA::Vec3d r)
+{
+    l.normalize();
+    r.normalize();
+    double cos = CGLA::dot( l, r );
+    return acos(cos);
+}
 
 
 }}

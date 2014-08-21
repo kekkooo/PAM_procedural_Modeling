@@ -8,6 +8,8 @@
 
 #include "structural_operations.h"
 
+#include "Algorithms.h"
+
 #include <GEL/CGLA/Vec3d.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <MeshEditE/Procedural/Operations/geometric_operations.h>
@@ -212,39 +214,157 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
     // get valency of the input vertices
     int         pole1_valency  = valency( m, pole1 ),
                 pole2_valency  = valency( m, pole2 );
-    // choose the one that has lowest valency ( say low_val_pole )
-    VertexID    low_val_pole   = pole1_valency < pole1_valency ? pole1 : pole2;
-    VertexID    hi_val_pole    = low_val_pole == pole1         ? pole2 : pole1;
-    int         lvpole_valency = low_val_pole == pole1         ? pole1_valency : pole2_valency;
-    int         hvpole_valency = low_val_pole == pole1         ? pole2_valency : pole1_valency;
-    int         diff           = pole2_valency - pole1_valency;
-    // subdivide it for a number of times equal to the difference in valence
-    vector< VertexID >      vs;
-    vector< HalfEdgeID >    hes;
-    HalfEdgeID starter = m.walker( low_val_pole ).next().halfedge();
-    ring_vertices_and_halfedges( m, starter, vs, hes );
-    // could happen that the difference in valence is greater than the low_val_pole valency
-    bool done = false;
-    do
+    // SKIP THE FOLLOWING IF THE VALENCIES ARE EQUAL
+    if( pole1_valency != pole2_valency )
     {
-        int limit = diff > hes.size() ? hes.size() : diff;
-        diff -= limit;
-        int pace = hes.size() / limit;
-        done = ( diff <= 0 );
+        // choose the one that has lowest valency ( say low_val_pole )
+        VertexID    low_val_pole   = pole1_valency < pole2_valency ? pole1 : pole2;
+        VertexID    hi_val_pole    = low_val_pole == pole1         ? pole2 : pole1;
+        int         lvpole_valency = low_val_pole == pole1         ? pole1_valency : pole2_valency;
+        int         hvpole_valency = low_val_pole == pole1         ? pole2_valency : pole1_valency;
+        int         diff           = hvpole_valency - lvpole_valency;
+        assert( diff > 0 );
+        // subdivide it for a number of times equal to the difference in valence
+        HalfEdgeID starter = m.walker( low_val_pole ).next().halfedge();
+        // could happen that the difference in valence is greater than the low_val_pole valency
+        bool done = false;
 
-        for( int i = 0; i < limit; ++i )
+        do
         {
+            vector< VertexID >      vs;
+            vector< HalfEdgeID >    hes;
+            ring_vertices_and_halfedges( m, starter, vs, hes );
             
-        }
-        
-    } while( !done );
+            int limit = diff > hes.size() ? hes.size() : diff;
+            diff -= limit;
+            int pace = hes.size() / limit;
+            done = ( diff <= 0 );
+            
+            for( int i = 0; i < limit; i+=pace )
+            {
+                assert(i < hes.size());
+                split_from_pole_to_pole(m, hes[i]);
+            }
+            
+        } while( !done );
+    }
+    // get the two halfedge sequences
+    vector< VertexID >      vs_pole1;
+    vector< HalfEdgeID >    hes_pole1;
+    ring_vertices_and_halfedges( m, m.walker(pole1).next().halfedge(), vs_pole1, hes_pole1 );
+
+    vector< VertexID >      vs_pole2;
+    vector< HalfEdgeID >    hes_pole2;
+    ring_vertices_and_halfedges( m, m.walker(pole2).next().halfedge(), vs_pole1, hes_pole2 );
+    assert(hes_pole1.size() == hes_pole2.size());
+
+    // find adequate matchings between edges
+    // use as matching policy the minimum angle between the vectors defined by :
+    // - the two poles
+    // - the two to_vertex of two compared halfedges
+    Vec3d       pole_pole               = m.pos(pole1) - m.pos(pole2);
+    double      min_angle_sum           = numeric_limits<double>::max();
+    double      min_angle_diff          = numeric_limits<double>::max();
+    HalfEdgeID  candidate_from_pole1    = InvalidHalfEdgeID;
+    HalfEdgeID  candidate_from_pole2    = InvalidHalfEdgeID;
+    int         candidate_id_from_pole1 = -1;
+    int         candidate_id_from_pole2 = -1;
     
+//    reverse(hes_pole2.begin(), hes_pole2.end());
+    
+    //for( HalfEdgeID p1_he : hes_pole1 )
+    for( int i = 0; i < hes_pole1.size(); ++i )
+    {
+        HalfEdgeID p1_he = hes_pole1[i];
+        Vec3d p1_to_v   = m.pos( m.walker( p1_he ).vertex());
+        Vec3d p1_from_v = m.pos( m.walker( p1_he ).prev().vertex());
+        
+        for( int j = 0; j < hes_pole2.size(); ++j )
+        {
+            HalfEdgeID  p2_he       = hes_pole2[j];
+            Vec3d       p2_to_v     = m.pos( m.walker( p2_he ).vertex());
+            Vec3d       p2_from_v   = m.pos( m.walker( p2_he ).prev().vertex());
+            // calculate the vectors
+            Vec3d       to_p1_p2    = p1_to_v - p2_to_v;
+            Vec3d       from_p1_p2  = p1_from_v - p2_from_v;
+            double      angle_to    = angle( to_p1_p2, pole_pole );
+            double      angle_from  = angle( to_p1_p2, pole_pole );
+            double      angle_sum   = angle_to + angle_from;
+            double      angle_diff  = fabs( angle_to - angle_from );
+
+            if( angle_sum < min_angle_sum && angle_diff < min_angle_diff )
+            {
+                min_angle_sum           = angle_sum;
+                min_angle_diff          = angle_diff;
+                candidate_from_pole1    = p1_he;
+                candidate_from_pole2    = p2_he;
+                candidate_id_from_pole1 = i;
+                candidate_id_from_pole2 = j;
+            }
+        }
+    }
+    int p1_offset = candidate_id_from_pole1;
+    int p2_offset = candidate_id_from_pole2;
+    
+    cout << p1_offset << " # " << p2_offset << endl;
+    
+    // delete poles
+    m.remove_vertex(pole1);
+    m.remove_vertex(pole2);
+//    m.close_hole(hes_pole1[0]);
+//    m.close_hole(hes_pole2[0]);
+    HalfEdgeID last_he  = InvalidHalfEdgeID;
+    HalfEdgeID first_he = InvalidHalfEdgeID;
+    
+//    Walker pole1_chain_walker = m.walker(hes_pole1[p1_offset]);
+//    Walker pole2_chain_walker = m.walker(hes_pole2[p2_offset]);
+    
+    // stich_boundary_edges between edges
+    for( int i = 0; i < hes_pole1.size(); ++i )
+    {
+        int p1_index = ( i + p1_offset ) % hes_pole1.size();
+        int p2_index = ( i + p2_offset ) % hes_pole2.size();
+        
+//        m.stitch_boundary_edges(hes_pole1[p1_index], hes_pole2[p2_index]);
+        vector<Vec3d> new_vs;
+        new_vs.push_back(m.pos(m.walker(hes_pole1[p1_index]).prev().vertex()));
+        new_vs.push_back(m.pos(m.walker(hes_pole1[p1_index]).vertex()));
+        // QUESTA COSA NON MI CONVINCE MOLTO! dovrebbe essere sempre PREV e NEXT
+        new_vs.push_back(m.pos(m.walker(hes_pole2[p2_index]).vertex()));
+        new_vs.push_back(m.pos(m.walker(hes_pole2[p2_index]).next().vertex()));
+
+
+
+
+
+
+        FaceID new_f        = m.add_face( new_vs );
+        Walker new_f_walker = m.walker( new_f );
+assert(
+        m.stitch_boundary_edges( hes_pole1[p1_index],
+                                new_f_walker.opp().halfedge())
+               );
+assert(
+        m.stitch_boundary_edges( hes_pole2[p2_index],
+                                new_f_walker.next().next().opp().halfedge())
+               );
+        
+//        if (i == 0)
+//        {
+//            first_he = new_f_walker.prev().opp().halfedge();
+//        }
+//        last_he = new_f_walker.next().opp().halfedge();
+//        if( i > 0 )
+//        {
+//            assert( last_he != InvalidHalfEdgeID );
+//        assert(
+//                   m.stitch_boundary_edges( last_he, new_f_walker.prev().opp().halfedge())
+//                   );
+//        }
+//        break;
+    }
 
     
-    
-    // find adequate matchings between edges
-    // delete poles
-    // stich_boundary_edges between edges
     
 }
     
