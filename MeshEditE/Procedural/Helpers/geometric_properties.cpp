@@ -8,10 +8,16 @@
 
 #include "geometric_properties.h"
 #include "polarize.h"
+#include <GEL/GLGraphics/ManifoldRenderer.h>
+#include <MeshEditE/Procedural/Helpers/structural_helpers.h>
+#include <queue>
+#include "Test.h"
 
 using namespace CGLA;
 using namespace std;
 using namespace HMesh;
+using namespace GLGraphics;
+using namespace Procedural::Structure;
 
 namespace Procedural{
     namespace Geometry{
@@ -147,6 +153,146 @@ double angle ( CGLA::Vec3d l, CGLA::Vec3d r)
     double cos = CGLA::dot( l, r );
     return acos(cos);
 }
+        
+void vertex_distance_from_poles ( Manifold& m, VertexID v,
+                                               HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                                               VertexAttributeVector<DistanceMetrics> &distances )
+{
+    // AS START, USE ONLY THE HOP METRIC
+    int max_dist = numeric_limits<int>::min();
+    std::queue< VertexID > poles;
+    std::map< VertexID, DistanceMetrics > ds;
+    // put all the poles into a pole queue
+    for( auto vit = m.vertices().begin(); vit != m.vertices().end(); ++vit )
+    {
+        if( is_pole( m, *vit )) poles.push( *vit );
+    }
+    // while the queue is not empty
+    while( !poles.empty( ))
+    {
+    //  set current_distance to 0
+        int current_distance = 0;
+    //  extract a pole from the queue.
+        VertexID curr = poles.front();
+        poles.pop();
+        //  set 0 the distance
+        ds[curr] = make_pair( current_distance, 0 );
+        //  current_distance++
+        current_distance++;
+    //  take the pole 1 ring - and set the distance to current_distance.
+        HalfEdgeID  he_helper       = m.walker( curr ).halfedge();
+        VertexID    pole_neighbor   = m.walker( curr ).vertex();
+        //  while the representative vertex of the next ring is not a pole
+        int count = 0;
+        while ( !is_pole( m, pole_neighbor ))
+        {
+//            cout << " looping for time : " << ( count++ ) << endl;
+            HalfEdgeID ring_he = get_first_rib_edge( m, pole_neighbor, edge_info, true );
+            vector< VertexID >      ring_vs;
+            vector< HalfEdgeID >    ring_hes;
+            ring_vertices_and_halfedges( m, ring_he, ring_vs, ring_hes );
+            for( auto v : ring_vs )
+            {
+                //      if the distance for that ring of vertex is not set || is smaller than current_distance
+                //          set the distance to current_distance
+                if( ds.count(v) == 0 )
+                {
+                    ds[v] = make_pair( current_distance, 0 );
+                }
+                if( ds.count(v) >  0 )
+                {
+                    if(  ds[v].first > current_distance )
+                    {
+                        ds[v] = make_pair( current_distance, 0 );
+                    }
+                }
+            }
+            current_distance++;
+    //      move to the next ring
+            he_helper       = m.walker( he_helper ).next().opp().next().halfedge();
+            pole_neighbor   = m.walker( he_helper ).vertex();
+            
+        }
+    }
+    cout << "finito";
+    // debug
+    for( auto fid : m.faces())
+    {
+        DebugRenderer::face_colors[fid] = Vec3f( 1.0, 1.0, 1.0 );
+    }
+    // vertices in some strange configurations are not reacheable with this procedure
+    // fix that starting from those vertices, follow each of their edge chain
+    // until the circle is clsoed or a pole is found.
+    // a pole should be always found.
+    for( auto vit = m.vertices().begin(); vit != m.vertices().end(); ++vit )
+    {
+        // take each vertex that does not have distance set
+        if ( !(ds.count( *vit ) > 0 ))
+        {
+            Walker w = m.walker(*vit);
+            for( ; !w.full_circle(); w = w.circulate_vertex_ccw())
+            {
+                if( edge_info[w.halfedge()].is_rib( )) continue;
+                Walker lw = m.walker(w.halfedge());
+                int current_distance = 0;
+                while ( !lw.full_circle( ) && !is_pole(m, lw.vertex()))
+                {
+                    lw = lw.next().opp().next();
+                    current_distance++;
+                }
+                if ( is_pole(m, lw.vertex( )))
+                {
+                    if( !(ds.count( *vit ) > 0 ))
+                       ds[*vit] = DistanceMetrics( current_distance, 0.0);
+                    else
+                    {
+                        if( ds[*vit].first > current_distance )
+                        {
+                            ds[*vit].first = current_distance;
+                        }
+                    }
+                }
+            }
+        }
+        if( ds[*vit].first > max_dist ) max_dist = ds[*vit].first;
+    }
+    // debug
+    for( auto vit = m.vertices().begin(); vit != m.vertices().end(); ++vit )
+    {
+        if ( !(ds.count( *vit ) > 0 ))
+        {
+            Walker w = m.walker(*vit);
+            for(; !w.full_circle(); w = w.circulate_vertex_ccw())
+                DebugRenderer::face_colors[w.face()] = Vec3f( 1.0, 1.0, 0.0);
+        }
+    }
+    //
+    
+    
+    
+    for( auto vit = m.vertices().begin(); vit != m.vertices().end(); ++vit )
+    {
+        assert( m.in_use( *vit ));
+        assert( ds.count( *vit ) > 0 );
+        
+        if( is_pole(m, *vit )) assert( ds[*vit].first == 0 );
+        
+        
+        Vec3f color = color_ramp(ds[*vit].first, max_dist);
+        DebugRenderer::vertex_colors[*vit] = color;
+        Walker w = m.walker(*vit);
+        for(; !w.full_circle(); w = w.circulate_vertex_ccw())
+        {
+            if( edge_info[w.halfedge()].is_rib() )
+            {
+                DebugRenderer::edge_colors[w.halfedge()]        = color;
+                DebugRenderer::edge_colors[w.opp().halfedge()]  = color;
+            }
+        }
+
+    }
+}
+
 
 
 }}

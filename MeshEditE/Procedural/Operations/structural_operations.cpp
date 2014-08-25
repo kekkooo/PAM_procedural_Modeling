@@ -215,6 +215,7 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
     int         pole1_valency  = valency( m, pole1 ),
                 pole2_valency  = valency( m, pole2 );
     // SKIP THE FOLLOWING IF THE VALENCIES ARE EQUAL
+    // this part subdivides the low valency pole  in order to match valencies
     if( pole1_valency != pole2_valency )
     {
         // choose the one that has lowest valency ( say low_val_pole )

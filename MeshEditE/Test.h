@@ -23,6 +23,7 @@
 bool                test_ring_barycenter                    ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
 CGLA::Vec3d         simple_random_direction                 ( HMesh::Manifold& m, HMesh::VertexID   v, double face_normal_weight );
 CGLA::Vec3d         alt_simple_random_direction             ( HMesh::Manifold& m, HMesh::VertexID   v );
+CGLA::Vec3f         color_ramp                              ( int value, int max );
 
 
 #endif /* defined(__MeshEditE__Test__) */

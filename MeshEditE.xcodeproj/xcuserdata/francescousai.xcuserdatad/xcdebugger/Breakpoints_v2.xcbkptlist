@@ -42,11 +42,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MeshEditE/Procedural/Helpers/geometric_properties.cpp"
-            timestampString = "430331841.960591"
+            timestampString = "430652551.918552"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "147"
-            endingLineNumber = "147"
+            startingLineNumber = "153"
+            endingLineNumber = "153"
             landmarkName = "angle ( CGLA::Vec3d l, CGLA::Vec3d r)"
             landmarkType = "7">
          </BreakpointContent>

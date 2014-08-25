@@ -12,10 +12,13 @@
 #include <iostream>
 #include <GEL/HMesh/Manifold.h>
 #include <GEL/CGLA/Vec3d.h>
+#include "polarize.h"
+
 
 namespace Procedural{
     namespace Geometry{
 
+typedef std::pair< int, double > DistanceMetrics;
 
 CGLA::Vec3d         face_normal                             ( HMesh::Manifold& m, HMesh::FaceID f       );
 CGLA::Vec3d         vertex_normal                           ( HMesh::Manifold& m, HMesh::VertexID v     );
@@ -34,7 +37,12 @@ void                ring_vertices_and_halfedges             ( HMesh::Manifold& m
 int                 valence                                 ( HMesh::Manifold& m, HMesh::VertexID v     );
 bool                is_singularity                          ( HMesh::Manifold& m, HMesh::VertexID v     );
 bool                is_2_neighbor_of_pole                   ( HMesh::Manifold& m, HMesh::VertexID v     );
-double              angle                                   ( CGLA::Vec3d l, CGLA::Vec3d r);
+double              angle                                   ( CGLA::Vec3d l, CGLA::Vec3d r );
+// must have calld label junction on edge_info
+void                vertex_distance_from_poles              ( HMesh::Manifold& m, HMesh::VertexID v,
+                                                              HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                                                              HMesh::VertexAttributeVector<DistanceMetrics> &distances );
+
 
 }}
 

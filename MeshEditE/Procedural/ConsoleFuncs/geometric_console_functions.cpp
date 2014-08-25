@@ -11,6 +11,7 @@
 #include <GEL/GLGraphics/MeshEditor.h>
 #include <MeshEditE/Procedural/Operations/geometric_operations.h>
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
+#include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <strstream>
 #include <istream>
 #include <fstream>
@@ -377,6 +378,25 @@ void console_test_smooth_pole( MeshEditor *me, const std::vector< std::string > 
     }
 }
 
+void console_test_distance_map( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<Procedural::Geometry::DistanceMetrics> distances;
+    
+    LabelJunctions( m, edge_info );
+    
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit)
+    {
+        if (me->get_vertex_selection()[*vit])
+        {
+            Procedural::Geometry::vertex_distance_from_poles( m, *vit, edge_info, distances);
+        }
+    }
+}
+
 namespace Procedural{
     namespace ConsoleFuncs{
         
@@ -412,6 +432,9 @@ namespace Procedural{
             
             me->register_console_function( "test.geometry.flatten_pole", console_test_flatten_pole,
                                           "test.geometry.flatten_pole" );
+            me->register_console_function( "test.geometry.distance_map", console_test_distance_map,
+                                          "test.geometry.distance_map" );
+
 
         }
 }}

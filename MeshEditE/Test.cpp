@@ -81,6 +81,32 @@ Vec3d alt_simple_random_direction ( Manifold& m, VertexID   v )
     
     Vec3d dir       = ( v_normal + other_dir * 1.5 ) * ratio;
     return dir;
+}
 
+Vec3f color_ramp( int value, int max )
+{
+    // la colorazione va da :
+    // rosso    : molto rosso, poco verde,  poco blu
+    // arancio  : molto rosso, verde medio, poco blu
+    // verde    : poco  rosso, molto verde, poco blu
+
+    assert( value >= 0  );
+    assert( value <= max );
+    assert( max > 1     );
+    
+    float   red     = 1.0,
+            blue    = 0.1,
+            green   = 0.1;
+    
+    int red_scale   = value;
+    int green_scale = max - value;
+    
+    green   = green_scale / (float)max;
+    red     = red_scale  / (float)max;
+    
+    assert( green >= 0 && green <=1 );
+    assert( red >= 0 && red <=1 );
+    
+    return Vec3f( red, green, blue );
 }
 
