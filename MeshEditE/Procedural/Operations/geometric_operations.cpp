@@ -25,52 +25,67 @@ namespace Procedural{
         namespace Geometric{
 
             
+void add_noise_to_vertex( Manifold& m, VertexID vid, int vertex_type_flags, double ratio, double cutoff )
+{
+    assert( m.in_use(vid));
+    if( ( vertex_type_flags & VertexType::POLE ) && is_pole( m, vid ))
+    {
+        //            Vec3d dir           = simple_random_direction(m, vid) * ratio * 3.0;
+        Vec3d dir           = alt_simple_random_direction( m, vid );
+        Vec3d polar_normal  = vertex_normal( m, vid );
+        
+        if( dot( dir, polar_normal ) < 0 ) dir = -dir;
+        
+        if( cutoff > 0.0 )
+        {
+            if ( dir.length() > cutoff )
+            {
+                dir.normalize();
+                dir *= cutoff;
+            }
+        }
+        
+        double scaling_ratio = (( rand() % 100 ) - 50.0 )/ 200.0 + 1.0;
+        
+        cout << "scaling " << scaling_ratio << endl;
+        extrude_pole( m, vid, dir, true, scaling_ratio );
+        
+        //            move_vertex(m, vid, dir);
+    }
+    else if( vertex_type_flags & VertexType::REGULAR )
+    {
+        Vec3d dir = simple_random_direction( m, vid, 3.0 ) * ratio;
+        if( cutoff > 0.0 )
+        {
+            if ( dir.length() > cutoff )
+            {
+                dir.normalize();
+                dir *= cutoff;
+            }
+        }
+        
+        move_vertex( m, vid, dir );
+    }
+}
+
+
+void add_noise ( HMesh::Manifold& m, int vertex_type_flags, double ratio, double cutoff,
+                 vector< VertexID > vertices )
+{
+    for( auto vid : vertices )
+    {
+        add_noise_to_vertex(m, vid, vertex_type_flags, ratio, cutoff );
+    }
+}
+    
+            
 void add_noise ( HMesh::Manifold& m, int vertex_type_flags, double ratio, double cutoff )
 {
-    for ( VertexID vid : m.vertices( ))
+    for( auto vid : m.vertices( ))
     {
-        assert( m.in_use(vid));
-        if( ( vertex_type_flags & VertexType::POLE ) && is_pole( m, vid ))
-        {
-            //            Vec3d dir           = simple_random_direction(m, vid) * ratio * 3.0;
-            Vec3d dir           = alt_simple_random_direction( m, vid );
-            Vec3d polar_normal  = vertex_normal( m, vid );
-            
-            if( dot( dir, polar_normal ) < 0 ) dir = -dir;
-            
-            if( cutoff > 0.0 )
-            {
-                if ( dir.length() > cutoff )
-                {
-                    dir.normalize();
-                    dir *= cutoff;
-                }
-            }
-            
-            double scaling_ratio = (( rand() % 100 ) - 50.0 )/ 200.0 + 1.0;
-            
-            cout << "scaling " << scaling_ratio << endl;
-            extrude_pole( m, vid, dir, true, scaling_ratio );
-            
-            //            move_vertex(m, vid, dir);
-        }
-        else if( vertex_type_flags & VertexType::REGULAR )
-        {
-            Vec3d dir = simple_random_direction( m, vid, 3.0 ) * ratio;
-            if( cutoff > 0.0 )
-            {
-                if ( dir.length() > cutoff )
-                {
-                    dir.normalize();
-                    dir *= cutoff;
-                }
-            }
-            
-            move_vertex( m, vid, dir );
-        }
-        //        m.cleanup();
+        add_noise_to_vertex(m, vid, vertex_type_flags, ratio, cutoff );
     }
-    
+
 }
 
 

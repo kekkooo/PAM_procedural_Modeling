@@ -308,6 +308,59 @@ void console_test_scale_selected_rings( MeshEditor *me, const std::vector< std::
     m.cleanup();
 }
 
+
+void console_test_perturbation_distance_based( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold& m = me->active_mesh();
+    
+    double cutoff   = 0.1;
+    double ratio    = 1.0;
+    int type        = 0;
+    int vtype       = VertexType::POLE;
+    int distance    = 3;
+    
+    if(args.size() > 0){
+        istringstream a0(args[0]);
+        a0 >> type;
+    }
+    
+    if(args.size() > 1){
+        istringstream a1(args[1]);
+        a1 >> ratio;
+    }
+    
+    if(args.size() > 2){
+        istringstream a1(args[2]);
+        a1 >> cutoff;
+    }
+    
+    if(args.size() > 3){
+        istringstream a1(args[3]);
+        a1 >> distance;
+    }
+    
+    if ( type == 1 ) { vtype = VertexType::REGULAR; }
+    if ( type == 2 ) { vtype |= VertexType::REGULAR; }
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<Procedural::Geometry::DistanceMetrics> distances;
+    vector< VertexID > selected;
+    
+    LabelJunctions( m, edge_info );
+    Procedural::Geometry::distance_from_poles_and_junctions( m, edge_info, distances );
+    
+    for( VertexID vid : m.vertices() )
+    {
+        if ( distances[vid].first > distance ) { selected.push_back( vid ); }
+    }
+    
+    cout << " moving " << selected.size() << " on " << m.no_vertices() << " with distance " << distance << endl;
+    
+    add_noise( m, VertexType::REGULAR, ratio, cutoff, selected );
+}
+
+
 void console_test_perturbate( MeshEditor *me, const std::vector< std::string > &args )
 {
     me->save_active_mesh();
@@ -333,12 +386,11 @@ void console_test_perturbate( MeshEditor *me, const std::vector< std::string > &
         a1 >> cutoff;
     }
     
-    
     if ( type == 1 ) { vtype = VertexType::REGULAR; }
     if ( type == 2 ) { vtype |= VertexType::REGULAR; }
     
     cout << " perturbating " << vtype << " with ratio : " << ratio;
-    add_noise(m, vtype, ratio, cutoff);
+    add_noise( m, vtype, ratio, cutoff );
 }
 
 void console_test_flatten_pole( MeshEditor *me, const std::vector< std::string > &args )
@@ -367,7 +419,6 @@ void console_test_smooth_pole( MeshEditor *me, const std::vector< std::string > 
             number_rib_edges(m, edge_info, h);
             break;
         }
-
     
     for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit)
     {
@@ -378,7 +429,19 @@ void console_test_smooth_pole( MeshEditor *me, const std::vector< std::string > 
     }
 }
 
-void console_test_distance_map( MeshEditor *me, const std::vector< std::string > &args )
+void console_test_distance_map_poles( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<Procedural::Geometry::DistanceMetrics> distances;
+    
+    LabelJunctions( m, edge_info );    
+    Procedural::Geometry::distance_from_poles( m, edge_info, distances);
+}
+
+void console_test_distance_map_junctions( MeshEditor *me, const std::vector< std::string > &args )
 {
     me->save_active_mesh();
     Manifold&   m       = me->active_mesh();
@@ -387,15 +450,21 @@ void console_test_distance_map( MeshEditor *me, const std::vector< std::string >
     VertexAttributeVector<Procedural::Geometry::DistanceMetrics> distances;
     
     LabelJunctions( m, edge_info );
-    
-    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit)
-    {
-        if (me->get_vertex_selection()[*vit])
-        {
-            Procedural::Geometry::vertex_distance_from_poles( m, *vit, edge_info, distances);
-        }
-    }
+    Procedural::Geometry::distance_from_junctions( m, edge_info, distances);
 }
+
+void console_test_distance_map_combined( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<Procedural::Geometry::DistanceMetrics> distances;
+    
+    LabelJunctions( m, edge_info );
+    Procedural::Geometry::distance_from_poles_and_junctions( m, edge_info, distances);
+}
+
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -417,7 +486,6 @@ namespace Procedural{
             me->register_console_function( "test.geometry.smooth_pole", console_test_smooth_pole,
                                            "test.geometry.smooth_pole" );
             
-            
             me->register_console_function( "test.geometry.set_ring_radius", console_test_set_ring_radius,
                                            "test.geometry.set_ring_radius" );
             
@@ -426,14 +494,26 @@ namespace Procedural{
             
             me->register_console_function( "test.geometry.perturbate", console_test_perturbate,
                                            "test.geometry.perturbate" );
+
+            me->register_console_function( "test.geometry.perturbate_on_distance", console_test_perturbation_distance_based,
+                                           "test.geometry.perturbate_on_distance" );
             
             me->register_console_function( "test.geometry.scale_selected_rings", console_test_scale_selected_rings,
                                            "test.geometry.scale_selected_rings" );
             
             me->register_console_function( "test.geometry.flatten_pole", console_test_flatten_pole,
                                           "test.geometry.flatten_pole" );
-            me->register_console_function( "test.geometry.distance_map", console_test_distance_map,
-                                          "test.geometry.distance_map" );
+
+            me->register_console_function( "test.geometry.distance_map.poles", console_test_distance_map_poles,
+                                          "test.geometry.distance_map.poles" );
+
+            me->register_console_function( "test.geometry.distance_map.junctions", console_test_distance_map_junctions,
+                                          "test.geometry.distance_map.junctions" );
+
+            me->register_console_function( "test.geometry.distance_map.combined", console_test_distance_map_combined,
+                                          "test.geometry.distance_map.combined" );
+
+
 
 
         }

@@ -36,7 +36,23 @@
          contextName = "HMesh::ItemVector&lt;HMesh::Vertex&gt;::operator[](HMesh::ItemID&lt;HMesh::Vertex&gt;) const:ItemVector.h">
       </ContextState>
       <ContextState
+         contextName = "Procedural::Geometry::vertex_distance_from_poles(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::Vertex&gt;, HMesh::HalfEdgeAttributeVector&lt;EdgeInfo&gt;, HMesh::VertexAttributeVector&lt;std::__1::pair&lt;int, double&gt; &gt;&amp;):geometric_properties.cpp">
+      </ContextState>
+      <ContextState
          contextName = "HMesh::Manifold::stitch_boundary_edges(HMesh::ItemID&lt;HMesh::HalfEdge&gt;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;):Manifold.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "kernel.face(h0)">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Procedural::Geometry::distance_from_junctions(HMesh::Manifold&amp;, HMesh::HalfEdgeAttributeVector&lt;EdgeInfo&gt;, HMesh::VertexAttributeVector&lt;std::__1::pair&lt;int, double&gt; &gt;&amp;):geometric_properties.cpp">
+         <PersistentStrings>
+            <PersistentString
+               value = "ds[*vit]">
+            </PersistentString>
+         </PersistentStrings>
       </ContextState>
       <ContextState
          contextName = "split_from_pole_to_pole(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;):Test.cpp">
@@ -62,16 +78,7 @@
          contextName = "Procedural::Operations::Structural::glue_poles(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::Vertex&gt;, HMesh::ItemID&lt;HMesh::Vertex&gt;):structural_operations.cpp">
          <PersistentStrings>
             <PersistentString
-               value = "www">
-            </PersistentString>
-            <PersistentString
-               value = "www.face()">
-            </PersistentString>
-            <PersistentString
-               value = "www.opp().face()">
-            </PersistentString>
-            <PersistentString
-               value = "new_faces">
+               value = "m.walker(new_f_walker.prev().opp().halfedge()).face()">
             </PersistentString>
          </PersistentStrings>
       </ContextState>

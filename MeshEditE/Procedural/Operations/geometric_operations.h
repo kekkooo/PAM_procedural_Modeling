@@ -63,6 +63,10 @@ void                        move_vertex             ( HMesh::Manifold& m, HMesh:
 
 void                        add_noise               ( HMesh::Manifold& m, int vertex_type_flags,
                                                       double ratiom, double cutoff );
+void                        add_noise               ( HMesh::Manifold& m, int vertex_type_flags,
+                                                      double ratiom, double cutoff,
+                                                      vector< HMesh::VertexID > vertices );
+
             
 void                        add_ring_around_pole    ( HMesh::Manifold& m, HMesh::VertexID pole,
                                                       double scaling );
