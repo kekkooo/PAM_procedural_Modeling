@@ -496,6 +496,30 @@ void console_test_distance_map_combined( MeshEditor *me, const std::vector< std:
     Procedural::Geometry::distance_from_poles_and_junctions( m, edge_info, distances);
 }
 
+void console_test_dihedral_angles_along_ribs( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<double> angles;
+    
+    LabelJunctions( m, edge_info );
+    Procedural::Geometry::dihedral_angles(m, edge_info, angles, RIB);
+}
+
+void console_test_dihedral_angles_along_spines( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<double> angles;
+    
+    LabelJunctions( m, edge_info );
+    Procedural::Geometry::dihedral_angles(m, edge_info, angles, SPINE);
+}
+
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -546,6 +570,14 @@ namespace Procedural{
 
             me->register_console_function( "test.geometry.distance_map.combined", console_test_distance_map_combined,
                                           "test.geometry.distance_map.combined" );
+
+            me->register_console_function( "test.geometry.angles.rib", console_test_dihedral_angles_along_ribs,
+                                          "test.geometry.angles.rib" );
+
+            me->register_console_function( "test.geometry.angles.spine", console_test_dihedral_angles_along_spines,
+                                          "test.geometry.angles.spine" );
+
+
 
 
 

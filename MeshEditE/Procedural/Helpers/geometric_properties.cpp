@@ -12,6 +12,7 @@
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include <queue>
 #include "Test.h"
+#include "math.h"
 
 using namespace CGLA;
 using namespace std;
@@ -152,6 +153,40 @@ double angle ( CGLA::Vec3d l, CGLA::Vec3d r)
     r.normalize();
     double cos = CGLA::dot( l, r );
     return acos(cos);
+}
+        
+double dihedral_angle ( Vec3d a, Vec3d b, Vec3d c, Vec3d d )
+{
+    Vec3d u = b - a;     u.normalize();
+    Vec3d v = c - a;     v.normalize();
+    Vec3d w = d - a;     w.normalize();
+    // classic formulation
+//    Vec3d  uv = cross( u, v );
+//    Vec3d  uw = cross( u, w );
+//    double cs  = dot( uv, uw );
+//    double ag  = acos( cs );
+    
+    // limit formulation
+    double limit_cs = ( dot( u, u ) * dot( v, w )) - ( dot( u, w ) * dot( u, v ));
+    double limit_ag = acos( limit_cs );
+    
+    // debug
+    if( isnan( limit_cs ))
+    {
+        cout << a << endl;
+        cout << b << endl;
+        cout << c << endl;
+        cout << d << endl;
+    }
+    
+    assert( !isnan( limit_cs ));
+    //
+
+    
+//    cout << " standard formulation " << cs << " # " << ag << endl
+//         << " limit formulation "    << limit_cs << " # " << limit_ag << endl;
+    
+    return limit_cs;
 }
         
 void distance_from_poles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
@@ -481,7 +516,65 @@ void distance_from_poles_and_junctions ( Manifold& m,
                 DebugRenderer::edge_colors[w.opp().halfedge()]  = blue;
             }
         }
+    }
+}
         
+Vec3f get_angle_color( double coseno )
+{
+    return color_ramp2( (int)( ( 1.0 + coseno ) * 20.0 ) , 20 );
+}
+        
+void dihedral_angles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                       VertexAttributeVector<double> &angles, EdgeType edge_type )
+{
+    for( auto a : m.vertices() )
+    {
+        // skip poles.
+        if( is_pole( m, a )) continue;
+        
+        // select the correct set of vertices depending on the edge type
+        VertexID b1, b2, c, d;
+        Walker w = m.walker(a);
+        bool rib_start = edge_info[w.halfedge()].is_rib();
+        HalfEdgeID he1, he2;
+
+        VertexID north = rib_start ? w.circulate_vertex_ccw().vertex() : w.vertex(),
+                 east  = rib_start ? w.vertex() : w.circulate_vertex_cw().vertex(),
+                 south = rib_start ? w.circulate_vertex_cw().vertex()
+                                   : w.circulate_vertex_ccw().circulate_vertex_ccw().vertex(),
+                 west  = rib_start ? w.circulate_vertex_ccw().circulate_vertex_ccw().vertex()
+                                   : w.circulate_vertex_ccw().vertex();
+        
+        if( edge_type == RIB || edge_type == RIB_JUNCTION )
+        {
+            b1  = east;  b2 = west;
+            c   = north; d  = south;
+        }
+        else
+        {
+            b1 = north;  b2 = south;
+            c  = west;   d  = east;
+        }
+        he1 = find_half_edge( m, a, b1 );
+        he2 = find_half_edge( m, a, b2 );
+        
+        assert( m.in_use( a  ));
+        assert( m.in_use( b1 ));
+        assert( m.in_use( b2 ));
+        assert( m.in_use( c  ));
+        assert( m.in_use( d  ));
+        
+        double cos1  = dihedral_angle( m.pos( a ), m.pos( b1 ), m.pos( c ), m.pos( d ));
+        double cos2 = dihedral_angle( m.pos( a ), m.pos( b2 ), m.pos( c ), m.pos( d ));
+        double cosv  = ( cos1 + cos2 ) / 2.0;
+        
+        angles[a] = cosv;
+        
+        DebugRenderer::edge_colors[he1]                             = get_angle_color( cos1 );
+        DebugRenderer::edge_colors[m.walker(he1).opp().halfedge()]  = get_angle_color( cos1 );
+        DebugRenderer::edge_colors[he2]                             = get_angle_color( cos2 );
+        DebugRenderer::edge_colors[m.walker(he2).opp().halfedge()]  = get_angle_color( cos2 );
+        DebugRenderer::vertex_colors[a]                             = get_angle_color( cosv );
     }
 }
 

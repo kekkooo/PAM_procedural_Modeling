@@ -37,7 +37,7 @@ void                ring_vertices_and_halfedges             ( HMesh::Manifold& m
 int                 valence                                 ( HMesh::Manifold& m, HMesh::VertexID v     );
 bool                is_singularity                          ( HMesh::Manifold& m, HMesh::VertexID v     );
 bool                is_2_neighbor_of_pole                   ( HMesh::Manifold& m, HMesh::VertexID v     );
-double              angle                                   ( CGLA::Vec3d l, CGLA::Vec3d r );
+
 // must have calld label junction on edge_info
 void                distance_from_poles                     ( HMesh::Manifold& m,
                                                               HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
@@ -48,6 +48,14 @@ void                distance_from_junctions                 ( HMesh::Manifold& m
 void                distance_from_poles_and_junctions       ( HMesh::Manifold& m,
                                                               HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
                                                               HMesh::VertexAttributeVector<DistanceMetrics> &distances );
+        
+void                dihedral_angles                         ( HMesh::Manifold& m,
+                                                             HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                                                             HMesh::VertexAttributeVector<double> &angles,
+                                                             EdgeType edge_type );
+
+double              angle                                   ( CGLA::Vec3d l, CGLA::Vec3d r );
+double              dihedral_angle                          ( CGLA::Vec3d a, CGLA::Vec3d b, CGLA::Vec3d c, CGLA::Vec3d d );
 
 
 

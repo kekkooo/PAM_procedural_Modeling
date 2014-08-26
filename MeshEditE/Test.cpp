@@ -52,7 +52,7 @@ Vec3d simple_random_direction ( Manifold& m, VertexID v, double vertex_normal_we
     Vec3d v_normal = vertex_normal( m, v );
     int     times   = rand() % 23;
     double  ratio   = ( (double)( rand() % 1000 ) - 500.0 )/10000.0;
-    cout << "times is : " << times << " ratio is : " << ratio <<endl;
+//    cout << "times is : " << times << " ratio is : " << ratio <<endl;
     Walker w = m.walker(v);
     for( int i = 0; i < times; w = w.circulate_vertex_ccw(), i++ );
     
@@ -70,7 +70,7 @@ Vec3d alt_simple_random_direction ( Manifold& m, VertexID   v )
     Vec3d v_normal = vertex_normal( m, v );
     int     times   = rand() % 23;
     double  ratio   = ( (double)( rand() % 1000 ) - 500.0 )/10000.0;
-    cout << "times is : " << times << " ratio is : " << ratio <<endl;
+//    cout << "times is : " << times << " ratio is : " << ratio <<endl;
     Walker w = m.walker(v);
     for( int i = 0; i < times; w = w.circulate_vertex_ccw(), i++ );
     
@@ -107,6 +107,26 @@ Vec3f color_ramp( int value, int max )
     assert( green >= 0 && green <=1 );
     assert( red >= 0 && red <=1 );
     
+    cout << value << " / " << max << endl << "bring to :" << red << ", " << green << ", " << blue << endl;
+    
     return Vec3f( red, green, blue );
+}
+
+Vec3f color_ramp2( int value, int max )
+{
+    float er = 240.0,
+          eg = 50.0,
+          eb = 50.0,
+          sr = 5.0,
+          sg = 180.0,
+          sb = 60;
+    float n;
+    float r, g, b;
+    n = (float)value / (float)max;
+    r = (float)sr * ( 1.0f -n ) + (float)er * n;
+    g = (float)sg * ( 1.0f -n ) + (float)eg * n;
+    b = (float)sb * ( 1.0f -n ) + (float)eb * n;
+    
+    return Vec3f( r/256.0, g/256.0, b/256.0 );
 }
 

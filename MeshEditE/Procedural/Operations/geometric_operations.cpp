@@ -47,7 +47,7 @@ void add_noise_to_vertex( Manifold& m, VertexID vid, int vertex_type_flags, doub
         
         double scaling_ratio = (( rand() % 100 ) - 50.0 )/ 200.0 + 1.0;
         
-        cout << "scaling " << scaling_ratio << endl;
+//        cout << "scaling " << scaling_ratio << endl;
         extrude_pole( m, vid, dir, true, scaling_ratio );
         
         //            move_vertex(m, vid, dir);
