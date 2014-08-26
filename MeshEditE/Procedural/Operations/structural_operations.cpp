@@ -334,7 +334,7 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
     assert( hes_pole1.size() == hes_pole2.size( ));
     
     vector< pair< HalfEdgeID, HalfEdgeID > > he_to_stitch;
-    
+    HalfEdgeID hook_for_splitting = InvalidHalfEdgeID;
     // save pairs of edges that have to be stitched
     for( int i = 0; i < hes_pole1.size(); i++ )
     {
@@ -345,11 +345,12 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
         new_vs.push_back( m.pos( m.walker( hes_pole2[i] ).prev().vertex() )     );
         new_vs.push_back( m.pos( m.walker( hes_pole2[i] ).vertex() )            );
         
-        FaceID new_f        = m.add_face( new_vs );
+        FaceID new_f = m.add_face( new_vs );
         
         Walker new_f_walker = m.walker( new_f );
         HalfEdgeID  h1 = new_f_walker.opp().halfedge(),
                     h3 = new_f_walker.next().next().opp().halfedge();
+        if( hook_for_splitting == InvalidHalfEdgeID ) hook_for_splitting = new_f_walker.next().halfedge();
         
         he_to_stitch.push_back( make_pair( hes_pole1[i], h1 ));
         he_to_stitch.push_back( make_pair( hes_pole2[i], h3 ));
@@ -363,6 +364,10 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
         auto hep = he_to_stitch[i];
         assert( m.stitch_boundary_edges( hep.first, hep.second ));
     }
+    
+    
+    
+    split_ring_of_quads( m, hook_for_splitting );
 }
     
     

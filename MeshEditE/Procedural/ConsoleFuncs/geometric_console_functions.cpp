@@ -12,6 +12,7 @@
 #include <MeshEditE/Procedural/Operations/geometric_operations.h>
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+#include <MeshEditE/Procedural/Operations/Algorithms.h>
 #include <strstream>
 #include <istream>
 #include <fstream>
@@ -26,6 +27,7 @@ using namespace std;
 using namespace HMesh;
 using namespace Procedural::Operations::Geometric;
 using namespace Procedural::Structure;
+using namespace Procedural::Operations::Algorithms;
 
 // this works if you have selected 2 vertices and both of them are not poles,
 void console_test_split_quad_ring( MeshEditor *me, const std::vector< std::string > &args )
@@ -189,7 +191,7 @@ void console_test_extrude_vertices_alt( MeshEditor *me, const std::vector< std::
                 Walker w = m.walker(*vit);
                 for( ; !w.full_circle() && me->get_vertex_selection()[w.vertex()] != 1; w = w.circulate_vertex_ccw() );
                 
-                CGLA::Vec3d dir = m.pos(*vit) - m.pos(w.vertex());
+                CGLA::Vec3d dir = m.pos(*vit) - m.pos( w.vertex() );
                 dir.normalize();
                 dir = dir * length;
                 
@@ -429,6 +431,35 @@ void console_test_smooth_pole( MeshEditor *me, const std::vector< std::string > 
     }
 }
 
+void console_test_smooth_on_distance( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m           = me->active_mesh();
+    int         distance    = 3;
+    
+    if(args.size() > 0){
+        istringstream a0(args[0]);
+        a0 >> distance;
+    }
+
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<Procedural::Geometry::DistanceMetrics> distances;
+    vector< VertexID > selected;
+    
+    
+    LabelJunctions( m, edge_info );
+    Procedural::Geometry::distance_from_poles_and_junctions( m, edge_info, distances);
+    
+    for( VertexID vid : m.vertices() )
+    {
+        if ( distances[vid].first < distance ) { selected.push_back( vid ); }
+    }
+    
+    selected_vertices_cotangent_weights_laplacian( m, selected );
+
+}
+
+
 void console_test_distance_map_poles( MeshEditor *me, const std::vector< std::string > &args )
 {
     me->save_active_mesh();
@@ -485,6 +516,9 @@ namespace Procedural{
             
             me->register_console_function( "test.geometry.smooth_pole", console_test_smooth_pole,
                                            "test.geometry.smooth_pole" );
+            
+            me->register_console_function( "test.geometry.smooth_on_distance", console_test_smooth_on_distance,
+                                          "test.geometry.smooth_on_distance" );
             
             me->register_console_function( "test.geometry.set_ring_radius", console_test_set_ring_radius,
                                            "test.geometry.set_ring_radius" );
