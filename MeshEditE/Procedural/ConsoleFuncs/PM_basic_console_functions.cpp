@@ -8,6 +8,7 @@
 
 #include "PM_basic_console_functions.h"
 #include <GEL/GLGraphics/MeshEditor.h>
+#include <sstream>
 //#include <strstream>
 //#include <istream>
 //#include <fstream>
@@ -16,9 +17,13 @@
 //#include <set>
 //#include <queue>
 //#include "Test.h"
-//#include "polarize.h"
+#include "polarize.h"
 #include <MeshEditE/Procedural/Operations/basic_shapes.h>
 #include <MeshEditE/Procedural/Operations/Algorithms.h>
+#include <MeshEditE/Procedural/Operations/structural_operations.h>
+#include <MeshEditE/Procedural/Helpers/structural_helpers.h>
+#include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+
 
 using namespace GLGraphics;
 using namespace Procedural::Operations;
@@ -164,6 +169,51 @@ void console_test_delete_vertices( MeshEditor *me, const std::vector< std::strin
     m->cleanup();
 }
 
+void console_test_print_vertex_info( MeshEditor *me, const std::vector< std::string > &args )
+{
+    auto &m = me->active_mesh();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<Procedural::Geometry::DistanceMetrics> pole_dist;
+    VertexAttributeVector<Procedural::Geometry::DistanceMetrics> junction_dist;
+    VertexAttributeVector<Procedural::Geometry::DistanceMetrics> combined_dist;
+    VertexAttributeVector<double> angles;
+    VertexAttributeVector<double> spine_angles;
+    VertexAttributeVector<double> rib_angles;
+    
+    Procedural::Structure::LabelJunctions( m, edge_info );
+    
+    Procedural::Geometry::dihedral_angles( m, edge_info, angles );
+    Procedural::Geometry::dihedral_angles( m, edge_info, spine_angles, SPINE );
+    Procedural::Geometry::dihedral_angles( m, edge_info, rib_angles, RIB );
+
+    Procedural::Geometry::distance_from_poles( m, edge_info, pole_dist );
+    Procedural::Geometry::distance_from_junctions( m, edge_info, junction_dist );
+    Procedural::Geometry::distance_from_poles_and_junctions( m, edge_info, combined_dist );
+
+    
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit )
+    {
+        std::ostringstream oss;
+        if( me->get_vertex_selection()[*vit] == 1 )
+        {
+            oss << " vertex ID                  : " << *vit                        << endl;
+            oss << " is pole?                   : " << is_pole( m, *vit )          << endl;
+            oss << " valence                    : " << valency( m, *vit )          << endl;
+            if( !is_pole(m, *vit))
+            {
+            oss << " distance from pole         : " << pole_dist[*vit].first       << endl;
+            oss << " distance from junction     : " << junction_dist[*vit].first   << endl;
+            oss << " combined distance          : " << combined_dist[*vit].first   << endl;
+            oss << " spines dihedral angle      : " << spine_angles[*vit]          << endl;
+            oss << " ribs dihedral angle        : " << rib_angles[*vit]            << endl;
+            oss << " combined dihedral angle    : " << angles[*vit]                << endl;
+            }
+            me->printf(oss.str().c_str());      oss.clear();
+        }
+    }
+}
+
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -207,6 +257,13 @@ void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)
       "test.delete_vertices",
       console_test_delete_vertices,
       "test.delete_vertices"        );
+    me->register_console_function(
+      "test.print_vertex_info",
+      console_test_print_vertex_info,
+      "test.print_vertex_info"        );
+
+    
+    
 
 
 

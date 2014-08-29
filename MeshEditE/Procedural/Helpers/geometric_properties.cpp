@@ -318,12 +318,14 @@ void distance_from_junctions ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> ed
     int max_dist = numeric_limits<int>::min();
     std::queue< VertexID > poles;
     std::map< VertexID, DistanceMetrics > ds;
+    bool has_junctions = false;
     
     for( auto heid : m.halfedges())
     {
         int current_distance = 0;
         // skip the non junction edges
         if( !(edge_info[heid].is_junction( ))) continue;
+        has_junctions = true;
         
         Walker w = m.walker( heid );
         if ( ds.count(w.vertex()) == 0 )
@@ -347,47 +349,51 @@ void distance_from_junctions ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> ed
             ds[ w.next().vertex( ) ] = DistanceMetrics( current_distance, 0.0 );
     }
     
-    // debug
-    for( auto vit = m.vertices().begin(); vit != m.vertices().end(); ++vit )
+    // all the following stuff is meaningful only if the mesh has junctions
+    if(has_junctions)
     {
-        if ( !(ds.count( *vit ) > 0 ))
+        // debug
+        for( auto vit = m.vertices().begin(); vit != m.vertices().end(); ++vit )
         {
+            if ( !(ds.count( *vit ) > 0 ))
+            {
+                Walker w = m.walker(*vit);
+                for(; !w.full_circle(); w = w.circulate_vertex_ccw())
+                    DebugRenderer::face_colors[w.face()] = Vec3f( 1.0, 1.0, 0.0);
+            }
+            else
+            {
+                max_dist = max_dist < ds[*vit].first ? ds[*vit].first : max_dist;
+            }
+
+        }
+        //
+
+        Vec3f blue( 0.0, 0.0, 1.0 );
+
+        for( auto vit = m.vertices().begin(); vit != m.vertices().end(); ++vit )
+        {
+            assert( m.in_use( *vit ));
+            assert( ds.count( *vit ) > 0 );
+            
+            Vec3f color = color_ramp(ds[*vit].first, max_dist);
+            DebugRenderer::vertex_colors[*vit] = color;
             Walker w = m.walker(*vit);
             for(; !w.full_circle(); w = w.circulate_vertex_ccw())
-                DebugRenderer::face_colors[w.face()] = Vec3f( 1.0, 1.0, 0.0);
-        }
-        else
-        {
-            max_dist = max_dist < ds[*vit].first ? ds[*vit].first : max_dist;
-        }
-
-    }
-    //
-    
-    Vec3f blue( 0.0, 0.0, 1.0 );
-    
-    for( auto vit = m.vertices().begin(); vit != m.vertices().end(); ++vit )
-    {
-        assert( m.in_use( *vit ));
-        assert( ds.count( *vit ) > 0 );
-        
-        Vec3f color = color_ramp(ds[*vit].first, max_dist);
-        DebugRenderer::vertex_colors[*vit] = color;
-        Walker w = m.walker(*vit);
-        for(; !w.full_circle(); w = w.circulate_vertex_ccw())
-        {
-            if( edge_info[w.halfedge()].is_rib() && !edge_info[w.halfedge()].is_junction() )
             {
-                DebugRenderer::edge_colors[w.halfedge()]        = color;
-                DebugRenderer::edge_colors[w.opp().halfedge()]  = color;
+                if( edge_info[w.halfedge()].is_rib() && !edge_info[w.halfedge()].is_junction() )
+                {
+                    DebugRenderer::edge_colors[w.halfedge()]        = color;
+                    DebugRenderer::edge_colors[w.opp().halfedge()]  = color;
+                }
+                if( edge_info[w.halfedge()].is_junction() )
+                {
+                    DebugRenderer::edge_colors[w.halfedge()]        = blue;
+                    DebugRenderer::edge_colors[w.opp().halfedge()]  = blue;
+                }
             }
-            if( edge_info[w.halfedge()].is_junction() )
-            {
-                DebugRenderer::edge_colors[w.halfedge()]        = blue;
-                DebugRenderer::edge_colors[w.opp().halfedge()]  = blue;
-            }
+            
         }
-        
     }
 }
         
@@ -577,6 +583,21 @@ void dihedral_angles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
         DebugRenderer::vertex_colors[a]                             = get_angle_color( cosv );
     }
 }
+        
+void dihedral_angles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                       VertexAttributeVector<double> &angles )
+{
+    VertexAttributeVector<double> rib_angles, spine_angles;
+    dihedral_angles( m, edge_info, rib_angles, RIB );
+    dihedral_angles( m, edge_info, spine_angles, SPINE );
+    for( auto vid : m.vertices( ))
+    {
+        angles[vid] = ( rib_angles[vid] + spine_angles[vid] ) / 2.0;
+        DebugRenderer::vertex_colors[vid] = get_angle_color( angles[vid] );
+    }
+    
+}
+
 
 
 }}

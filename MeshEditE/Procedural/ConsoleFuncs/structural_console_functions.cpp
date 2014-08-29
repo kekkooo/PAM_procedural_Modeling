@@ -10,6 +10,8 @@
 #include <GEL/GLGraphics/MeshEditor.h>
 #include "polarize.h"
 #include <MeshEditE/Procedural/Operations/structural_operations.h>
+#include <MeshEditE/Procedural/Helpers/structural_helpers.h>
+#include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 
 using namespace GLGraphics;
 using namespace std;
@@ -109,6 +111,36 @@ void console_test_glue_poles( MeshEditor *me, const std::vector< std::string > &
     m.cleanup();
 }
 
+void console_test_add_branch_on_high_angles( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<double> angles;
+    
+    Procedural::Structure::LabelJunctions( m, edge_info );
+    Procedural::Geometry::dihedral_angles( m, edge_info, angles );
+
+    for( auto vid : m.vertices( ))
+    {
+        cout << vid << "has cosine " << angles[vid] << endl;
+        if (angles[vid] > 0.0 )
+        {
+            me->active_visobj().clear_selection();
+            me->get_vertex_selection()[vid] = 1;
+            add_branch( m, vid, 1, me->get_vertex_selection( ));
+        }
+        
+    }
+    
+    me->active_visobj().clear_selection();
+    m.cleanup();
+
+    
+}
+
+
 namespace Procedural{
     namespace ConsoleFuncs{
         
@@ -121,6 +153,8 @@ namespace Procedural{
             me->register_console_function( "test.structure.remove_branch", console_test_remove_branch, "test.structure.remove_branch" );
             
             me->register_console_function( "test.structure.glue_poles", console_test_glue_poles, "test.structure.glue_poles" );
+            
+            me->register_console_function( "test.structure.add_branch_on_high_angles", console_test_add_branch_on_high_angles, "test.structure.add_branch_on_high_angles" );
             
         }
 }}

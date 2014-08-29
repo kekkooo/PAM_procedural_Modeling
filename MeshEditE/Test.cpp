@@ -107,7 +107,7 @@ Vec3f color_ramp( int value, int max )
     assert( green >= 0 && green <=1 );
     assert( red >= 0 && red <=1 );
     
-    cout << value << " / " << max << endl << "bring to :" << red << ", " << green << ", " << blue << endl;
+//    cout << value << " / " << max << endl << "bring to :" << red << ", " << green << ", " << blue << endl;
     
     return Vec3f( red, green, blue );
 }

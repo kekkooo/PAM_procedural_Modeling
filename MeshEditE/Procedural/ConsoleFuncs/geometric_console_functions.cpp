@@ -505,7 +505,7 @@ void console_test_dihedral_angles_along_ribs( MeshEditor *me, const std::vector<
     VertexAttributeVector<double> angles;
     
     LabelJunctions( m, edge_info );
-    Procedural::Geometry::dihedral_angles(m, edge_info, angles, RIB);
+    Procedural::Geometry::dihedral_angles( m, edge_info, angles, RIB );
 }
 
 void console_test_dihedral_angles_along_spines( MeshEditor *me, const std::vector< std::string > &args )
@@ -517,7 +517,19 @@ void console_test_dihedral_angles_along_spines( MeshEditor *me, const std::vecto
     VertexAttributeVector<double> angles;
     
     LabelJunctions( m, edge_info );
-    Procedural::Geometry::dihedral_angles(m, edge_info, angles, SPINE);
+    Procedural::Geometry::dihedral_angles( m, edge_info, angles, SPINE );
+}
+
+void console_test_dihedral_angles_combined( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    Manifold&   m       = me->active_mesh();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
+    VertexAttributeVector<double> angles;
+    
+    LabelJunctions( m, edge_info );
+    Procedural::Geometry::dihedral_angles( m, edge_info, angles );
 }
 
 
@@ -576,11 +588,9 @@ namespace Procedural{
 
             me->register_console_function( "test.geometry.angles.spine", console_test_dihedral_angles_along_spines,
                                           "test.geometry.angles.spine" );
-
-
-
-
-
+            
+            me->register_console_function( "test.geometry.angles.combined", console_test_dihedral_angles_combined,
+                                          "test.geometry.angles.combined" );
 
         }
 }}
