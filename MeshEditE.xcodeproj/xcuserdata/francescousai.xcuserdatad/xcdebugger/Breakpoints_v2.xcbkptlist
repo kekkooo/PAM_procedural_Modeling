@@ -9,28 +9,12 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "MeshEditE/BasicOpenGLView.mm"
-            timestampString = "429204100.193981"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "70"
-            endingLineNumber = "70"
-            landmarkName = "-save_window_to_pasteboard:"
-            landmarkType = "5">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
             filePath = "MeshEditE/Procedural/Operations/structural_operations.cpp"
-            timestampString = "430324890.719118"
+            timestampString = "431214651.872993"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "188"
-            endingLineNumber = "188"
+            startingLineNumber = "189"
+            endingLineNumber = "189"
             landmarkName = "remove_branch ( HMesh::Manifold&amp; m, HMesh::VertexID pole, HMesh::HalfEdgeAttributeVector&lt;EdgeInfo&gt; edge_info )"
             landmarkType = "7">
          </BreakpointContent>
@@ -81,6 +65,22 @@
             endingLineNumber = "330"
             landmarkName = "distance_from_junctions ( Manifold&amp; m, HalfEdgeAttributeVector&lt;EdgeInfo&gt; edge_info, VertexAttributeVector&lt;DistanceMetrics&gt; &amp;distances )"
             landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "MeshEditE/BasicOpenGLView.mm"
+            timestampString = "431255494.485071"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "133"
+            endingLineNumber = "133"
+            landmarkName = "-keyDown:"
+            landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

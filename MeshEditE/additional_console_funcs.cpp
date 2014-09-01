@@ -1336,6 +1336,7 @@ void console_polarize(MeshEditor* me, const std::vector<std::string> & args)
         vmax = max(harmonic[v], vmax);
     }
     polarize_mesh(me->active_mesh(), harmonic, vmin, vmax, divisions);
+    
 }
 
 

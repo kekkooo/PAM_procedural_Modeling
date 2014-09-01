@@ -415,7 +415,7 @@ void smooth_pole ( Manifold& m, VertexID pole, HalfEdgeAttributeVector<EdgeInfo>
 //    for( HalfEdgeID he : m.halfedges()) { assert( !edge_info[he].is_junction() ); }
 //#endif
     
-    
+    // this sould be done better, smoothing all the branch, I guess
     while ( !edge_info[ w.next().halfedge() ].is_junction() )
     {
         w = w.next().opp().next();

@@ -23,6 +23,7 @@
 #include <MeshEditE/Procedural/Operations/structural_operations.h>
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+#include <MeshEditE/Procedural/PMEngine.h>
 
 
 using namespace GLGraphics;
@@ -87,6 +88,7 @@ void console_test_inverse_distance_smoothing( MeshEditor *me, const std::vector<
     for (int iter = 0; iter < times; iter++) {
         inverse_distance_laplacian_smoothing( me->active_mesh( ));
     }
+    
 }
 
 // cotangent weights laplacian smoothing

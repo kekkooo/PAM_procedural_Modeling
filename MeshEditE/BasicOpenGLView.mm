@@ -4,11 +4,13 @@
 #include "Procedural/ConsoleFuncs/geometric_console_functions.h"
 #include "Procedural/ConsoleFuncs/structural_console_functions.h"
 #include <GEL/GLGraphics/MeshEditor.h>
+#include "Procedural/PMEngine.h"
 
 using namespace CGLA;
 using namespace GLGraphics;
 
 MeshEditor me;
+Procedural::Engine engine;
 
 // ==================================
 #pragma mark ---- Error Reporting ----
@@ -127,34 +129,59 @@ GLenum glReportError (int where = -1)
 
 -(void)keyDown:(NSEvent *)theEvent
 {
-    switch ([theEvent keyCode]) {
-        case 123:
-            me.key_left();
-            break;
-        case 124:
-            me.key_right();
-            break;
-        case 126:
-            me.key_up();
-            break;
-        case 125:
-            me.key_down();
-            break;
-        case 115:
-            me.key_home();
-            break;
-        case 119:
-            me.key_end();
-            break;
-        default:
-            NSString *characters = [theEvent characters];
-            if ([characters length]) {
-                unichar character = [characters characterAtIndex:0];
-                me.keyparse(character);
-            }
-            break;
+    unsigned short a = [theEvent keyCode];
+    NSUInteger flags = [ theEvent modifierFlags];
+
+    if (flags & NSAlternateKeyMask)
+    {
+        switch ([theEvent keyCode])
+        {
+                // ### aggiunte da me ###
+//            case 30 :
+            case 8:
+                engine.setMesh( &me.active_mesh( ));
+                engine.buildCube();
+                break;
+            case 14 :
+                engine.extrudePoles();
+                break;
+            case 1 :
+                engine.polarSubdivision();
+                break;
+        }
+    }
+    else
+    {
+        switch ([theEvent keyCode]) {
+            case 123:
+                me.key_left();
+                break;
+            case 124:
+                me.key_right();
+                break;
+            case 126:
+                me.key_up();
+                break;
+            case 125:
+                me.key_down();
+                break;
+            case 115:
+                me.key_home();
+                break;
+            case 119:
+                me.key_end();
+                break;
+            default:
+                NSString *characters = [theEvent characters];
+                if ([characters length]) {
+                    unichar character = [characters characterAtIndex:0];
+                    me.keyparse(character);
+                }
+                break;
+        }
     }
     [self setNeedsDisplay: YES];
+    me.post_create_display_list();
 }
 
 
@@ -285,6 +312,7 @@ GLenum glReportError (int where = -1)
     GLint swapInt = 1;
     [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval]; // set to vbl sync
     me.init();
+    engine.setMesh( &me.active_mesh( ));
     register_console_funcs(&me);
     // procedural modeling extensions.
     Procedural::ConsoleFuncs::register_basic_console_funcs(&me);

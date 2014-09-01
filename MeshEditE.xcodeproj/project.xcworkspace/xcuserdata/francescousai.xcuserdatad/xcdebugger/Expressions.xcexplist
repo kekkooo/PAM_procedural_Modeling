@@ -55,6 +55,17 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "-[BasicOpenGLView keyDown:]:BasicOpenGLView.mm">
+         <PersistentStrings>
+            <PersistentString
+               value = "keyCode">
+            </PersistentString>
+            <PersistentString
+               value = "me.active_mesh()">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "split_from_pole_to_pole(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;):Test.cpp">
          <PersistentStrings>
             <PersistentString
@@ -70,6 +81,9 @@
                value = "w.vertex()">
             </PersistentString>
          </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "Procedural::Operations::create_basic_PAM(HMesh::Manifold&amp;, double):basic_shapes.cpp">
       </ContextState>
       <ContextState
          contextName = "ring_barycenter(HMesh::Manifold&amp;, HMesh::ItemID&lt;HMesh::HalfEdge&gt;, std::__1::vector&lt;HMesh::ItemID&lt;HMesh::Vertex&gt;, std::__1::allocator&lt;HMesh::ItemID&lt;HMesh::Vertex&gt; &gt; &gt;&amp;):Test.cpp">

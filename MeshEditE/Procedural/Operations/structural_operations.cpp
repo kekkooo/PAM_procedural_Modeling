@@ -29,7 +29,7 @@ namespace Procedural{
     namespace Operations{
         namespace Structural{
 
-void add_branch ( HMesh::Manifold& m, HMesh::VertexID vid, int size, HMesh::VertexAttributeVector<int> &ring )
+VertexID add_branch ( HMesh::Manifold& m, HMesh::VertexID vid, int size, HMesh::VertexAttributeVector<int> &ring )
 {
 //    HMesh::VertexAttributeVector<int> ring( m.no_vertices(), 0 );
     HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( m );
@@ -59,8 +59,9 @@ void add_branch ( HMesh::Manifold& m, HMesh::VertexID vid, int size, HMesh::Vert
             vert_pos[w.vertex()] = m.pos( w.vertex( ));
         }
         Vec3d centroid(0);
-        polar_add_branch( m, ring );
+        return polar_add_branch( m, ring );
     }
+    return InvalidVertexID;
 }
             
 void cut_branch( Manifold& m, HalfEdgeID h, VertexID pole )

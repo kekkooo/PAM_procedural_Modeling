@@ -38,6 +38,7 @@
 		5979AF6319825D92003E3697 /* Test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5979AF6119825D92003E3697 /* Test.cpp */; };
 		597D8D63198F84A300CF1C64 /* Plane.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 597D8D61198F84A300CF1C64 /* Plane.cpp */; };
 		597D8D6D198FB90600CF1C64 /* additional_console_funcs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 597D8D6B198FB90600CF1C64 /* additional_console_funcs.cpp */; };
+		59A6B6CD19B20F5F003A0BBD /* PMEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59A6B6CB19B20F5F003A0BBD /* PMEngine.cpp */; };
 		59B75D89197D25B100DD6462 /* GEL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59B75D88197D25B100DD6462 /* GEL.framework */; };
 		59B75D8A197D274600DD6462 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0D5467C9180B805100DBC8B9 /* MainMenu.xib */; };
 /* End PBXBuildFile section */
@@ -110,6 +111,8 @@
 		597D8D62198F84A300CF1C64 /* Plane.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Plane.h; sourceTree = "<group>"; };
 		597D8D6B198FB90600CF1C64 /* additional_console_funcs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = additional_console_funcs.cpp; sourceTree = "<group>"; };
 		597D8D6C198FB90600CF1C64 /* additional_console_funcs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = additional_console_funcs.h; sourceTree = "<group>"; };
+		59A6B6CB19B20F5F003A0BBD /* PMEngine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PMEngine.cpp; sourceTree = "<group>"; };
+		59A6B6CC19B20F5F003A0BBD /* PMEngine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PMEngine.h; sourceTree = "<group>"; };
 		59B75D88197D25B100DD6462 /* GEL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GEL.framework; path = ../../../../Library/Frameworks/GEL.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -260,6 +263,8 @@
 				595DC9761992818D00532C6A /* Operations */,
 				597D8D64198FB78600CF1C64 /* ConsoleFuncs */,
 				597D8D60198F80B700CF1C64 /* Helpers */,
+				59A6B6CB19B20F5F003A0BBD /* PMEngine.cpp */,
+				59A6B6CC19B20F5F003A0BBD /* PMEngine.h */,
 			);
 			name = Procedural;
 			path = MeshEditE/Procedural;
@@ -394,6 +399,7 @@
 				0D44677B180B0A7F00B27082 /* BasicOpenGLView.mm in Sources */,
 				593C563919951E1F0008EAC4 /* geometric_console_functions.cpp in Sources */,
 				0D0F5B74180878B9003557E2 /* AppDelegate.m in Sources */,
+				59A6B6CD19B20F5F003A0BBD /* PMEngine.cpp in Sources */,
 				595DC979199281C000532C6A /* basic_shapes.cpp in Sources */,
 				593C563C19951F140008EAC4 /* structural_helpers.cpp in Sources */,
 				595DC9821994F5B100532C6A /* structural_operations.cpp in Sources */,

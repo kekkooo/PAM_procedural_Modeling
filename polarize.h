@@ -67,7 +67,7 @@ void refine_region(HMesh::Manifold& m, Region& region);
 
 void simplify_polar_mesh(HMesh::Manifold& m, double frac, int max_iter=1);
 void smooth_and_refit(HMesh::Manifold& m1,  HMesh::Manifold& m2, int iter, double alpha, bool preserve_poles);
-void polar_add_branch(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs);
+HMesh::VertexID polar_add_branch(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs);
 void refine_poles(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs);
 
 void dist_color_vertices(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs);

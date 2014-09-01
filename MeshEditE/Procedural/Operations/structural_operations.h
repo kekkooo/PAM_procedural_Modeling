@@ -19,12 +19,12 @@ namespace Procedural{
     namespace Operations{
         namespace Structural{
 
-void add_branch     ( HMesh::Manifold& m, HMesh::VertexID, int size, HMesh::VertexAttributeVector<int> &ring );
-void cut_branch     ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
-void cut_branch     ( HMesh::Manifold& m, HMesh::HalfEdgeID h, HMesh::VertexID pole);
-void cut_branch     ( HMesh::Manifold& m, HMesh::VertexID v, HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info );
-void remove_branch  ( HMesh::Manifold& m, HMesh::VertexID pole, HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info );
-void glue_poles     ( HMesh::Manifold& m, HMesh::VertexID pole1, HMesh::VertexID pole2 );
+HMesh::VertexID add_branch     ( HMesh::Manifold& m, HMesh::VertexID, int size, HMesh::VertexAttributeVector<int> &ring );
+void            cut_branch     ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
+void            cut_branch     ( HMesh::Manifold& m, HMesh::HalfEdgeID h, HMesh::VertexID pole);
+void            cut_branch     ( HMesh::Manifold& m, HMesh::VertexID v, HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info );
+void            remove_branch  ( HMesh::Manifold& m, HMesh::VertexID pole, HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info );
+void            glue_poles     ( HMesh::Manifold& m, HMesh::VertexID pole1, HMesh::VertexID pole2 );
 
 }}}
 #endif /* defined(__MeshEditE__structural_opeations__) */

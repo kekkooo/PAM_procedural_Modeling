@@ -1784,7 +1784,7 @@ void polar_subdivide(HMesh::Manifold& mani, int MAX_ITER)
 
 
 
-void polar_add_branch(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs)
+VertexID polar_add_branch(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs)
 {
     HalfEdgeID h = m.slit_edges(vs);
     FaceID f = m.close_hole(h);
@@ -1799,7 +1799,7 @@ void polar_add_branch(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs)
     }
     int i=0;
     circulate_face_ccw(m, f, [&](VertexID v) {m.pos(v) = npos[i++];});
-    m.split_face_by_vertex(f);
+    return m.split_face_by_vertex(f);
 }
 
 void refine_poles(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs)
