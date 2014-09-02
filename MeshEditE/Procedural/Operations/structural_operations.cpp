@@ -39,7 +39,6 @@ VertexID add_branch ( HMesh::Manifold& m, HMesh::VertexID vid, int size, HMesh::
     //                          che non hanno vicini selezionati
         
     map< HMesh::VertexID, CGLA::Vec3d > vert_pos;
-    if( !is_pole( m, vid ) && !is_2_neighbor_of_pole( m,vid ))
     {
         Walker w  = m.walker( vid );
         ring[vid] = 1;

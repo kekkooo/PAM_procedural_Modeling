@@ -130,3 +130,16 @@ Vec3f color_ramp2( int value, int max )
     return Vec3f( r/256.0, g/256.0, b/256.0 );
 }
 
+void linspace ( double min, double max, int num, std::vector<double> &values)
+{
+    if ( num <= 0 ) return;
+    
+    double pace = ( max - min ) / (double)( num - 1 );
+    values.push_back( min );
+    for(int i=1; i< num; i++)
+    {
+        values.push_back(values[i-1] + pace);
+    }
+}
+
+

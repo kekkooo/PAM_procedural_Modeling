@@ -189,7 +189,7 @@ double dihedral_angle ( Vec3d a, Vec3d b, Vec3d c, Vec3d d )
     return limit_cs;
 }
         
-void distance_from_poles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
+void distance_from_poles ( Manifold& m, const HalfEdgeAttributeVector<EdgeInfo> edge_info,
                            VertexAttributeVector<DistanceMetrics> &distances )
 {
     // AS START, USE ONLY THE HOP METRIC
@@ -311,7 +311,7 @@ void distance_from_poles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_i
 }
         
         
-void distance_from_junctions ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
+void distance_from_junctions ( Manifold& m, const HalfEdgeAttributeVector<EdgeInfo> edge_info,
                                  VertexAttributeVector<DistanceMetrics> &distances )
 {
     // AS START, USE ONLY THE HOP METRIC
@@ -373,6 +373,7 @@ void distance_from_junctions ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> ed
 
         for( auto vit = m.vertices().begin(); vit != m.vertices().end(); ++vit )
         {
+            if ( *vit == InvalidVertexID ) continue;
             assert( m.in_use( *vit ));
             assert( ds.count( *vit ) > 0 );
             
@@ -398,7 +399,7 @@ void distance_from_junctions ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> ed
 }
         
 void distance_from_poles_and_junctions ( Manifold& m,
-                                         HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                                         const HalfEdgeAttributeVector<EdgeInfo> edge_info,
                                          VertexAttributeVector<DistanceMetrics> &distances )
 {
     std::map< VertexID, DistanceMetrics > ds;
@@ -539,10 +540,10 @@ void dihedral_angles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
         if( is_pole( m, a )) continue;
         
         // select the correct set of vertices depending on the edge type
-        VertexID b1, b2, c, d;
-        Walker w = m.walker(a);
-        bool rib_start = edge_info[w.halfedge()].is_rib();
-        HalfEdgeID he1, he2;
+        VertexID    b1,  b2, c, d;
+        HalfEdgeID  he1, he2;
+        Walker      w           = m.walker(a);
+        bool        rib_start   = edge_info[w.halfedge()].is_rib();
 
         VertexID north = rib_start ? w.circulate_vertex_ccw().vertex() : w.vertex(),
                  east  = rib_start ? w.vertex() : w.circulate_vertex_cw().vertex(),
@@ -571,7 +572,7 @@ void dihedral_angles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
         assert( m.in_use( d  ));
         
         double cos1  = dihedral_angle( m.pos( a ), m.pos( b1 ), m.pos( c ), m.pos( d ));
-        double cos2 = dihedral_angle( m.pos( a ), m.pos( b2 ), m.pos( c ), m.pos( d ));
+        double cos2  = dihedral_angle( m.pos( a ), m.pos( b2 ), m.pos( c ), m.pos( d ));
         double cosv  = ( cos1 + cos2 ) / 2.0;
         
         angles[a] = cosv;
@@ -584,7 +585,7 @@ void dihedral_angles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
     }
 }
         
-void dihedral_angles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
+void dihedral_angles ( Manifold& m, const HalfEdgeAttributeVector<EdgeInfo> edge_info,
                        VertexAttributeVector<double> &angles )
 {
     VertexAttributeVector<double> rib_angles, spine_angles;
@@ -597,6 +598,44 @@ void dihedral_angles ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> edge_info,
     }
     
 }
+        
+double edge_length ( Manifold& m,
+                     HalfEdgeAttributeVector<double> lengths )
+{
+    std::map< HalfEdgeID, bool > visited;
+    double                       length_sum = 0.0;
+    unsigned int                 count      = 0;
+    for( HalfEdgeID he : m.halfedges() )
+    {
+        if( !visited[he] )
+        {
+            Walker w = m.walker(he);
+            visited[he]                 = true;
+            visited[w.opp().halfedge()] = true;
+            double l = ( m.pos( w.vertex( )) - m.pos( w.prev().vertex( ))).length();
+            lengths[he]                 = l;
+            lengths[w.opp().halfedge()] = l;
+            length_sum                 += l;
+            ++count;
+        }
+    }
+    return length_sum / count;    
+}
+        
+        
+double mean_length_of_outoing_he ( Manifold& m, VertexID vertex )
+{
+    double length   = 0.0;
+    Vec3d  curr     = m.pos( vertex );
+    Walker w        = m.walker( vertex );
+    for ( ; !w.full_circle(); w = w.circulate_vertex_ccw( ))
+    {
+        length += ( curr - m.pos( w.vertex( ))).length();
+    }
+    length /= w.no_steps();
+    return  length;
+}
+
 
 
 

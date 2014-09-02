@@ -43,6 +43,10 @@ HMesh::HalfEdgeID   get_ring_vertices   ( HMesh::Manifold& m, HMesh::VertexID v0
                                           HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
                                           std::vector< HMesh::VertexID > &vertices,
                                           bool allow_junction = false );
+void                get_rings_from_pole ( HMesh::Manifold& m, HMesh::VertexID pole,
+                                          HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                                          std::vector<HMesh::HalfEdgeID> &rings,
+                                          int max_rings = -1 );
 
 HMesh::HalfEdgeID   find_half_edge      ( HMesh::Manifold& m, HMesh::VertexID v0, HMesh::VertexID v1);
 
@@ -59,6 +63,8 @@ HMesh::HalfEdgeID   BranchCutDirection  ( HMesh::Manifold& m, HMesh::VertexID,
         
 void                LabelJunctions      ( HMesh::Manifold& m,
                                           HMesh::HalfEdgeAttributeVector<EdgeInfo> &edge_info );
+        
+
         
 }}
 

@@ -137,7 +137,9 @@ GLenum glReportError (int where = -1)
         switch ([theEvent keyCode])
         {
                 // ### aggiunte da me ###
-//            case 30 :
+            case 46:
+                engine.setMesh( &me.active_mesh( ));
+                break;
             case 8:
                 engine.setMesh( &me.active_mesh( ));
                 engine.buildCube();
@@ -147,6 +149,25 @@ GLenum glReportError (int where = -1)
                 break;
             case 1 :
                 engine.polarSubdivision();
+                break;
+            case 2 :
+                engine.pickABranchAndScaleIt(0);
+                break;
+            case 3 :
+                engine.pickABranchAndScaleIt(1);
+                break;
+            case 4 :
+                engine.pickABranchAndScaleIt(2);
+                break;
+            case 5 :
+                engine.pickABranchAndScaleIt(3);
+                break;
+
+            case 11 :
+                engine.addRandomBranches();
+                break;
+            case 35 :
+                engine.perturbate();
                 break;
         }
     }

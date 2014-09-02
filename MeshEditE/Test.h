@@ -25,6 +25,8 @@ CGLA::Vec3d         simple_random_direction                 ( HMesh::Manifold& m
 CGLA::Vec3d         alt_simple_random_direction             ( HMesh::Manifold& m, HMesh::VertexID   v );
 CGLA::Vec3f         color_ramp                              ( int value, int max );
 CGLA::Vec3f         color_ramp2                             ( int value, int max );
+void                linspace                                ( double min, double max, int num,
+                                                             std::vector<double> &values);
 
 
 #endif /* defined(__MeshEditE__Test__) */

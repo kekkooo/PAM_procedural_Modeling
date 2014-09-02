@@ -252,14 +252,7 @@ void extrude_pole ( HMesh::Manifold& m, HMesh::VertexID v, double length,
     // if length is NaN calculate the average outgoing edge's length
     if( isnan(length) )
     {
-        length = 0.0;
-        Vec3d curr  = m.pos(v);
-        Walker w    = m.walker(v);
-        for (; !w.full_circle(); w = w.circulate_vertex_ccw())
-        {
-            length += ( curr - m.pos(w.vertex())).length();
-        }
-        length /= w.no_steps();
+        length = mean_length_of_outoing_he( m, v );
     }
     // move the vertex and store the list of the vertices that are added during the split
     // of the triangles fan

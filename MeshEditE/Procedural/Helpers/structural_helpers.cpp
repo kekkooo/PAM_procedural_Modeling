@@ -91,6 +91,27 @@ HalfEdgeID get_ring_vertices ( Manifold& m, VertexID v0, HalfEdgeAttributeVector
     return he;
 
 }
+        
+void get_rings_from_pole ( HMesh::Manifold& m, HMesh::VertexID pole,
+                           HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
+                           std::vector<HMesh::HalfEdgeID> &rings,
+                           int max_rings )
+{
+    if( !is_pole( m, pole )) return;
+    rings.clear();
+    int max_iter = max_rings < 0 ? numeric_limits<int>::max() : max_rings;
+    // get the starters
+    Walker w = m.walker( pole );
+    while( !edge_info[w.next().halfedge()].is_junction()
+        && !is_pole( m, w.vertex( )) && rings.size() < max_iter )
+    {
+        rings.push_back( w.next().halfedge() );
+        w = w.next().opp().next();
+    }
+
+    
+}
+
 
         
         

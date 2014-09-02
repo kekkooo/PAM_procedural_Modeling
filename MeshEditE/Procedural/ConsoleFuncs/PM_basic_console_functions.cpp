@@ -16,7 +16,7 @@
 //#include <regex>
 //#include <set>
 //#include <queue>
-//#include "Test.h"
+#include <GEL/HMesh/obj_save.h>
 #include "polarize.h"
 #include <MeshEditE/Procedural/Operations/basic_shapes.h>
 #include <MeshEditE/Procedural/Operations/Algorithms.h>
@@ -217,6 +217,21 @@ void console_test_print_vertex_info( MeshEditor *me, const std::vector< std::str
 }
 
 
+void console_test_save_to_results_folder( MeshEditor *me, const std::vector< std::string > &args )
+{
+    const string& file_name = args[0];
+    if(args.size() == 1){
+        if(file_name.substr(file_name.length()-4,file_name.length())==".obj")
+        {
+            stringstream oss;
+            oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results" << file_name;
+            obj_save(oss.str(), me->active_mesh());
+        }
+    }
+
+}
+
+
 namespace Procedural{
     namespace ConsoleFuncs{
 
@@ -263,11 +278,11 @@ void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)
       "test.print_vertex_info",
       console_test_print_vertex_info,
       "test.print_vertex_info"        );
-
     
-    
-
-
+    me->register_console_function(
+      "test.save_to_results_folder",
+      console_test_save_to_results_folder,
+      "test.save_to_results_folder"        );
 
 }
 

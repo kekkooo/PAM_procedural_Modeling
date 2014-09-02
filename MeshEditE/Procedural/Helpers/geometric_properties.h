@@ -60,7 +60,9 @@ void                dihedral_angles                         ( HMesh::Manifold& m
 
 double              angle                                   ( CGLA::Vec3d l, CGLA::Vec3d r );
 double              dihedral_angle                          ( CGLA::Vec3d a, CGLA::Vec3d b, CGLA::Vec3d c, CGLA::Vec3d d );
-
+double              edge_length                             ( HMesh::Manifold& m,
+                                                              HMesh::HalfEdgeAttributeVector<double> lengths );
+double              mean_length_of_outoing_he               ( HMesh::Manifold& m, HMesh::VertexID vertex );
 
 
 

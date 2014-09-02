@@ -4,3 +4,23 @@
 *.xcuserstate
 
 *.xcbkptlist
+
+*.pbxproj
+
+*.xcuserstate
+
+*.xcexplist
+
+*.xcbkptlist
+
+*.xcscheme
+
+MeshEditE.xcodeproj/xcuserdata/francescousai.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
+
+MeshEditE.xcodeproj/xcuserdata/francescousai.xcuserdatad/xcschemes/MeshEditE.xcscheme
+
+MeshEditE.xcodeproj/project.xcworkspace/xcuserdata/francescousai.xcuserdatad/xcdebugger/Expressions.xcexplist
+
+MeshEditE.xcodeproj/project.xcworkspace/xcuserdata/francescousai.xcuserdatad/UserInterfaceState.xcuserstate
+
+MeshEditE.xcodeproj/project.pbxproj
