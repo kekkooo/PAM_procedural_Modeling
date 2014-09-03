@@ -13,6 +13,7 @@
 #include <polarize.h>
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+#include <unordered_set>
 
 
 using namespace std;
@@ -37,7 +38,8 @@ struct PolesList
 {
 private:
     vector< VertexID >                  poles;
-    vector< int >                       pole_valency;
+    map< VertexID, int >                pole_valency;
+    map< VertexID, int >                pole_age;
     bool                                is_valid;
     size_t                              no_poles;
     // operations
@@ -62,26 +64,47 @@ public:
            int                  const   PoleValency( VertexID pole )
     {
         assert( IsPole( pole ));
-        return pole_valency[ indexOfPole( pole ) ];
+        return pole_valency[pole];
     }
     inline int                  const   MeanPoleValency()
     {
         int sum = 0;
-        for( int v : pole_valency ) { sum += v; }
+        for( auto v : pole_valency ) { sum += v.second; }
         return sum/No_Poles();
+    }
+    inline int                  const   PoleAge( VertexID pole )
+    {
+        assert( IsPole(pole));
+        return pole_age[pole];
     }
     
     // updates the pole list with the input mesh
     void Update( Manifold *mesh, bool evenIfIsValid = false )
     {
         if( is_valid && !evenIfIsValid ) return;
-        poles.clear();
         for( VertexID vid : mesh->vertices() )
         {
+            // if is a pole for the mesh
             if( is_pole( *mesh, vid ))
             {
-                poles.push_back( vid );
-                pole_valency.push_back( valency( *mesh, vid ));
+                // it was a pole in the last iteration
+                if( IsPole( vid ))  { pole_age[vid]++;   }
+                else
+                {
+                    poles.push_back( vid );
+                    pole_age[vid] = 0;
+                }
+                pole_valency[vid] = valency( *mesh, vid );
+            }
+            else
+            {
+                if( IsPole( vid ))
+                {
+                    // if it was a pole in the last iteration, but it is not anymore
+                    poles.erase( std::find( poles.begin(), poles.end(), vid) );
+                    pole_valency.erase( vid );
+                    pole_age.erase( vid );
+                }
             }
         }
         is_valid = true;

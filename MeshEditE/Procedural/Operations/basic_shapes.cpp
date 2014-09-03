@@ -28,7 +28,6 @@ void create_cube_vertices( double edge_length, vector<Vec3d> &vertices )
     vertices[7] = Vec3d( plus, minus, plus );
 }
 
-
 namespace Procedural{
     namespace Operations{
 
@@ -47,7 +46,27 @@ void create_cube_vertices( double edge_length, vector<Vec3f> &vertices )
     vertices[6] = Vec3f( plus, minus, minus );
     vertices[7] = Vec3f( plus, minus, plus );
 }
+        
+void create_box_vertices( double l1, double l2, double l3, vector<Vec3f> &vertices )
+{
+    float l1p = l1 / 2;
+    float l2p = l2 / 2;
+    float l3p = l3 / 2;
+    float l1m = -l1p;
+    float l2m = -l2p;
+    float l3m = -l3p;
+    // initialize points
+    vertices[0] = Vec3f( l1m, l2p, l3p );
+    vertices[1] = Vec3f( l1m, l2p, l3m );
+    vertices[2] = Vec3f( l1p, l2p, l3m );
+    vertices[3] = Vec3f( l1p, l2p, l3p );
+    vertices[4] = Vec3f( l1m, l2m, l3p );
+    vertices[5] = Vec3f( l1m, l2m, l3m );
+    vertices[6] = Vec3f( l1p, l2m, l3m );
+    vertices[7] = Vec3f( l1p, l2m, l3p );
+}
 
+        
 // Creates a cube with little piramids (with squared foot) instead of top and bottom face
 // One of the simplest PAMs
 void create_basic_PAM( HMesh::Manifold& m, double edge_length )
@@ -154,6 +173,43 @@ void create_quads_cube( HMesh::Manifold& m, double edge_length )
     // BOTTOM
     indices[20] = 7;    indices[21] = 4;    indices[22] = 5;    indices[23] = 6;
     
+    m.build( vertices.size( ), reinterpret_cast< float * >( &vertices[0] ),
+            faces.size( ), &faces[0], &indices[0] );
+}
+        
+        
+void create_PAM_box ( HMesh::Manifold& m, double l1, double l2, double l3 )
+{
+    vector< Vec3f > vertices( 10 );
+    vector< int >   faces   ( 12, 3 );
+    vector< int >   indices ( 40 );
+    create_box_vertices( l1, l2, l3, vertices );
+    
+    // add the pole vertices;
+    vertices[8] = Vec3f(( 2.0 * l1 / 3.0 ), 0.0, 0.0 );
+    vertices[9] = Vec3f(( -2.0 * l1 / 3.0 ), 0.0, 0.0 );
+    
+    faces[0] = 4;   faces[1] = 4;   faces[2] = 4;   faces[3] = 4;
+    
+    // TOP
+    indices[0]  = 0;    indices[1]  = 3;    indices[2]  = 2;    indices[3]  = 1;
+    // BACK
+    indices[4]  = 1;    indices[5]  = 2;    indices[6]  = 6;    indices[7]  = 5;
+    // FRONT
+    indices[8]  = 3;    indices[9]  = 0;    indices[10] = 4;    indices[11] = 7;
+    // BOTTOM
+    indices[12] = 4;    indices[13] = 5;    indices[14] = 6;    indices[15] = 7;
+    // left pole
+    indices[16] = 9;    indices[17] = 0;    indices[18] = 1;
+    indices[19] = 9;    indices[20] = 4;    indices[21] = 0;
+    indices[22] = 9;    indices[23] = 5;    indices[24] = 4;
+    indices[25] = 9;    indices[26] = 1;    indices[27] = 5;
+    // lower pole
+    indices[28] = 8;    indices[29] = 2;    indices[30] = 3;
+    indices[31] = 8;    indices[32] = 3;    indices[33] = 7;
+    indices[34] = 8;    indices[35] = 7;    indices[36] = 6;
+    indices[37] = 8;    indices[38] = 6;    indices[39] = 2;
+  
     m.build( vertices.size( ), reinterpret_cast< float * >( &vertices[0] ),
             faces.size( ), &faces[0], &indices[0] );
 }

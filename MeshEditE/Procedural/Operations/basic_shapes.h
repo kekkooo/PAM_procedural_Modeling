@@ -19,6 +19,7 @@ namespace Operations
     void    create_triangle_cube    ( HMesh::Manifold& m, double edge_length    );
     void    create_quads_cube       ( HMesh::Manifold& m, double edge_length    );
     void    create_basic_PAM        ( HMesh::Manifold& m, double edge_length    );
+    void    create_PAM_box          ( HMesh::Manifold& m, double l1, double l2, double l3 );
 }
 }
 

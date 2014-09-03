@@ -14,6 +14,7 @@
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <GEL/CGLA/CGLA.h>
 #include <MeshEditE/Test.h>
+#include <set>
 
 using namespace Procedural::Operations;
 using namespace Procedural::Operations::Geometric;
@@ -51,7 +52,8 @@ namespace Procedural
     void Engine::buildCube()
     {        
         invalidateAll();
-        Procedural::Operations::create_basic_PAM( *m, 0.5 );
+//        Procedural::Operations::create_basic_PAM( *m, 0.5 );
+        Procedural::Operations::create_PAM_box( *m, 3.0, 1.0, 2.0 );
         _polesList.Update( m );
     }
     
@@ -175,6 +177,9 @@ namespace Procedural
         CGLA::gel_rand();
         
         std::cout << "there are  " << _polesList.No_Poles() << " branches " << endl;
+        // save current poles, in order to find which were added.
+        size_t  old_size = _polesList.No_Poles();
+
         int count = 0;
         for( VertexID vid : m->vertices() )
         {
@@ -192,11 +197,22 @@ namespace Procedural
             }
             if ( count >= 5 ) break;
         }
+
+        if( count > 0)
+        {
         
-        std::cout << "added " << count << " branches " << endl;
-        _polesList.Update( m, true );
-        for( VertexID pole : _polesList.Poles() )
-            flatten_pole( *m, pole );
+            std::cout << "added " << count << " branches " << endl;
+            _polesList.Update( m, true );
+            
+            assert( _polesList.No_Poles() == old_size + count );
+            
+            for( VertexID pole : _polesList.Poles() )
+            {
+                // flatten only poles with age 0
+                if( _polesList.PoleAge( pole ) == 0)
+                    flatten_pole( *m, pole );
+            }
+        }
         
         std::cout << "now there are  " << _polesList.No_Poles() << " branches " << endl;
         
