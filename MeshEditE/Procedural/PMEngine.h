@@ -56,6 +56,10 @@ private :
     PoleTracking            _pole_tracking;
 
     HMesh::VertexAttributeVector<int> vertex_selection;
+    
+    // maybe it will not be needed anymore
+    map< VertexID, PoleTrajectory > trajectories;
+    //
 
     
     inline  void        invalidatePolesList()       { _polesList.Invalidate(); }

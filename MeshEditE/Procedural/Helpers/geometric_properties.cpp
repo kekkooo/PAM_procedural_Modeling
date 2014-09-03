@@ -179,7 +179,7 @@ double dihedral_angle ( Vec3d a, Vec3d b, Vec3d c, Vec3d d )
         cout << d << endl;
     }
     
-    assert( !isnan( limit_cs ));
+//    assert( !isnan( limit_cs ));
     //
 
     

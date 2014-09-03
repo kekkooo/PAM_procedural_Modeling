@@ -279,13 +279,33 @@ void extrude_pole( HMesh::Manifold&m, HMesh::VertexID v, Vec3d direction, bool a
 }
 
 
-void scale_ring_radius ( HMesh::Manifold& m, HMesh::HalfEdgeID h, double ratio )
+void scale_ring_radius ( HMesh::Manifold& m, HMesh::HalfEdgeID h, double ratio, bool smoothing )
 {
     vector< VertexID > vertices;
     Vec3d barycenter = ring_barycenter( m, h, vertices );
-    for( auto v : vertices)
+    if( smoothing )
     {
-        m.pos(v) = barycenter + ( m.pos( v ) - barycenter ) * ratio;
+        double max_radius = -1;
+        for( auto v : vertices)
+        {
+            double curr_radius = ( m.pos( v ) - barycenter ).length();
+            if( curr_radius > max_radius ) { max_radius = curr_radius; }
+        }
+        
+        for( auto v : vertices)
+        {
+            auto dir = m.pos(v) - barycenter;
+            double dir_len = dir.length();
+            dir.normalize();
+            m.pos(v) = barycenter + dir * (( dir_len + max_radius ) / 2 ) * ratio;
+        }
+    }
+    else
+    {
+        for( auto v : vertices)
+        {
+            m.pos(v) = barycenter + ( m.pos( v ) - barycenter ) * ratio;
+        }   
     }
 }
 

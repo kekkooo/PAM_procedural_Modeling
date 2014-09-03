@@ -257,7 +257,7 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
 
     vector< VertexID >      vs_pole2;
     vector< HalfEdgeID >    hes_pole2;
-    ring_vertices_and_halfedges( m, m.walker(pole2).next().halfedge(), vs_pole1, hes_pole2 );
+    ring_vertices_and_halfedges( m, m.walker(pole2).next().halfedge(), vs_pole2, hes_pole2 );
     assert(hes_pole1.size() == hes_pole2.size());
 
     // find adequate matchings between edges

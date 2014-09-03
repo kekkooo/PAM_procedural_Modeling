@@ -151,9 +151,9 @@ public:
     {
         if( is_valid && !evenIfIsValid ) return;
 
-        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), angles                );
-        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), spine_angles, SPINE   );
-        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), rib_angles,  RIB      );
+//        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), angles                );
+//        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), spine_angles, SPINE   );
+//        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), rib_angles,  RIB      );
 
         Procedural::Geometry::distance_from_poles               ( *mesh, edgeInfo.edgeInfo(), pole_dist             );
         Procedural::Geometry::distance_from_junctions           ( *mesh, edgeInfo.edgeInfo(), junction_dist         );
@@ -184,6 +184,15 @@ public:
         return matches[v];
     }
     inline void        AddMatch( VertexID v, VertexID match ) { matches[v] = match; }
+};
+        
+        
+struct PoleTrajectory
+{
+    int         no_calls;
+    CGLA::Vec3d current_dir;
+    double      total_length;
+    PoleTrajectory() { no_calls = 0; total_length = 0.0; }
 };
         
         

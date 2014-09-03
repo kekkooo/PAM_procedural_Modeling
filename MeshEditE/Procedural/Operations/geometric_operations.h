@@ -41,7 +41,7 @@ vector< HMesh::VertexID >   split_from_pole_to_pole ( HMesh::Manifold& m, HMesh:
 
 
 void                        scale_ring_radius       ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
-                                                      double ratio );
+                                                      double ratio, bool smoothing = false );
 void                        set_ring_radius         ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
                                                       double radius );
 void                        set_ring_radius         ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
