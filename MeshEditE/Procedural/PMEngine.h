@@ -33,6 +33,7 @@ public :
             void        extrudePoles                    ( );
             void        polarSubdivision                ( );
             void        perturbate                      ( );
+            void        smooth_near_junctions           ();
 
     
 // THE FUNCTIONS ENCLOSED INTO BETWEEN THOSE TWO COMMENTS MUST REPLACED

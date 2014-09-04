@@ -34,6 +34,13 @@ namespace Procedural
         invalidateEdgeInfo();
         invalidatePolesList();
         invalidateGeometricInfo();
+        if(m)
+        {
+            CGLA::gel_srand( m->no_vertices()) ;
+            CGLA::gel_srand( m->no_faces() );
+            CGLA::gel_srand( m->no_halfedges() );
+        }
+
     }
     
     void Engine::buildCleanSelection()
@@ -60,6 +67,7 @@ namespace Procedural
     void Engine::setMesh(HMesh::Manifold *mesh)
     {
         m = mesh;
+        invalidateAll();
         _polesList.Update( m, true );
         _edges_info_container.Update( m, true, true );
         _geometric_info.Update( m, _edges_info_container );
@@ -127,36 +135,79 @@ namespace Procedural
                 trajectories[pole_id].no_calls = 1;
             }
         }
-
+        m->cleanup();
         _edges_info_container.Update( m, true, true );
+
     }
     
     void Engine::polarSubdivision( )
     {
         polar_subdivide( *m, 1 );
+        m->cleanup();
         _edges_info_container.Update( m, true, true );
+
     }
     
     void Engine::perturbate()
     {
-        _polesList.Update(m);
+        _polesList.Update( m, true);
         _edges_info_container.Update( m, true, true );
         _geometric_info.Update( m, _edges_info_container );
         
         vector< VertexID >  selected;
-        int                 distance = m->no_vertices() / ( _polesList.MeanPoleValency() * _polesList.No_Poles());
+        vector< double >    per_vertex_ratio;
+        int                 distance = (int) ( log2( _polesList.No_Poles( )) + log2( _polesList.MeanPoleValency( )));
+        // ratio should be calculeted per vertex, accordingly to the region rib_edge_loop radius
         double              ratio    = 0.2;
-        double              cutoff   = _geometric_info.MeanLength();
+        double              avg_length   = _geometric_info.MeanLength();
         cout << "adding noise with distance " << distance << endl;
         
         for( VertexID vid : m->vertices() )
         {
+            assert(vid != InvalidVertexID);
+
             if ( _geometric_info.CombinedDistance()[vid].first > distance )
+            {
+                // here is possible to optimize things!
+                double mean_radius = ring_mean_radius( *m, get_first_rib_edge
+                                                      ( *m, vid, _edges_info_container.edgeInfo( )));
+                double alt_ratio   = ( mean_radius / _geometric_info.MeanLength() ) / 10.0;
+//                cout << " alt ratio is : " << alt_ratio << " from mean radius : " << mean_radius << "and mean edge length : " << _geometric_info.MeanLength() << endl;
+                selected.push_back( vid );
+                per_vertex_ratio.push_back( alt_ratio );
+            }
+        }
+//        add_perpendicular_noise( *m, selected, ratio, avg_length );
+        add_perpendicular_noise( *m, selected, per_vertex_ratio, avg_length );
+    }
+   
+    
+    void Engine::smooth_near_junctions()
+    {
+        _polesList.Update( m, true);        
+        if (_polesList.No_Poles() <= 2 ) return; // there are no junctions
+        
+        
+        _edges_info_container.Update( m, true, true );
+        _geometric_info.Update( m, _edges_info_container );
+        
+        vector< VertexID >  selected;
+        //        size_t              distance = ( m->no_vertices() ) / ( _polesList.MeanPoleValency() * _polesList.No_Poles());
+        int              distance = (int) ( log2( _polesList.No_Poles( )) + log2( _polesList.MeanPoleValency( )));
+        // ratio should be calculeted per vertex, accordingly to the region rib_edge_loop radius
+        cout << "adding noise with distance " << distance << endl;
+        
+        for( VertexID vid : m->vertices() )
+        {
+            assert(vid != InvalidVertexID);
+            if ( _geometric_info.CombinedDistance()[vid].first < distance )
             {
                 selected.push_back( vid );
             }
         }
-        add_noise( *m, VertexType::REGULAR, ratio, cutoff, selected );
+        //        add_noise( *m, VertexType::REGULAR, ratio, cutoff, selected );
+        Procedural::Operations::Algorithms::selected_vertices_inverse_distance_laplacian(*m, selected);
+
     }
     
     
@@ -168,10 +219,8 @@ namespace Procedural
         _edges_info_container.Update( m, true, true );
         _geometric_info.Update(m, _edges_info_container, true );
         
-        int distance_limit  = 10;
-        int branch_size     =  ( CGLA::gel_rand() % 3 ) + 2;
+        int max_new_branches = (int) log2(_polesList.No_Poles( ));
         
-        CGLA::gel_srand(0);
         CGLA::gel_rand();
         CGLA::gel_rand();
         CGLA::gel_rand();
@@ -179,30 +228,53 @@ namespace Procedural
         std::cout << "there are  " << _polesList.No_Poles() << " branches " << endl;
         // save current poles, in order to find which were added.
         size_t  old_size = _polesList.No_Poles();
+        bool there_are_junctions = _polesList.No_Poles() > 2;
 
         int count = 0;
         for( VertexID vid : m->vertices() )
         {
             if( _polesList.IsPole( vid )) continue;
             int p = CGLA::gel_rand() % 200;
+            
+            cout << " p is : " << p << endl;
+            
             if( p == 100 ) // it does not mean too much but should work
             {
+                int distance_limit   = (int) ( log2( _polesList.No_Poles( )) + log2( _polesList.MeanPoleValency( )));
+                int branch_size      =  ( CGLA::gel_rand() % 3 ) + 2; // this should depend on the branch thickness
+                
+                cout << _polesList.No_Poles() << " branches. mean valence is : " << _polesList.MeanPoleValency() <<
+                     " you are using distance limit : " << distance_limit << " with branch size : " << branch_size << endl;
+                
 //                if( _geometric_info.CombinedDistance()[vid].first > distance_limit )
-                if( _geometric_info.CombinedDistance()[vid].first > distance_limit )
+                if( there_are_junctions )
                 {
-                    buildCleanSelection();
-                    add_branch( *m, vid, branch_size, vertex_selection );
-                    ++count;
+                    
+                    if( _geometric_info.JunctionDistance()[vid].first > distance_limit )
+                    {
+                        buildCleanSelection();
+                        add_branch( *m, vid, branch_size, vertex_selection );
+                        ++count;
+                    }
+                }
+                else
+                {
+                    if( _geometric_info.PoleDistance()[vid].first > distance_limit * branch_size )
+                    {
+                        buildCleanSelection();
+                        add_branch( *m, vid, branch_size, vertex_selection );
+                        ++count;
+                    }
                 }
             }
-            if ( count >= 5 ) break;
+            if ( count >= max_new_branches ) break;
         }
 
         if( count > 0)
         {
-        
             std::cout << "added " << count << " branches " << endl;
             _polesList.Update( m, true );
+            std::cout << "now there are  " << _polesList.No_Poles() << " branches " << endl;
             
             assert( _polesList.No_Poles() == old_size + count );
             
@@ -212,11 +284,13 @@ namespace Procedural
                 if( _polesList.PoleAge( pole ) == 0)
                     flatten_pole( *m, pole );
             }
+            
+            m->cleanup();
         }
-        
-        std::cout << "now there are  " << _polesList.No_Poles() << " branches " << endl;
-        
     }
+    
+    // should have be done better,
+    // but I need a proportional scaling along the branches' rib edge loops
     void Engine::pickABranchAndScaleIt( int mode )
     {
         _polesList.Update( m );
@@ -288,9 +362,6 @@ namespace Procedural
                     break;
             }
         }
-
-        
-
     }
     
     

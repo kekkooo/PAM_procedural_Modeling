@@ -68,7 +68,6 @@ void add_noise_to_vertex( Manifold& m, VertexID vid, int vertex_type_flags, doub
     }
 }
 
-
 void add_noise ( HMesh::Manifold& m, int vertex_type_flags, double ratio, double cutoff,
                  vector< VertexID > vertices )
 {
@@ -85,10 +84,53 @@ void add_noise ( HMesh::Manifold& m, int vertex_type_flags, double ratio, double
     {
         add_noise_to_vertex(m, vid, vertex_type_flags, ratio, cutoff );
     }
-
 }
+            
+void add_perpendicular_noise ( Manifold& m, vector< VertexID > vertices,
+                               double amplitude, double avg_edge_length )
+{
+    VertexAttributeVector< Vec3d > normals;
+    for(int i = 0; i < vertices.size(); ++i )
+    {
+        assert( vertices[i] != InvalidVertexID );
+        auto n = vertex_normal( m, vertices[i] );
+        n.normalize();
+        normals[vertices[i]] = n;
+    }
+//    gel_srand(0);
 
-
+    for(int i = 0; i < vertices.size(); ++i )
+    {
+        float rval = 0.5 - gel_rand() / float(GEL_RAND_MAX);
+        Vec3d dir = normals[vertices[i]] * rval * amplitude * avg_edge_length * 2.0;
+//        cout << " moving vertex with " << dir << " norm : " << dir.length() << endl;
+        move_vertex( m, vertices[i], dir );
+    }
+}
+            
+void add_perpendicular_noise ( HMesh::Manifold& m, vector< HMesh::VertexID > vertices,
+                               vector< double > per_vertex_amplitude, double avg_edge_length )
+{
+    vector< Vec3d >  normals;
+    for( VertexID vid : vertices)
+    {
+        Vec3d n = vertex_normal( m, vid );
+        normals.push_back( n );
+    }
+    
+    gel_srand(0);
+    
+    size_t normals_size = normals.size();
+    for(int i = 0; i < normals_size; ++i )
+    {
+        float rval = 0.5 - gel_rand() / float(GEL_RAND_MAX);
+        cout << normals[i].length() << " # " << per_vertex_amplitude[i] << " # " << avg_edge_length << " # " << endl;
+        Vec3d dir = normals[i] * rval * per_vertex_amplitude[i] * avg_edge_length * 2.0;
+        move_vertex( m, vertices[i], dir );
+    }
+}
+    
+            
 // h must be a spine edge. Splits the specified half edge and all of it "parallel" edges,
 // that are all the edges reachable as current_he.next().next().opp()
 vector< VertexID > split_ring_of_quads( HMesh::Manifold& m, HMesh::HalfEdgeID h )
@@ -286,18 +328,26 @@ void scale_ring_radius ( HMesh::Manifold& m, HMesh::HalfEdgeID h, double ratio, 
     if( smoothing )
     {
         double max_radius = -1;
+        vector< double > radii;
         for( auto v : vertices)
         {
             double curr_radius = ( m.pos( v ) - barycenter ).length();
             if( curr_radius > max_radius ) { max_radius = curr_radius; }
+            radii.push_back( curr_radius );
         }
         
-        for( auto v : vertices)
+        size_t no_vs = vertices.size();
+        for ( size_t i = 0; i < no_vs; ++i)
         {
-            auto dir = m.pos(v) - barycenter;
-            double dir_len = dir.length();
+            auto dir = m.pos( vertices[i] ) - barycenter;
             dir.normalize();
-            m.pos(v) = barycenter + dir * (( dir_len + max_radius ) / 2 ) * ratio;
+
+//            double result_length = (( radii[i] + max_radius ) / 2 ) * ratio;
+            double result_length =
+                (( 2 * radii[ ( i - 1 ) % no_vs ] + 2 * radii[i]
+                 + 2 * radii[ ( i + 1 ) % no_vs ] + max_radius ) / 7 ) * ratio;
+            
+            m.pos( vertices[i] ) = barycenter + dir * result_length;
         }
     }
     else

@@ -79,7 +79,7 @@ public:
     }
     
     // updates the pole list with the input mesh
-    void Update( Manifold *mesh, bool evenIfIsValid = false )
+    void Update( Manifold *mesh, bool evenIfIsValid = true )
     {
         if( is_valid && !evenIfIsValid ) return;
         for( VertexID vid : mesh->vertices() )
@@ -126,11 +126,11 @@ public:
     inline void                                       Invalidate()  { is_valid = false; }
     
     // updates the pole list with the input mesh
-    void Update( Manifold *mesh, bool also_junctions = false, bool evenIfIsValid = false )
+    void Update( Manifold *mesh, bool also_junctions = true, bool evenIfIsValid = true )
     {
-        if( is_valid && !evenIfIsValid ) return;
+//        if( is_valid && !evenIfIsValid ) return;
         edge_info = label_PAM_edges( *mesh );
-        if( also_junctions )
+//        if( also_junctions )
             Procedural::Structure::LabelJunctions( *mesh, edge_info );
         is_valid = true;
     }
@@ -174,13 +174,13 @@ public:
     {
         if( is_valid && !evenIfIsValid ) return;
 
-//        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), angles                );
-//        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), spine_angles, SPINE   );
-//        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), rib_angles,  RIB      );
+        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), angles                 );
+        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), spine_angles,  SPINE   );
+        Procedural::Geometry::dihedral_angles                   ( *mesh, edgeInfo.edgeInfo(), rib_angles,    RIB     );
 
-        Procedural::Geometry::distance_from_poles               ( *mesh, edgeInfo.edgeInfo(), pole_dist             );
-        Procedural::Geometry::distance_from_junctions           ( *mesh, edgeInfo.edgeInfo(), junction_dist         );
-        Procedural::Geometry::distance_from_poles_and_junctions ( *mesh, edgeInfo.edgeInfo(), combined_dist         );
+        Procedural::Geometry::distance_from_poles               ( *mesh, edgeInfo.edgeInfo(), pole_dist,     false   );
+        Procedural::Geometry::distance_from_junctions           ( *mesh, edgeInfo.edgeInfo(), junction_dist, false   );
+        Procedural::Geometry::distance_from_poles_and_junctions ( *mesh, edgeInfo.edgeInfo(), combined_dist, false   );
         UpdateEdgeLengths ( *mesh );
         is_valid = true;
     }

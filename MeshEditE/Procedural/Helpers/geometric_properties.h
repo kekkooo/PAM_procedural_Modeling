@@ -29,6 +29,8 @@ CGLA::Vec3d         ring_barycenter                         ( HMesh::Manifold& m
 CGLA::Vec3d         ring_barycenter                         ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
                                                              std::vector< HMesh::VertexID > &vertices,
                                                              std::vector< HMesh::HalfEdgeID > &halfedges);
+double              ring_mean_radius                        ( HMesh::Manifold& m, HMesh::HalfEdgeID h, std::map< HMesh::VertexID, double> &radii );
+double              ring_mean_radius                        ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
 
 void                ring_vertices_and_halfedges             ( HMesh::Manifold& m, HMesh::HalfEdgeID h,
                                                              std::vector< HMesh::VertexID > &vertices,
@@ -41,13 +43,16 @@ bool                is_2_neighbor_of_pole                   ( HMesh::Manifold& m
 // must have calld label junction on edge_info
 void                distance_from_poles                     ( HMesh::Manifold& m,
                                                               HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
-                                                              HMesh::VertexAttributeVector<DistanceMetrics> &distances );
+                                                              HMesh::VertexAttributeVector<DistanceMetrics> &distances,
+                                                              bool debug_colors = true );
 void                distance_from_junctions                 ( HMesh::Manifold& m,
                                                               HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
-                                                              HMesh::VertexAttributeVector<DistanceMetrics> &distances );
+                                                              HMesh::VertexAttributeVector<DistanceMetrics> &distances,
+                                                              bool debug_colors = true );
 void                distance_from_poles_and_junctions       ( HMesh::Manifold& m,
                                                               HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
-                                                              HMesh::VertexAttributeVector<DistanceMetrics> &distances );
+                                                              HMesh::VertexAttributeVector<DistanceMetrics> &distances,
+                                                              bool debug_colors = true );
         
 void                dihedral_angles                         ( HMesh::Manifold& m,
                                                              HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,

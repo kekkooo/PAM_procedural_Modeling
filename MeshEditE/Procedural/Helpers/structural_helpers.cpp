@@ -109,6 +109,7 @@ void get_rings_from_pole ( HMesh::Manifold& m, HMesh::VertexID pole,
         w = w.next().opp().next();
     }
 
+    rings.push_back( w.next().halfedge() );
     
 }
 
