@@ -425,6 +425,11 @@ void distance_from_junctions ( Manifold& m, const HalfEdgeAttributeVector<EdgeIn
             }
         }
     }
+    if( ds.size() == 0 )
+    {
+        int a = 0;
+        cout << a++;
+    }
 }
         
 void distance_from_poles_and_junctions ( Manifold& m,

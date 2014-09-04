@@ -137,7 +137,7 @@ public:
     void UpdateWithJunctions( Manifold *mesh )
     {
         if( !is_valid ) Update( mesh, true );
-        else Procedural::Structure::LabelJunctions( *mesh, edge_info );
+        Procedural::Structure::LabelJunctions( *mesh, edge_info );
     }        
 };
         
