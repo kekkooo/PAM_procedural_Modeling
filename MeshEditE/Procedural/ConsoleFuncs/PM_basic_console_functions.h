@@ -20,6 +20,7 @@ namespace Procedural{
     
     void register_basic_console_funcs(GLGraphics::MeshEditor* me);
     void register_algorithm_console_funcs(GLGraphics::MeshEditor* me);
+    void register_match_console_funcs(GLGraphics::MeshEditor* me);
 
 }}
 

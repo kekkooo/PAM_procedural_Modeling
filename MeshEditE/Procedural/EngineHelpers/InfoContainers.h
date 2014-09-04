@@ -213,6 +213,8 @@ public:
 struct PoleTrajectory
 {
     int         no_calls;
+    int d1;
+    int d2;
     CGLA::Vec3d current_dir;
     double      total_length;
     PoleTrajectory() { no_calls = 0; total_length = 0.0; }

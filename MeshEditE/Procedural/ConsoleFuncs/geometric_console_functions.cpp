@@ -354,7 +354,7 @@ void console_test_perturbation_distance_based( MeshEditor *me, const std::vector
     
     for( VertexID vid : m.vertices() )
     {
-        if ( distances[vid].first > distance ) { selected.push_back( vid ); }
+        if ( distances[vid] > distance ) { selected.push_back( vid ); }
     }
     
     cout << " moving " << selected.size() << " on " << m.no_vertices() << " with distance " << distance << endl;
@@ -452,7 +452,7 @@ void console_test_smooth_on_distance( MeshEditor *me, const std::vector< std::st
     
     for( VertexID vid : m.vertices() )
     {
-        if ( distances[vid].first < distance ) { selected.push_back( vid ); }
+        if ( distances[vid] < distance ) { selected.push_back( vid ); }
     }
     
     selected_vertices_cotangent_weights_laplacian( m, selected );

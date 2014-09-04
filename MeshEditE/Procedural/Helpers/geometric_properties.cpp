@@ -232,7 +232,7 @@ void distance_from_poles ( Manifold& m, const HalfEdgeAttributeVector<EdgeInfo> 
         VertexID curr = poles.front();
         poles.pop();
         //  set 0 the distance
-        ds[curr] = make_pair( current_distance, 0 );
+        ds[curr] = current_distance;
         //  current_distance++
         current_distance++;
     //  take the pole 1 ring - and set the distance to current_distance.
@@ -251,13 +251,13 @@ void distance_from_poles ( Manifold& m, const HalfEdgeAttributeVector<EdgeInfo> 
                 //          set the distance to current_distance
                 if( ds.count(v) == 0 )
                 {
-                    ds[v] = make_pair( current_distance, 0 );
+                    ds[v] = current_distance;
                 }
                 if( ds.count(v) >  0 )
                 {
-                    if(  ds[v].first > current_distance )
+                    if(  ds[v] > current_distance )
                     {
-                        ds[v] = make_pair( current_distance, 0 );
+                        ds[v] = current_distance;
                     }
                 }
             }
@@ -292,18 +292,18 @@ void distance_from_poles ( Manifold& m, const HalfEdgeAttributeVector<EdgeInfo> 
                 if ( is_pole(m, lw.vertex( )))
                 {
                     if( !(ds.count( *vit ) > 0 ))
-                       ds[*vit] = DistanceMetrics( current_distance, 0.0);
+                        ds[*vit] = current_distance;
                     else
                     {
-                        if( ds[*vit].first > current_distance )
+                        if( ds[*vit] > current_distance )
                         {
-                            ds[*vit].first = current_distance;
+                            ds[*vit] = current_distance;
                         }
                     }
                 }
             }
         }
-        if( ds[*vit].first > max_dist ) max_dist = ds[*vit].first;
+        if( ds[*vit] > max_dist ) max_dist = ds[*vit];
         distances[*vit] = ds[*vit];
     }
     
@@ -315,10 +315,10 @@ void distance_from_poles ( Manifold& m, const HalfEdgeAttributeVector<EdgeInfo> 
             assert( m.in_use( *vit ));
             assert( ds.count( *vit ) > 0 );
             
-            if( is_pole(m, *vit )) assert( ds[*vit].first == 0 );
+            if( is_pole(m, *vit )) assert( ds[*vit] == 0 );
             
 
-            Vec3f color = color_ramp(ds[*vit].first, max_dist);
+            Vec3f color = color_ramp(ds[*vit], max_dist);
             DebugRenderer::vertex_colors[*vit] = color;
             Walker w = m.walker(*vit);
             for(; !w.full_circle(); w = w.circulate_vertex_ccw())
@@ -354,17 +354,17 @@ void distance_from_junctions ( Manifold& m, const HalfEdgeAttributeVector<EdgeIn
         
         Walker w = m.walker( heid );
         if ( ds.count(w.vertex()) == 0 )
-            ds[w.vertex()] = DistanceMetrics( current_distance, 0.0 );
+            ds[w.vertex()] = current_distance;
         
         do{
             current_distance++;
             auto vid = w.next().vertex();
             if ( ds.count( vid ) == 0 )
-                ds[ vid ] = DistanceMetrics( current_distance, 0.0 );
+                ds[ vid ] = current_distance;
             else
             {
-                if( ds[vid].first > current_distance )
-                    ds[vid].first = current_distance;
+                if( ds[vid] > current_distance )
+                    ds[vid] = current_distance;
             }
             // move to the next rib edege loop
             w = w.next().next().opp();
@@ -373,7 +373,7 @@ void distance_from_junctions ( Manifold& m, const HalfEdgeAttributeVector<EdgeIn
              && !edge_info[ w.next().next().halfedge() ].is_junction() );
         
         if( is_pole(m, w.next().vertex( )))
-            ds[ w.next().vertex( ) ] = DistanceMetrics( current_distance, 0.0 );
+            ds[ w.next().vertex( ) ] = current_distance;
     }
     
     // all the following stuff is meaningful only if the mesh has junctions
@@ -390,9 +390,9 @@ void distance_from_junctions ( Manifold& m, const HalfEdgeAttributeVector<EdgeIn
             }
             else
             {
-                max_dist = max_dist < ds[*vit].first ? ds[*vit].first : max_dist;
+                max_dist = max_dist < ds[*vit] ? ds[*vit] : max_dist;
             }
-
+            distances[*vit] = ds[*vit];
         }
         //
 
@@ -406,7 +406,7 @@ void distance_from_junctions ( Manifold& m, const HalfEdgeAttributeVector<EdgeIn
                 assert( m.in_use( *vit ));
                 assert( ds.count( *vit ) > 0 );
                 
-                Vec3f color = color_ramp(ds[*vit].first, max_dist);
+                Vec3f color = color_ramp(ds[*vit], max_dist);
                 DebugRenderer::vertex_colors[*vit] = color;
                 Walker w = m.walker(*vit);
                 for(; !w.full_circle(); w = w.circulate_vertex_ccw())
@@ -424,11 +424,6 @@ void distance_from_junctions ( Manifold& m, const HalfEdgeAttributeVector<EdgeIn
                 }
             }
         }
-    }
-    if( ds.size() == 0 )
-    {
-        int a = 0;
-        cout << a++;
     }
 }
         
@@ -449,24 +444,24 @@ void distance_from_poles_and_junctions ( Manifold& m,
         
         Walker w = m.walker( heid );
         if ( ds.count(w.vertex()) == 0 )
-            ds[w.vertex()] = DistanceMetrics( current_distance, 0.0 );
+            ds[w.vertex()] = current_distance;
         
         do{
             current_distance++;
             auto vid = w.next().vertex();
             if ( ds.count( vid ) == 0 )
-                ds[ vid ] = DistanceMetrics( current_distance, 0.0 );
+                ds[ vid ] = current_distance;
             else
             {
-                if( ds[vid].first > current_distance )
-                    ds[vid].first = current_distance;
+                if( ds[vid] > current_distance )
+                    ds[vid] = current_distance;
             }
             w = w.next().next().opp();
         }while( !is_pole(m, w.next().vertex())
                && !edge_info[ w.next().next().halfedge()].is_junction() );
         
         if( is_pole(m, w.next().vertex( )))
-            ds[ w.next().vertex( ) ] = DistanceMetrics( current_distance, 0.0 );
+            ds[ w.next().vertex( ) ] = current_distance;
     }
     
     // add distances from poles
@@ -480,7 +475,7 @@ void distance_from_poles_and_junctions ( Manifold& m,
         int current_distance = 0;
         
         //  set 0 the distance
-        ds[curr] = make_pair( current_distance, 0 );
+        ds[curr] = current_distance;
         //  current_distance++
         current_distance++;
         //  take the pole 1 ring - and set the distance to current_distance.
@@ -499,13 +494,13 @@ void distance_from_poles_and_junctions ( Manifold& m,
                 //          set the distance to current_distance
                 if( ds.count(v) == 0 )
                 {
-                    ds[v] = make_pair( current_distance, 0 );
+                    ds[v] = current_distance;
                 }
                 if( ds.count(v) >  0 )
                 {
-                    if(  ds[v].first > current_distance )
+                    if(  ds[v] > current_distance )
                     {
-                        ds[v] = make_pair( current_distance, 0 );
+                        ds[v] = current_distance;
                     }
                 }
             }
@@ -529,7 +524,7 @@ void distance_from_poles_and_junctions ( Manifold& m,
         }
         else
         {
-            max_dist = max_dist < ds[*vit].first ? ds[*vit].first : max_dist;
+            max_dist = max_dist < ds[*vit] ? ds[*vit] : max_dist;
         }
         distances[*vit] = ds[*vit];
         
@@ -544,7 +539,7 @@ void distance_from_poles_and_junctions ( Manifold& m,
             assert( m.in_use( *vit ));
             assert( ds.count( *vit ) > 0 );
             
-            Vec3f color = color_ramp(ds[*vit].first, max_dist);
+            Vec3f color = color_ramp(ds[*vit], max_dist);
             DebugRenderer::vertex_colors[*vit] = color;
             Walker w = m.walker(*vit);
             for(; !w.full_circle(); w = w.circulate_vertex_ccw())

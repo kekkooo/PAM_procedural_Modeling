@@ -338,6 +338,7 @@ GLenum glReportError (int where = -1)
     engine.setMesh( &me.active_mesh( ));
     register_console_funcs(&me);
     // procedural modeling extensions.
+    Procedural::ConsoleFuncs::register_match_console_funcs(&me);
     Procedural::ConsoleFuncs::register_basic_console_funcs(&me);
     Procedural::ConsoleFuncs::register_algorithm_console_funcs(&me);
     Procedural::ConsoleFuncs::register_geometric_console_funcs(&me);

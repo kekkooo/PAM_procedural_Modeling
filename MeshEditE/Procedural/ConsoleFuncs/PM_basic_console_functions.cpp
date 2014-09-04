@@ -24,6 +24,7 @@
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <MeshEditE/Procedural/PMEngine.h>
+#include <MeshEditE/Procedural/Matches/Matches.h>
 
 
 using namespace GLGraphics;
@@ -204,9 +205,9 @@ void console_test_print_vertex_info( MeshEditor *me, const std::vector< std::str
             oss << " valence                    : " << valency( m, *vit )          << endl;
             if( !is_pole(m, *vit))
             {
-            oss << " distance from pole         : " << pole_dist[*vit].first       << endl;
-            oss << " distance from junction     : " << junction_dist[*vit].first   << endl;
-            oss << " combined distance          : " << combined_dist[*vit].first   << endl;
+            oss << " distance from pole         : " << pole_dist[*vit]       << endl;
+            oss << " distance from junction     : " << junction_dist[*vit]   << endl;
+            oss << " combined distance          : " << combined_dist[*vit]   << endl;
             oss << " spines dihedral angle      : " << spine_angles[*vit]          << endl;
             oss << " ribs dihedral angle        : " << rib_angles[*vit]            << endl;
             oss << " combined dihedral angle    : " << angles[*vit]                << endl;
@@ -228,19 +229,36 @@ void console_test_save_to_results_folder( MeshEditor *me, const std::vector< std
             obj_save(oss.str(), me->active_mesh());
         }
     }
-
 }
+
+
+void test_match( MeshEditor *me, const std::vector< std::string > &args )
+{
+//    Procedural::Matching::build(me->active_mesh());
+    Procedural::Matching::console_call(me->active_mesh());
+}
+
+void test_translate( MeshEditor *me, const std::vector< std::string > &args )
+{
+    Procedural::Matching::transform( me->active_mesh( ));
+}
+
 
 
 namespace Procedural{
     namespace ConsoleFuncs{
+        
+void register_match_console_funcs(GLGraphics::MeshEditor* me)
+{
+    me->register_console_function( "test.match",     test_match, "test.match" );
+    me->register_console_function( "test.translate", test_translate, "test.translate" );
+}
 
 void register_basic_console_funcs(GLGraphics::MeshEditor* me)
 {
     me->register_console_function( "test.shapes.cube_t",     console_test_cube_triangles,    "test.shapes.cube_t"     );
     me->register_console_function( "test.shapes.cube_q",     console_test_cube_quads,        "test.shapes.cube_q"     );
     me->register_console_function( "test.shapes.basic_PAM",  console_test_basic_PAM,         "test.shapes.basic_PAM"  );
-
 }
 
 void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)

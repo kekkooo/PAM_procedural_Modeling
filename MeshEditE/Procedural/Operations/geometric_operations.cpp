@@ -115,6 +115,7 @@ void add_perpendicular_noise ( HMesh::Manifold& m, vector< HMesh::VertexID > ver
     for( VertexID vid : vertices)
     {
         Vec3d n = vertex_normal( m, vid );
+        n.normalize();
         normals.push_back( n );
     }
     
@@ -124,7 +125,7 @@ void add_perpendicular_noise ( HMesh::Manifold& m, vector< HMesh::VertexID > ver
     for(int i = 0; i < normals_size; ++i )
     {
         float rval = 0.5 - gel_rand() / float(GEL_RAND_MAX);
-        cout << normals[i].length() << " # " << per_vertex_amplitude[i] << " # " << avg_edge_length << " # " << endl;
+//        cout << normals[i].length() << " # " << per_vertex_amplitude[i] << " # " << avg_edge_length << " # " << endl;
         Vec3d dir = normals[i] * rval * per_vertex_amplitude[i] * avg_edge_length * 2.0;
         move_vertex( m, vertices[i], dir );
     }

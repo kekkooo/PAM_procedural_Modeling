@@ -40,7 +40,6 @@ namespace Procedural
             CGLA::gel_srand( m->no_faces() );
             CGLA::gel_srand( m->no_halfedges() );
         }
-
     }
     
     void Engine::buildCleanSelection()
@@ -94,36 +93,40 @@ namespace Procedural
         auto poles = _polesList.Poles();
         invalidateAll();
         
-        CGLA::Vec3d up( 0.0, 1.0, 0.0), down( 0.0, -1.0, 0.0 );
+        CGLA::Vec3d axes[6];
+        axes[0] = CGLA::Vec3d(  0.0,  1.0,  0.0 );
+        axes[1] = CGLA::Vec3d(  0.0, -1.0,  0.0 );
+        axes[2] = CGLA::Vec3d(  1.0,  0.0,  0.0 );
+        axes[3] = CGLA::Vec3d( -1.0,  0.0,  0.0 );
+        axes[4] = CGLA::Vec3d(  0.0,  0.0,  1.0 );
+        axes[5] = CGLA::Vec3d(  0.0,  0.0, -1.0 );
         
         for( VertexID pole_id : poles)
         {
             if( trajectories.count( pole_id ) > 0 )
             {
-                bool au_contraire = trajectories[pole_id].no_calls < 15;
+                bool shake = trajectories[pole_id].total_length > _geometric_info.MeanLength() * _polesList.PoleAge( pole_id );
                 trajectories[pole_id].no_calls = ( trajectories[pole_id].no_calls + 1 );// % ( CGLA::gel_rand() % 100 + 10 );
                 
-                CGLA::Vec3d dir;
-//                CGLA::Vec3d v_normal = vertex_normal( *m, pole_id );
-                double angle = Geometry::angle( up, trajectories[pole_id].current_dir );
-                if( angle < M_PI_2 || ( angle > M_PI_2 && au_contraire) )
+                if( trajectories[pole_id].no_calls == 1 || shake )
                 {
-//                    dir = ( v_normal + up * log(trajectories[pole_id].no_calls++ ) );
-                    dir = ( trajectories[pole_id].current_dir + up * cos( 0.05 * (double)trajectories[pole_id].no_calls++ ) );
-                    dir.normalize();
-                    dir *= _geometric_info.MeanLength();
+                    trajectories[pole_id].d1 = CGLA::gel_rand() % 6;
+                    trajectories[pole_id].d2 = ((CGLA::gel_rand() % 6) + 4 ) % 6;
+                    trajectories[pole_id].current_dir = vertex_normal( *m, pole_id );
+                    trajectories[pole_id].current_dir.normalize();
+                    trajectories[pole_id].total_length = 0.0;
                 }
-                else
-                {
-//                    dir = ( v_normal + down * log(trajectories[pole_id].no_calls++ ) );
-                    dir = ( trajectories[pole_id].current_dir + down * sin( 0.05 * (double) trajectories[pole_id].no_calls++ ));
-                    dir.normalize();
-                    dir *= _geometric_info.MeanLength();
-                }
+                
+                CGLA::Vec3d dir = ( trajectories[pole_id].current_dir
+                                  + axes[trajectories[pole_id].d1] * cos( 0.05 * (double)trajectories[pole_id].no_calls )
+                                  + axes[trajectories[pole_id].d2] * sin( 0.05 * (double)trajectories[pole_id].no_calls ));
+                dir.normalize();
+                dir *= _geometric_info.MeanLength();
                 
                 trajectories[pole_id].total_length += dir.length();
                 
                 Geometric::extrude_pole(*m, pole_id, dir, true, 0.9);
+                trajectories[pole_id].no_calls++;
             }
             else
             {
@@ -132,6 +135,8 @@ namespace Procedural
                 trajectories[pole_id].current_dir = vertex_normal( *m, pole_id );
                 trajectories[pole_id].current_dir.normalize();
                 trajectories[pole_id].total_length = _geometric_info.MeanLength();
+                trajectories[pole_id].d1 = 0;
+                trajectories[pole_id].d1 = 1;
                 trajectories[pole_id].no_calls = 1;
             }
         }
@@ -156,7 +161,8 @@ namespace Procedural
         
         vector< VertexID >  selected;
         vector< double >    per_vertex_ratio;
-        int                 distance = (int) ( log2( _polesList.No_Poles( )) + log2( _polesList.MeanPoleValency( )));
+//        int                 distance = (int) ( log2( _polesList.No_Poles( )) + log2( _polesList.MeanPoleValency( )));
+        int                 distance = (int)log2( _polesList.MeanPoleValency( ));
         // ratio should be calculeted per vertex, accordingly to the region rib_edge_loop radius
         double              ratio    = 0.2;
         double              avg_length   = _geometric_info.MeanLength();
@@ -166,13 +172,20 @@ namespace Procedural
         {
             assert(vid != InvalidVertexID);
 
-            if ( _geometric_info.CombinedDistance()[vid].first > distance )
+            int vertex_distance = _geometric_info.CombinedDistance()[vid];
+            if ( vertex_distance > distance )
             {
+                double radius;
+                map< VertexID, double > radii;
                 // here is possible to optimize things!
                 double mean_radius = ring_mean_radius( *m, get_first_rib_edge
-                                                      ( *m, vid, _edges_info_container.edgeInfo( )));
-                double alt_ratio   = ( mean_radius / _geometric_info.MeanLength() ) / 10.0;
-//                cout << " alt ratio is : " << alt_ratio << " from mean radius : " << mean_radius << "and mean edge length : " << _geometric_info.MeanLength() << endl;
+                                                      ( *m, vid, _edges_info_container.edgeInfo( )),
+                                                      radii );
+                radius = radii[vid];
+                double alt_ratio   = ( radius * (log2( (double)vertex_distance )) * _geometric_info.MeanLength() )  ;
+//                double alt_ratio = _geometric_info.MeanLength() / mean_radius;
+//                cout << " alt ratio is : " << alt_ratio << " avg_radius : " << mean_radius << " edge_avg : " << _geometric_info.MeanLength()
+//                     << "dist : " << vertex_distance << " inverse_log_dist " << ( 1.0 / log2(vertex_distance)) << endl;
                 selected.push_back( vid );
                 per_vertex_ratio.push_back( alt_ratio );
             }
@@ -200,7 +213,7 @@ namespace Procedural
         for( VertexID vid : m->vertices() )
         {
             assert(vid != InvalidVertexID);
-            if ( _geometric_info.CombinedDistance()[vid].first < distance )
+            if ( _geometric_info.CombinedDistance()[vid] < distance && !_polesList.IsPole( vid ))
             {
                 selected.push_back( vid );
             }
@@ -233,13 +246,21 @@ namespace Procedural
         int count = 0;
         for( VertexID vid : m->vertices() )
         {
+            bool branch_added = false;
             if( _polesList.IsPole( vid )) continue;
-            int p = CGLA::gel_rand() % 200;
+            int p = CGLA::gel_rand() % 100;
             
             cout << " p is : " << p << endl;
             
-            if( p == 100 ) // it does not mean too much but should work
+            if( p == 50 ) // it does not mean too much but should work
             {
+                CGLA::Vec3d up( 0.0, 1.0, 0.0 );
+                // add branches only on the upper side
+                double angle = Geometry::angle( up, vertex_normal(*m, vid) );
+                if( angle > M_PI_2 ) continue;
+
+                
+                
                 int distance_limit   = (int) ( log2( _polesList.No_Poles( )) + log2( _polesList.MeanPoleValency( )));
                 int branch_size      =  ( CGLA::gel_rand() % 3 ) + 2; // this should depend on the branch thickness
                 
@@ -250,25 +271,35 @@ namespace Procedural
                 if( there_are_junctions )
                 {
                     
-                    if( _geometric_info.JunctionDistance()[vid].first > distance_limit )
+                    if( _geometric_info.JunctionDistance()[vid] > distance_limit
+                     && _geometric_info.PoleDistance()[vid] > branch_size * 2 )
                     {
                         buildCleanSelection();
                         add_branch( *m, vid, branch_size, vertex_selection );
                         ++count;
+                        branch_added = true;
                     }
                 }
                 else
                 {
-                    if( _geometric_info.PoleDistance()[vid].first > distance_limit * branch_size )
+                    if( _geometric_info.PoleDistance()[vid] > distance_limit * branch_size )
                     {
                         buildCleanSelection();
                         add_branch( *m, vid, branch_size, vertex_selection );
                         ++count;
+                        branch_added = true;
                     }
+                }
+                if( branch_added )
+                {
+                    _polesList.Update(m);
+                    _edges_info_container.Update( m, true, true );
+                    _geometric_info.Update(m, _edges_info_container, true );
                 }
             }
             if ( count >= max_new_branches ) break;
         }
+        
 
         if( count > 0)
         {
