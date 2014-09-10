@@ -13,6 +13,7 @@
 #include <GEL/HMesh/Manifold.h>
 #include <tuple>
 #include "polarize.h"
+#include <GEL/CGLA/Mat4x4d.h>
 
 
 // Geometric Structure Utilities : structural_helpers.h
@@ -27,6 +28,10 @@ CGLA::Vec3f         color_ramp                              ( int value, int max
 CGLA::Vec3f         color_ramp2                             ( int value, int max );
 void                linspace                                ( double min, double max, int num,
                                                              std::vector<double> &values);
+CGLA::Mat4x4d       get_rotation_mat4d                      ( CGLA::Vec3d axis, double cosine );
+void                alt_glue_poles                          ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
+
+
 
 
 #endif /* defined(__MeshEditE__Test__) */

@@ -9,6 +9,7 @@
 #include "PM_basic_console_functions.h"
 #include <GEL/GLGraphics/MeshEditor.h>
 #include <sstream>
+#include <random>
 //#include <strstream>
 //#include <istream>
 //#include <fstream>
@@ -234,13 +235,31 @@ void console_test_save_to_results_folder( MeshEditor *me, const std::vector< std
 
 void test_match( MeshEditor *me, const std::vector< std::string > &args )
 {
+    static std::mersenne_twister_engine<std::uint_fast32_t, 32, 624, 397, 31,
+                0x9908b0df, 11, 0xffffffff, 7, 0x9d2c5680, 15, 0xefc60000, 18, 1812433253> rrrr;
+
+    rrrr.seed( time(0) );
+    cout << rrrr();
+    CGLA::gel_srand( rrrr() );
 //    Procedural::Matching::build(me->active_mesh());
     Procedural::Matching::console_call(me->active_mesh());
 }
 
-void test_translate( MeshEditor *me, const std::vector< std::string > &args )
+void test_trasform( MeshEditor *me, const std::vector< std::string > &args )
 {
-    Procedural::Matching::transform( me->active_mesh( ));
+    static std::mersenne_twister_engine<std::uint_fast32_t, 32, 624, 397, 31,
+    0x9908b0df, 11, 0xffffffff, 7, 0x9d2c5680, 15, 0xefc60000, 18, 1812433253> rrrr;
+    rrrr.seed( time(0) );
+    cout << rrrr();
+    CGLA::gel_srand( rrrr() );
+    
+    int id = 0;
+    if(args.size() > 0){
+        istringstream a0(args[0]);
+        a0 >> id;
+    }
+
+    Procedural::Matching::console_call2( me->active_mesh( ), id);
 }
 
 
@@ -250,8 +269,8 @@ namespace Procedural{
         
 void register_match_console_funcs(GLGraphics::MeshEditor* me)
 {
-    me->register_console_function( "test.match",     test_match, "test.match" );
-    me->register_console_function( "test.translate", test_translate, "test.translate" );
+    me->register_console_function( "test.match.do",         test_match, "test.match.do" );
+    me->register_console_function( "test.match.transform",  test_trasform, "test.match.transform" );
 }
 
 void register_basic_console_funcs(GLGraphics::MeshEditor* me)

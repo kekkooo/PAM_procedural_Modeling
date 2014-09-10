@@ -142,4 +142,84 @@ void linspace ( double min, double max, int num, std::vector<double> &values)
     }
 }
 
+CGLA::Mat4x4d get_rotation_mat4d ( CGLA::Vec3d axis, double angle )
+{
+    CGLA::Mat4x4d t;
+    CGLA::Vec3d ax( 1.0, 0.0, 0.0 ), ay( 0.0, 1.0, 0.0 ), az( 0.0, 0.0, 1.0 );
+    double cosine = cos(angle), sine = sin(angle);
+    axis.normalize();
+
+    double x = axis[0], y = axis[1], z = axis[2];
+    
+    CGLA::Vec4d row1( ( x * x ) + (( 1.0 - x * x ) * ( cosine )),
+                      (( 1.0 - ( cosine )) * x * y) - (( sine ) * z ),
+                      (( 1.0 - ( cosine )) * x * z) + (( sine ) * y ),
+                      0.0 );
+    CGLA::Vec4d row2( (( 1.0 - ( cosine)) * y * x) + (( sine ) * z),
+                      ( y * y ) + (( 1.0 - y * y ) * (cosine)),
+                      (( 1.0 - ( cosine)) * y * z) - (( sine ) * x), 0.0 );
+    
+    CGLA::Vec4d row3( (( 1.0 - ( cosine)) * z * x) - (( sine ) * y),
+                      (( 1.0 - ( cosine)) * z * y) + (( sine ) * x),
+                      ( z * z ) + (( 1.0 - z * z ) * (cosine)), 0.0 );
+    CGLA::Vec4d row4( 0.0, 0.0, 0.0, 1.0 );
+
+    t = CGLA::Mat4x4d( row1, row2, row3, row4 );
+    return t;
+}
+
+
+void alt_glue_poles(Manifold& mani, VertexID vid0, VertexID vid1)
+{
+	vector<VertexID> loop0;
+	Walker hw0 = mani.walker(vid0);
+	for(;!hw0.full_circle(); hw0 = hw0.circulate_vertex_ccw()) {
+		loop0.push_back(hw0.vertex());
+	}
+    
+	vector<VertexID> loop1;
+	Walker hw1 = mani.walker(vid1);
+	for(;!hw1.full_circle(); hw1 = hw1.circulate_vertex_ccw()){
+		loop1.push_back(hw1.vertex());
+    }
+    
+    vector<pair<VertexID, VertexID> > connections;
+    
+	size_t L0= loop0.size();
+	size_t L1= loop1.size();
+    
+    assert(L0==L1);
+    
+    size_t L = L0;
+    
+    float min_len = FLT_MAX;
+    int j_off_min_len = -1;
+    for(int j_off = 0; j_off < L; ++j_off)
+    {
+        float len = 0;
+        for(int i=0;i<L;++i)
+            len += sqr_length(mani.pos(loop0[i]) - mani.pos(loop1[(L+j_off - i)%L]));
+        if(len < min_len)
+        {
+            j_off_min_len = j_off;
+            min_len = len;
+        }
+    }
+    for(int i=0;i<L;++i)
+        connections.push_back(pair<VertexID, VertexID>(loop0[i],loop1[(L+ j_off_min_len - i)%L]));
+	// Merge the two one rings producing two faces.
+	FaceID f0 = mani.merge_one_ring(vid0);
+	FaceID f1 = mani.merge_one_ring(vid1);
+	
+	// Bridge the just created faces.
+	vector<HalfEdgeID> newhalfedges = mani.bridge_faces(f0, f1, connections);
+}
+
+
+
+
+
+
+
+
 

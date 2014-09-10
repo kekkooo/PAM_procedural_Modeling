@@ -294,8 +294,8 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
             double      angle_sum   = angle_a + angle_b;
             double      angle_diff  = fabs( angle_a - angle_b );
             
-            cout << "current min " << min_angle_sum << " # " << min_angle_diff  << endl;
-            cout << "latest calc " << angle_sum     << " # " << angle_diff      << endl;
+//            cout << "current min " << min_angle_sum << " # " << min_angle_diff  << endl;
+//            cout << "latest calc " << angle_sum     << " # " << angle_diff      << endl;
 
             if( angle_sum <= min_angle_sum && angle_diff <= min_angle_diff )
             {
