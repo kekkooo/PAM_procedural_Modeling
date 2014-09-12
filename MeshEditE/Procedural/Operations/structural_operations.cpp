@@ -211,45 +211,52 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
     // early termination in case the input vertices are not poles
     if( !is_pole( m, pole1 )) return;
     if( !is_pole( m, pole2 )) return;
-    // get valency of the input vertices
-    int         pole1_valency  = valency( m, pole1 ),
-                pole2_valency  = valency( m, pole2 );
-    // SKIP THE FOLLOWING IF THE VALENCIES ARE EQUAL
-    // this part subdivides the low valency pole  in order to match valencies
-    if( pole1_valency != pole2_valency )
-    {
-        // choose the one that has lowest valency ( say low_val_pole )
-        VertexID    low_val_pole   = pole1_valency < pole2_valency ? pole1 : pole2;
-        VertexID    hi_val_pole    = low_val_pole == pole1         ? pole2 : pole1;
-        int         lvpole_valency = low_val_pole == pole1         ? pole1_valency : pole2_valency;
-        int         hvpole_valency = low_val_pole == pole1         ? pole2_valency : pole1_valency;
-        int         diff           = hvpole_valency - lvpole_valency;
-        assert( diff > 0 );
-        // subdivide it for a number of times equal to the difference in valence
-        HalfEdgeID starter = m.walker( low_val_pole ).next().halfedge();
-        // could happen that the difference in valence is greater than the low_val_pole valency
-        bool done = false;
-
-        do
+    
+    // this works but it should avoid to keep subdivide edges that connect the two poles
+    bool done_ext = false;
+    do{
+        // get valency of the input vertices
+        int         pole1_valency  = valency( m, pole1 ),
+                    pole2_valency  = valency( m, pole2 );
+        // SKIP THE FOLLOWING IF THE VALENCIES ARE EQUAL
+        // this part subdivides the low valency pole  in order to match valencies
+        if( pole1_valency != pole2_valency )
         {
-            vector< VertexID >      vs;
-            vector< HalfEdgeID >    hes;
-            ring_vertices_and_halfedges( m, starter, vs, hes );
-            
-            size_t limit = diff > hes.size() ? hes.size() : diff;
-            diff -= limit;
-            size_t pace = hes.size() / limit;
-            done = ( diff <= 0 );
-            
-            for( int i = 0; i < limit; i++ )
+            // choose the one that has lowest valency ( say low_val_pole )
+            VertexID    low_val_pole   = pole1_valency < pole2_valency ? pole1 : pole2;
+            VertexID    hi_val_pole    = low_val_pole == pole1         ? pole2 : pole1;
+            int         lvpole_valency = low_val_pole == pole1         ? pole1_valency : pole2_valency;
+            int         hvpole_valency = low_val_pole == pole1         ? pole2_valency : pole1_valency;
+            int         diff           = hvpole_valency - lvpole_valency;
+            assert( diff > 0 );
+            // subdivide it for a number of times equal to the difference in valence
+            HalfEdgeID starter = m.walker( low_val_pole ).next().halfedge();
+            // could happen that the difference in valence is greater than the low_val_pole valency
+            bool done = false;
+
+            do
             {
-                size_t index = i * pace;
-                assert(i < hes.size());
-                split_from_pole_to_pole(m, hes[index]);
-            }
-            
-        } while( !done );
-    }
+                vector< VertexID >      vs;
+                vector< HalfEdgeID >    hes;
+                ring_vertices_and_halfedges( m, starter, vs, hes );
+                
+                size_t limit = diff > hes.size() ? hes.size() : diff;
+                diff -= limit;
+                size_t pace = hes.size() / limit;
+                done = ( diff <= 0 );
+                
+                for( int i = 0; i < limit; i++ )
+                {
+                    size_t index = ( i * pace ) % limit;
+                    assert(i < hes.size());
+                    split_from_pole_to_pole(m, hes[index]);
+                }
+                
+            } while( !done );
+        }
+        done_ext = ( valency( m, pole1 ) == valency( m, pole2 ) );
+    }while(!done_ext);
+    
     // get the two halfedge sequences
     vector< VertexID >      vs_pole1;
     vector< HalfEdgeID >    hes_pole1;

@@ -98,6 +98,10 @@ namespace Procedural{
             assert( candidate_pole != InvalidVertexID );
             assert( candidate_v    != InvalidVertexID );
             
+            // remove candidates from usable poles and usable vertices
+            module_poles.erase( candidate_pole );
+            selected.erase( std::find(selected.begin(), selected.end(), candidate_v));
+
             // take the orignial vertex normal
             Vec3d   vn  = Geometry::vertex_normal( me_active_mesh, candidate_v );
             candidate_v = add_pole_if_necessary( me_active_mesh, candidate_v, 3 );
@@ -110,21 +114,81 @@ namespace Procedural{
             
             // ALIGNMENT
             // take candidate_pole and candidate_v normals
-            align_module(me_active_mesh, module, candidate_pole, vn, fresh_module_ids );
+            align_module( me_active_mesh, module, candidate_pole, vn, fresh_module_ids );
             
             // save intermediate result
             oss = stringstream();
             oss << path << "intermediate.obj";
             obj_save(oss.str(), me_active_mesh );
 
-            
-            Mat4x4d tr_pole_to_v = translation_Mat4x4d( me_active_mesh.pos( candidate_v ) - me_active_mesh.pos( candidate_pole ));
+            Vec3d translation_dir = me_active_mesh.pos( candidate_v ) - me_active_mesh.pos( candidate_pole );
+            Mat4x4d tr_pole_to_v = translation_Mat4x4d( translation_dir );
             Mat4x4d push         = translation_Mat4x4d( vn );
             Mat4x4d t2           = push * tr_pole_to_v;
             for( auto mv : fresh_module_ids )
             {
                 me_active_mesh.pos(mv) = t2.mul_3D_point(me_active_mesh.pos(mv));
             }
+            
+            // now that the first pole is fixed, we need to find another glueing point
+            // find the rotation that brings the other pole to that vertex
+            // track the movement of the vertex to that pole
+            Vec3d old_pole_pos = me_active_mesh.pos(candidate_pole);
+            Procedural::Operations::Structural::glue_poles( me_active_mesh, candidate_v, candidate_pole );
+            
+            // save intermediate result
+            oss = stringstream();
+            oss << path << "intermediate1.obj";
+            obj_save(oss.str(), me_active_mesh );
+
+
+            VertexID    other_pole      = InvalidVertexID,
+                        other_candidate = InvalidVertexID;
+            
+            find_best_matching( me_active_mesh, selected, module_poles, other_candidate, other_pole );
+            Vec3d other_vn  = Geometry::vertex_normal( me_active_mesh, other_candidate );
+            other_candidate = add_pole_if_necessary( me_active_mesh, other_candidate, 3 );
+            
+//            align_module( me_active_mesh, module, other_pole, other_vn, fresh_module_ids );
+            
+            Vec3d   pn              = Geometry::vertex_normal( me_active_mesh, other_pole );
+            Vec3d   rotation_axis   = CGLA::cross( other_vn, pn );
+            double  rotation_angle  = std::acos( CGLA::dot( other_vn, pn ));
+            double  pace            = rotation_angle / 10.0;
+            double  r;
+            Vec3d   pivot;
+            bsphere_of_selected( me_active_mesh, fresh_module_ids, pivot, r );
+            Mat4x4d tr_origin       = translation_Mat4x4d( -pivot );
+            Mat4x4d rot             = get_rotation_mat4d( rotation_axis, pace );
+            Mat4x4d tr_back         = translation_Mat4x4d( pivot );
+            Mat4x4d t               = tr_back * rot * tr_origin;
+            
+            cout << "angle : " << rotation_angle << " # pace: " << pace << endl;
+            
+            for (int i = 0; i < 10; ++i )
+            {
+                me_active_mesh.pos(other_pole) = t.mul_3D_point( me_active_mesh.pos(other_pole ));
+                Procedural::Operations::Geometric::add_ring_around_pole( me_active_mesh, other_pole, 1.0 );
+                assert( is_pole( me_active_mesh, other_pole ));
+//                oss = stringstream();
+//                oss << path << "intermediate_" << i << ".obj";
+//                obj_save(oss.str(), me_active_mesh );
+            }
+//            return;
+
+            
+            
+            
+            // save intermediate result
+            oss = stringstream();
+            oss << path << "intermediate2.obj";
+            obj_save(oss.str(), me_active_mesh );
+
+            assert( is_pole( me_active_mesh, other_candidate ));
+            Procedural::Operations::Structural::glue_poles( me_active_mesh, other_candidate, other_pole );
+
+            
+            
             
             // find a rotation around the normal of  candidate_v  that alings in a good way the vertices
             // choose a vertex on the ring connected to candidate_v
@@ -156,7 +220,7 @@ namespace Procedural{
 //                me_active_mesh.pos(mv) = t.mul_3D_point(me_active_mesh.pos(mv));
 //            }
             
-            Procedural::Operations::Structural::glue_poles( me_active_mesh, candidate_v, candidate_pole );
+//            Procedural::Operations::Structural::glue_poles( me_active_mesh, candidate_v, candidate_pole );
 //            alt_glue_poles( me_active_mesh, candidate_v, candidate_pole );
             
             oss = stringstream();
@@ -367,6 +431,7 @@ namespace Procedural{
             radius = rad.length();
         }
         
+        
         void bsphere_of_selected( Manifold& m, set<VertexID> selected, Vec3d& centroid, double& radius )
         {
             Vec3d pmin, pmax;
@@ -386,7 +451,6 @@ namespace Procedural{
             centroid = pmin + rad;
             radius = rad.length();
         }
-        
         
         
         void transform ( Manifold& source, Manifold &destination )
@@ -445,7 +509,7 @@ namespace Procedural{
             }
         }
         
-        //
+        // this should also discard points that are too distant from the module
         void select_candidate_vs ( Manifold& m, vector< VertexID >& vs, DistanceVector& dist )
         {
             for( VertexID v : m.vertices())
