@@ -84,11 +84,11 @@ void add_noise               ( HMesh::Manifold& m, int vertex_type_flags,
 void add_noise               ( HMesh::Manifold& m, int vertex_type_flags, double ratiom,
                                double cutoff, vector< HMesh::VertexID > vertices );
 
-void add_perpendicular_noise ( HMesh::Manifold& m, vector< HMesh::VertexID > vertices,
+void add_perpendicular_noise ( HMesh::Manifold& m, vector< HMesh::VertexID > &vertices,
                                double amplitude, double avg_edge_length );
 
-void add_perpendicular_noise ( HMesh::Manifold& m, vector< HMesh::VertexID > vertices,
-                               vector< double > per_vertex_amplitude, double avg_edge_length );
+void add_perpendicular_noise ( HMesh::Manifold& m, vector< HMesh::VertexID > &vertices,
+                               vector< double > &per_vertex_amplitude, double avg_edge_length );
 
 
             

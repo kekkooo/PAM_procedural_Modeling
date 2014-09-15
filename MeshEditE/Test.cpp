@@ -215,6 +215,26 @@ void alt_glue_poles(Manifold& mani, VertexID vid0, VertexID vid1)
 	vector<HalfEdgeID> newhalfedges = mani.bridge_faces(f0, f1, connections);
 }
 
+void bezier ( CGLA::Vec3d p0, CGLA::Vec3d p1, CGLA::Vec3d p2, int n, vector< CGLA::Vec3d >& points )
+{
+    points.clear();
+    points.push_back(p0);
+    // get the pace on the interval [0, 1]
+    double pace = 1.0 / (double)( n - 1 );
+    for( int i = 1; i <= n; ++i )
+    {
+        double t = (double)i * pace;
+        CGLA::Vec3d pi = (( 1.0 - t ) * ( 1.0 -t ) * p0 )
+                        + ( 2 * t *( 1 - t ) * p1 )
+                        + ( t * t ) * p2;
+        points.push_back( pi );
+    }
+    
+    
+    points.push_back(p2);
+    
+}
+
 
 
 

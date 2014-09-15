@@ -67,12 +67,13 @@ namespace Procedural{
 //            polar_subdivide( me_active_mesh, 1 );
             
             // scale active
-//            Mat4x4d scale = scaling_Mat4x4d(Vec3d(0.1, 0.1, 0.1 ));
-//            for( auto v : me_active_mesh.vertices())
-//            {
-//                me_active_mesh.pos(v) = scale.mul_3D_point(me_active_mesh.pos(v));
-//            }
-            
+            double scaling_factor = 0.75 + ((double)( gel_rand() % 100 )/200.0);
+            Mat4x4d scale = scaling_Mat4x4d(Vec3d( scaling_factor, scaling_factor, scaling_factor ));
+            for( auto v : me_active_mesh.vertices())
+            {
+                me_active_mesh.pos(v) = scale.mul_3D_point(me_active_mesh.pos(v));
+            }
+//            return;
             // calculate distances
             DistanceVector combined_dist;
             HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges( me_active_mesh );
@@ -146,6 +147,7 @@ namespace Procedural{
                         other_candidate = InvalidVertexID;
             
             find_best_matching( me_active_mesh, selected, module_poles, other_candidate, other_pole );
+            Vec3d other_candidate_pos = me_active_mesh.pos(other_candidate);
             Vec3d other_vn  = Geometry::vertex_normal( me_active_mesh, other_candidate );
             other_candidate = add_pole_if_necessary( me_active_mesh, other_candidate, 3 );
             
@@ -154,7 +156,7 @@ namespace Procedural{
             Vec3d   pn              = Geometry::vertex_normal( me_active_mesh, other_pole );
             Vec3d   rotation_axis   = CGLA::cross( other_vn, pn );
             double  rotation_angle  = std::acos( CGLA::dot( other_vn, pn ));
-            double  pace            = rotation_angle / 10.0;
+            double  pace            = rotation_angle / 2.0;
             double  r;
             Vec3d   pivot;
             bsphere_of_selected( me_active_mesh, fresh_module_ids, pivot, r );
@@ -165,15 +167,19 @@ namespace Procedural{
             
             cout << "angle : " << rotation_angle << " # pace: " << pace << endl;
             
-            for (int i = 0; i < 10; ++i )
-            {
-                me_active_mesh.pos(other_pole) = t.mul_3D_point( me_active_mesh.pos(other_pole ));
-                Procedural::Operations::Geometric::add_ring_around_pole( me_active_mesh, other_pole, 1.0 );
+//            for (int i = 0; i < 10; ++i )
+//            {
+            me_active_mesh.pos(other_pole) = t.mul_3D_point( me_active_mesh.pos(other_pole ));
+            Procedural::Operations::Geometric::add_ring_around_pole( me_active_mesh, other_pole, 1.0 );
+            Vec3d current = me_active_mesh.pos( other_pole );
+            
+            Procedural::Operations::Geometric::extrude_pole(me_active_mesh, other_pole, other_candidate_pos - current, 1, 1.0 );
+            
                 assert( is_pole( me_active_mesh, other_pole ));
 //                oss = stringstream();
 //                oss << path << "intermediate_" << i << ".obj";
 //                obj_save(oss.str(), me_active_mesh );
-            }
+//            }
 //            return;
 
             
@@ -406,7 +412,7 @@ namespace Procedural{
         {
             m.clear();
             stringstream oss;
-            oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results/sep09/ex4/test_match";
+            oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results/sep09/ex7/test_match";
             if ( iter > 0 ) oss << iter;
             oss << ".obj";
             obj_load(oss.str(), m );

@@ -173,21 +173,23 @@ namespace Procedural
             assert(vid != InvalidVertexID);
 
             int vertex_distance = _geometric_info.CombinedDistance()[vid];
-            if ( vertex_distance > distance )
+//            if ( vertex_distance > distance )
+            if( vertex_distance > 1 )
             {
                 double radius;
                 map< VertexID, double > radii;
                 // here is possible to optimize things!
-                double mean_radius = ring_mean_radius( *m, get_first_rib_edge
-                                                      ( *m, vid, _edges_info_container.edgeInfo( )),
-                                                      radii );
+                HalfEdgeID rib_starter = get_first_rib_edge( *m, vid, _edges_info_container.edgeInfo( ));
+                double mean_radius = ring_mean_radius( *m, rib_starter, radii );
                 radius = radii[vid];
                 double alt_ratio   = ( radius * (log2( (double)vertex_distance )) * _geometric_info.MeanLength() )  ;
+                alt_ratio *= ( (double)( vertex_distance )  / (double)distance );
 //                double alt_ratio = _geometric_info.MeanLength() / mean_radius;
+//                cout << vid << ") " << vertex_distance << " # " << alt_ratio << endl ;
 //                cout << " alt ratio is : " << alt_ratio << " avg_radius : " << mean_radius << " edge_avg : " << _geometric_info.MeanLength()
 //                     << "dist : " << vertex_distance << " inverse_log_dist " << ( 1.0 / log2(vertex_distance)) << endl;
                 selected.push_back( vid );
-                per_vertex_ratio.push_back( alt_ratio );
+                per_vertex_ratio.push_back( alt_ratio * 100.0 );
             }
         }
 //        add_perpendicular_noise( *m, selected, ratio, avg_length );

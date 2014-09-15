@@ -86,7 +86,7 @@ void add_noise ( HMesh::Manifold& m, int vertex_type_flags, double ratio, double
     }
 }
             
-void add_perpendicular_noise ( Manifold& m, vector< VertexID > vertices,
+void add_perpendicular_noise ( Manifold& m, vector< VertexID > &vertices,
                                double amplitude, double avg_edge_length )
 {
     VertexAttributeVector< Vec3d > normals;
@@ -108,8 +108,8 @@ void add_perpendicular_noise ( Manifold& m, vector< VertexID > vertices,
     }
 }
             
-void add_perpendicular_noise ( HMesh::Manifold& m, vector< HMesh::VertexID > vertices,
-                               vector< double > per_vertex_amplitude, double avg_edge_length )
+void add_perpendicular_noise ( HMesh::Manifold& m, vector< HMesh::VertexID > &vertices,
+                               vector< double > &per_vertex_amplitude, double avg_edge_length )
 {
     vector< Vec3d >  normals;
     for( VertexID vid : vertices)
