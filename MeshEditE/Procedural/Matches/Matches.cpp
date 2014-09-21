@@ -150,6 +150,7 @@ namespace Procedural{
             Vec3d other_candidate_pos = me_active_mesh.pos(other_candidate);
             Vec3d other_vn  = Geometry::vertex_normal( me_active_mesh, other_candidate );
             other_candidate = add_pole_if_necessary( me_active_mesh, other_candidate, 3 );
+//            Procedural::Operations::Geometric::extrude_pole( me_active_mesh, other_candidate, other_candidate_pos - me_active_mesh.pos(other_candidate), false, 1.0 );
             
 //            align_module( me_active_mesh, module, other_pole, other_vn, fresh_module_ids );
             
@@ -167,20 +168,24 @@ namespace Procedural{
             
             cout << "angle : " << rotation_angle << " # pace: " << pace << endl;
             
-//            for (int i = 0; i < 10; ++i )
-//            {
-            me_active_mesh.pos(other_pole) = t.mul_3D_point( me_active_mesh.pos(other_pole ));
-            Procedural::Operations::Geometric::add_ring_around_pole( me_active_mesh, other_pole, 1.0 );
-            Vec3d current = me_active_mesh.pos( other_pole );
+            Vec3d control_point = t.mul_3D_point( me_active_mesh.pos(other_pole ));
+            vector< Vec3d > points;
+            bezier( me_active_mesh.pos(other_pole), control_point, other_candidate_pos, 7, points );
             
-            Procedural::Operations::Geometric::extrude_pole(me_active_mesh, other_pole, other_candidate_pos - current, 1, 1.0 );
             
-                assert( is_pole( me_active_mesh, other_pole ));
-//                oss = stringstream();
-//                oss << path << "intermediate_" << i << ".obj";
-//                obj_save(oss.str(), me_active_mesh );
-//            }
-//            return;
+//            Procedural::Operations::Geometric::add_ring_around_pole( me_active_mesh, other_pole, 1.0 );
+
+
+            for( Vec3d cbp : points )
+            {
+                Vec3d current = me_active_mesh.pos( other_pole );
+                double radius = Procedural::Geometry::ring_mean_radius(me_active_mesh, me_active_mesh.walker(other_pole).next().halfedge());
+                Procedural::Operations::Geometric::extrude_pole( me_active_mesh, other_pole, cbp - current, true, 1.0 );
+                double new_radius = Procedural::Geometry::ring_mean_radius(me_active_mesh, me_active_mesh.walker(other_pole).next().halfedge());
+                Procedural::Operations::Geometric::scale_ring_radius(me_active_mesh, me_active_mesh.walker(other_pole).next().halfedge(), radius/ new_radius, true );
+            }
+            
+            assert( is_pole( me_active_mesh, other_pole ));
 
             
             
