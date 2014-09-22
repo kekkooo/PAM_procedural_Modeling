@@ -15,6 +15,8 @@
 #include <GEL/CGLA/CGLA.h>
 #include <MeshEditE/Test.h>
 #include <set>
+#include "Matches/Matches.h"
+#include <random>
 
 using namespace Procedural::Operations;
 using namespace Procedural::Operations::Geometric;
@@ -27,14 +29,22 @@ namespace Procedural
     Engine::Engine()
     {
         invalidateAll();
+        _timestamp  = 0;
+        static std::mersenne_twister_engine<std::uint_fast32_t, 32, 624, 397, 31,
+        0x9908b0df, 11, 0xffffffff, 7, 0x9d2c5680, 15, 0xefc60000, 18, 1812433253> rrrr;
+        rrrr.seed( time( 0) );
+        cout << rrrr();
+        CGLA::gel_srand( rrrr() );
+
     }
     
     void Engine::invalidateAll()
     {
+        ++_timestamp;
         invalidateEdgeInfo();
         invalidatePolesList();
         invalidateGeometricInfo();
-        if(m)
+        if( m )
         {
             CGLA::gel_srand( m->no_vertices()) ;
             CGLA::gel_srand( m->no_faces() );
@@ -69,7 +79,8 @@ namespace Procedural
         invalidateAll();
         _polesList.Update( m, true );
         _edges_info_container.Update( m, true, true );
-        _geometric_info.Update( m, _edges_info_container );
+        _geometric_info.Update( m, _edges_info_container, true );
+        _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
     }
     
     
@@ -140,16 +151,24 @@ namespace Procedural
                 trajectories[pole_id].no_calls = 1;
             }
         }
-        m->cleanup();
+        IDRemap r;
+        m->cleanup( r );
+        _v_info.remap = r.vmap;
         _edges_info_container.Update( m, true, true );
+        _geometric_info.Update( m, _edges_info_container );
+        _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
 
     }
     
     void Engine::polarSubdivision( )
     {
         polar_subdivide( *m, 1 );
-        m->cleanup();
+        IDRemap r;
+        m->cleanup( r );
+        _v_info.remap = r.vmap;
         _edges_info_container.Update( m, true, true );
+        _geometric_info.Update( m, _edges_info_container );
+        _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
 
     }
     
@@ -223,6 +242,125 @@ namespace Procedural
         //        add_noise( *m, VertexType::REGULAR, ratio, cutoff, selected );
         Procedural::Operations::Algorithms::selected_vertices_inverse_distance_laplacian(*m, selected);
 
+    }
+    
+    void Engine::add_module()
+    {
+        // initialize the meshes
+        Manifold module;
+        Matching::build( module );
+        
+        // scale active
+        double scaling_factor = 0.75 + (( double )( gel_rand() % 100 )/200.0);
+        Mat4x4d scale = scaling_Mat4x4d( Vec3d( scaling_factor, scaling_factor, scaling_factor ));
+        for( auto v : m->vertices())
+        {
+            m->pos(v) = scale.mul_3D_point( m->pos( v ));
+        }
+        //            return;
+        // calculate distances
+        invalidateAll();
+        this->_polesList.Update( m, true );
+        this->_edges_info_container.Update( m );
+        this->_geometric_info.Update( m, _edges_info_container );
+        
+        // select from the me_active_mesh points that have the right combined distance
+        vector<VertexID> selected;
+        
+        Matching::select_candidate_vs( *m, selected, _geometric_info.combinedDistance() );
+        
+        // move the module in a random position in space
+        Matching::transform( module, *m );
+        set< VertexID > module_poles, fresh_module_ids;
+        // add the module manifold to me_active_mesh ( the manifold contains 2 separate components
+        // save the vertexID of the module's poles and all of its vertex ids in the new manifold
+        Matching::copy( module, *m, module_poles, fresh_module_ids );
+        
+        // choose the best matching pole
+        VertexID    candidate_v = InvalidVertexID, candidate_pole = InvalidVertexID;
+        double      min_dist    = Matching::find_best_matching( *m, selected, module_poles,
+                                                                candidate_v, candidate_pole );
+        
+        assert( candidate_pole != InvalidVertexID );
+        assert( candidate_v    != InvalidVertexID );
+        
+        // remove candidates from usable poles and usable vertices
+        module_poles.erase( candidate_pole );
+        selected.erase( std::find(selected.begin(), selected.end(), candidate_v));
+        
+        // take the orignial vertex normal
+        Vec3d   vn  = Geometry::vertex_normal( *m, candidate_v );
+        candidate_v = Matching::add_pole_if_necessary( *m, candidate_v, 3 );
+        
+        // ALIGNMENT
+        // take candidate_pole and candidate_v normals
+        Matching::align_module( *m, module, candidate_pole, vn, fresh_module_ids );
+        
+        Vec3d translation_dir = m->pos( candidate_v ) - m->pos( candidate_pole );
+        Mat4x4d tr_pole_to_v  = translation_Mat4x4d( translation_dir );
+        Mat4x4d push          = translation_Mat4x4d( vn );
+        Mat4x4d t2            = push * tr_pole_to_v;
+        for( auto mv : fresh_module_ids )
+        {
+            m->pos(mv) = t2.mul_3D_point( m->pos( mv ));
+        }
+        
+        // now that the first pole is fixed, we need to find another glueing point
+        // find the rotation that brings the other pole to that vertex
+        // track the movement of the vertex to that pole
+        Vec3d old_pole_pos = m->pos( candidate_pole );
+        Procedural::Operations::Structural::glue_poles( *m, candidate_v, candidate_pole );
+        
+        VertexID    other_pole      = InvalidVertexID,
+        other_candidate = InvalidVertexID;
+        
+        Matching::find_best_matching( *m, selected, module_poles, other_candidate, other_pole );
+        Vec3d other_candidate_pos = m->pos(other_candidate);
+        Vec3d other_vn  = Geometry::vertex_normal( *m, other_candidate );
+        other_candidate = Matching::add_pole_if_necessary( *m, other_candidate, 3 );
+        
+        Vec3d   pn              = Geometry::vertex_normal( *m, other_pole );
+        Vec3d   rotation_axis   = CGLA::cross( other_vn, pn );
+        double  rotation_angle  = std::acos( CGLA::dot( other_vn, pn ));
+        double  pace            = rotation_angle / 2.0;
+        double  r;
+        Vec3d   pivot;
+        Matching::bsphere_of_selected( *m, fresh_module_ids, pivot, r );
+        Mat4x4d tr_origin       = translation_Mat4x4d( -pivot );
+        Mat4x4d rot             = get_rotation_mat4d( rotation_axis, pace );
+        Mat4x4d tr_back         = translation_Mat4x4d( pivot );
+        Mat4x4d t               = tr_back * rot * tr_origin;
+        
+        cout << "angle : " << rotation_angle << " # pace: " << pace << endl;
+        
+        Vec3d control_point = t.mul_3D_point( m->pos(other_pole ));
+        vector< Vec3d > points;
+        bezier( m->pos(other_pole), control_point, other_candidate_pos, 7, points );
+        
+        
+        //            Procedural::Operations::Geometric::add_ring_around_pole( me_active_mesh, other_pole, 1.0 );
+        
+        
+        for( Vec3d cbp : points )
+        {
+            Vec3d current = m->pos( other_pole );
+            double radius = Procedural::Geometry::ring_mean_radius( *m, m->walker(other_pole).next().halfedge());
+            Procedural::Operations::Geometric::extrude_pole( *m, other_pole, cbp - current, true, 1.0 );
+            double new_radius = Procedural::Geometry::ring_mean_radius( *m, m->walker(other_pole).next().halfedge());
+            Procedural::Operations::Geometric::scale_ring_radius( *m, m->walker(other_pole).next().halfedge(), radius/ new_radius, true );
+        }
+        
+        assert( is_pole( *m, other_pole ));
+        
+        assert( is_pole( *m, other_candidate ));
+        Procedural::Operations::Structural::glue_poles( *m, other_candidate, other_pole );
+        
+        IDRemap idr;
+        m->cleanup( idr );
+        _v_info.remap = idr.vmap;
+        _edges_info_container.Update( m, true, true );
+        _geometric_info.Update( m, _edges_info_container );
+        _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
     }
     
     
@@ -318,7 +456,13 @@ namespace Procedural
                     flatten_pole( *m, pole );
             }
             
-            m->cleanup();
+            IDRemap idr;
+            m->cleanup( idr );
+            _v_info.remap = idr.vmap;
+            _edges_info_container.Update( m, true, true );
+            _geometric_info.Update( m, _edges_info_container );
+            _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
+
         }
     }
     

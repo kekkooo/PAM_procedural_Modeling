@@ -34,6 +34,7 @@ public :
             void        polarSubdivision                ( );
             void        perturbate                      ( );
             void        smooth_near_junctions           ();
+            void        add_module                      ();
 
     
 // THE FUNCTIONS ENCLOSED INTO BETWEEN THOSE TWO COMMENTS MUST REPLACED
@@ -55,6 +56,8 @@ private :
     EdgeInfoContainer       _edges_info_container;
     GeometricInfoContainer  _geometric_info;
     PoleTracking            _pole_tracking;
+    int                     _timestamp;
+    vertices_info           _v_info;
 
     HMesh::VertexAttributeVector<int> vertex_selection;
     

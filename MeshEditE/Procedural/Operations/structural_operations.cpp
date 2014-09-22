@@ -254,7 +254,10 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
                 
             } while( !done );
         }
-        done_ext = ( valency( m, pole1 ) == valency( m, pole2 ) );
+        int val1 = valency( m, pole1 );
+        int val2 = valency( m, pole2 );
+        cout << "after balancing attempt " << val1 << " # " << val2 << endl;
+        done_ext = ( val1 == val2 );
     }while(!done_ext);
     
     // get the two halfedge sequences

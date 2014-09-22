@@ -157,6 +157,7 @@ public:
     inline DistanceVector   const PoleDistance()       { return pole_dist;     }
     inline DistanceVector   const JunctionDistance()   { return junction_dist; }
     inline DistanceVector   const CombinedDistance()   { return combined_dist; }
+    inline DistanceVector&        combinedDistance()   { return combined_dist; }
     inline AngleVector      const CombinedAngles()     { return angles;        }
     inline AngleVector      const RibAngles()          { return rib_angles;    }
     inline AngleVector      const SpineAngles()        { return spine_angles;  }
@@ -218,6 +219,79 @@ struct PoleTrajectory
     CGLA::Vec3d current_dir;
     double      total_length;
     PoleTrajectory() { no_calls = 0; total_length = 0.0; }
+};
+        
+struct VertexInfo
+{
+    Geometry::DistanceMetrics   distFromPole,
+                                distFromJunction,
+                                distFromBoth;
+    double                      spineAngle,
+                                ribAngle,
+                                combinedAngle;
+    bool                        is_pole;
+    int                         t_gen;
+    VertexInfo()
+    {
+        distFromPole     =
+        distFromJunction =
+        distFromBoth     = numeric_limits<int>::max();
+        spineAngle       =
+        ribAngle         =
+        combinedAngle    = 0.0;
+        is_pole          = false;
+        t_gen            = 0;
+    }
+};
+
+struct vertices_info
+{
+    map< VertexID, VertexInfo > info;
+    VertexIDRemap               remap;
+public:
+    void Update( Manifold& m, int t, PolesList &polesList, GeometricInfoContainer &geo_info )
+    {
+        assert( geo_info.IsValid()  );
+        assert( polesList.IsValid() );
+        
+        // do a proper remap
+        // for each entry, switch
+        if( remap.size() > 0 )
+        {
+            map< VertexID, VertexInfo > temp_info;
+            for( auto re = remap.begin(); re != remap.end(); ++re )
+            {
+                if( info.count( re->first ) > 0 )
+                    temp_info[ re->second ] = info[ re->first ];
+            }
+            info.clear();
+            info = temp_info;
+        }
+        
+        for( VertexID vid : m.vertices())
+        {
+            VertexInfo vi;
+            bool exists = ( info.count(vid) > 0 );
+            
+            if( exists ) {  vi = info[vid];     }
+            else
+            {
+                vi = VertexInfo();
+                vi.t_gen = t;
+            }
+            vi.is_pole          = polesList.IsPole(vid);
+            vi.distFromPole     = geo_info.PoleDistance()[vid];
+            vi.distFromJunction = geo_info.JunctionDistance()[vid];
+            vi.distFromBoth     = geo_info.CombinedDistance()[vid];
+            if( !vi.is_pole )
+            {
+                vi.ribAngle         = geo_info.RibAngles()[vid];
+                vi.spineAngle       = geo_info.SpineAngles()[vid];
+                vi.combinedAngle    = geo_info.CombinedAngles()[vid];
+            }
+        }
+    }
+    
 };
         
         

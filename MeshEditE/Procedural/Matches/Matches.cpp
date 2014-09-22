@@ -150,9 +150,6 @@ namespace Procedural{
             Vec3d other_candidate_pos = me_active_mesh.pos(other_candidate);
             Vec3d other_vn  = Geometry::vertex_normal( me_active_mesh, other_candidate );
             other_candidate = add_pole_if_necessary( me_active_mesh, other_candidate, 3 );
-//            Procedural::Operations::Geometric::extrude_pole( me_active_mesh, other_candidate, other_candidate_pos - me_active_mesh.pos(other_candidate), false, 1.0 );
-            
-//            align_module( me_active_mesh, module, other_pole, other_vn, fresh_module_ids );
             
             Vec3d   pn              = Geometry::vertex_normal( me_active_mesh, other_pole );
             Vec3d   rotation_axis   = CGLA::cross( other_vn, pn );

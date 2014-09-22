@@ -136,6 +136,9 @@ GLenum glReportError (int where = -1)
     {
         switch ([theEvent keyCode])
         {
+            case 0 : // A
+                engine.add_module();
+                break;
                 // ### aggiunte da me ###
             case 46: // M
                 engine.setMesh( &me.active_mesh( ));
