@@ -168,12 +168,30 @@ GLenum glReportError (int where = -1)
             case 11 : // B
                 engine.addRandomBranches();
                 break;
+            case 17 : // T
+            {
+                std::set< HMesh::VertexID > selected;
+                engine.get_candidates( selected );
+                for( auto f : me.active_mesh().faces( ))
+                    DebugRenderer::face_colors[f]   = Vec3f( 0.0, 0.0, 0.0);
+                for( auto v : me.active_mesh().vertices( ))
+                    DebugRenderer::vertex_colors[v] = Vec3f( 0.0, 0.0, 0.0);
+                for( auto h : me.active_mesh().halfedges( ))
+                    DebugRenderer::edge_colors[h]   = Vec3f( 0.0, 0.0, 0.0);
+                for( auto vid : selected )
+                {
+                    DebugRenderer::vertex_colors[vid] = Vec3f( 1.0, 0.0, 0.0);
+//                    me.get_vertex_selection()[vid] = 1;
+                }
+            }
+                break;
             case 34 : // I
                 engine.smooth_near_junctions();
                 break;
             case 35 : // P
                 engine.perturbate();
                 break;
+                
         }
     }
     else
@@ -338,7 +356,7 @@ GLenum glReportError (int where = -1)
     GLint swapInt = 1;
     [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval]; // set to vbl sync
     me.init();
-    engine.setMesh( &me.active_mesh( ));
+    engine.init( &me.active_mesh( ));
     register_console_funcs(&me);
     // procedural modeling extensions.
     Procedural::ConsoleFuncs::register_match_console_funcs(&me);

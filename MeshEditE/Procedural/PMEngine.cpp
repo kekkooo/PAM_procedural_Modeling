@@ -17,6 +17,7 @@
 #include <set>
 #include "Matches/Matches.h"
 #include <random>
+#include <queue>
 
 using namespace Procedural::Operations;
 using namespace Procedural::Operations::Geometric;
@@ -35,12 +36,10 @@ namespace Procedural
         rrrr.seed( time( 0) );
         cout << rrrr();
         CGLA::gel_srand( rrrr() );
-
     }
     
     void Engine::invalidateAll()
     {
-        ++_timestamp;
         invalidateEdgeInfo();
         invalidatePolesList();
         invalidateGeometricInfo();
@@ -63,6 +62,7 @@ namespace Procedural
         invalidateAll();
         Procedural::Operations::create_basic_PAM( mesh, 0.5 );
         _polesList.Update( m );
+        increase_timestamp();
     }
 
     void Engine::buildCube()
@@ -71,6 +71,7 @@ namespace Procedural
 //        Procedural::Operations::create_basic_PAM( *m, 0.5 );
         Procedural::Operations::create_PAM_box( *m, 3.0, 1.0, 2.0 );
         _polesList.Update( m );
+        increase_timestamp();
     }
     
     void Engine::setMesh(HMesh::Manifold *mesh)
@@ -81,6 +82,7 @@ namespace Procedural
         _edges_info_container.Update( m, true, true );
         _geometric_info.Update( m, _edges_info_container, true );
         _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
+        increase_timestamp();
     }
     
     
@@ -157,6 +159,7 @@ namespace Procedural
         _edges_info_container.Update( m, true, true );
         _geometric_info.Update( m, _edges_info_container );
         _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
+        increase_timestamp();
 
     }
     
@@ -169,6 +172,7 @@ namespace Procedural
         _edges_info_container.Update( m, true, true );
         _geometric_info.Update( m, _edges_info_container );
         _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
+        increase_timestamp();
 
     }
     
@@ -361,6 +365,46 @@ namespace Procedural
         _edges_info_container.Update( m, true, true );
         _geometric_info.Update( m, _edges_info_container );
         _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
+        increase_timestamp();
+    }
+    
+    
+    void Engine::get_candidates( set< VertexID > &selected )
+    {
+        int distance_limit   = (int) max( log2( _polesList.No_Poles( )), log2( _polesList.MeanPoleValency( )));
+        int branch_size      =  ( CGLA::gel_rand() % 3 ) + 2; // this should depend on the branch thickness
+        bool there_are_junctions = _polesList.No_Poles() > 2;
+
+        cout << "timestamp : " << _timestamp;
+        
+        for( VertexID vid : m->vertices() )
+        {
+            assert(vid != InvalidVertexID);
+            cout << "t_gen" << _v_info.info[vid].t_gen << endl;
+            if( _timestamp - _v_info.info[vid].t_gen < 5 )
+            {
+                if( there_are_junctions )
+                {
+//                    if( _geometric_info.JunctionDistance()[vid] > distance_limit
+//                     && _geometric_info.PoleDistance()[vid] > branch_size * 2 )
+                    if( _v_info.info[vid].distFromBoth > distance_limit )
+                    {
+                        selected.insert( vid );
+                    }
+                }
+                else if( _v_info.info[vid].distFromPole > distance_limit + branch_size )
+                {
+                    selected.insert( vid );
+                }
+            }
+        }
+        // reduction step. change to obtain a more sparse sampling
+        int manhattan_distance = 1;
+        
+        
+        // add all the poles
+        for( auto pole : _polesList.Poles() ) { selected.insert( pole ); }
+        
     }
     
     
@@ -462,6 +506,7 @@ namespace Procedural
             _edges_info_container.Update( m, true, true );
             _geometric_info.Update( m, _edges_info_container );
             _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
+            increase_timestamp();
 
         }
     }

@@ -261,6 +261,7 @@ public:
             map< VertexID, VertexInfo > temp_info;
             for( auto re = remap.begin(); re != remap.end(); ++re )
             {
+                assert(re->first != InvalidVertexID );
                 if( info.count( re->first ) > 0 )
                     temp_info[ re->second ] = info[ re->first ];
             }
@@ -272,6 +273,7 @@ public:
         {
             VertexInfo vi;
             bool exists = ( info.count(vid) > 0 );
+
             
             if( exists ) {  vi = info[vid];     }
             else
@@ -289,7 +291,9 @@ public:
                 vi.spineAngle       = geo_info.SpineAngles()[vid];
                 vi.combinedAngle    = geo_info.CombinedAngles()[vid];
             }
+            info[vid] = vi;
         }
+        remap.clear();
     }
     
 };

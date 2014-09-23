@@ -14,6 +14,7 @@
 #include <polarize.h>
 #include <MeshEditE/Procedural/EngineHelpers/InfoContainers.h>
 #include <MeshEditE/Procedural/Operations/geometric_operations.h>
+#include <set>
 
 
 using namespace HMesh;
@@ -35,6 +36,7 @@ public :
             void        perturbate                      ( );
             void        smooth_near_junctions           ();
             void        add_module                      ();
+            void        get_candidates                  ( std::set< HMesh::VertexID > &selected );
 
     
 // THE FUNCTIONS ENCLOSED INTO BETWEEN THOSE TWO COMMENTS MUST REPLACED
@@ -43,9 +45,11 @@ void addRandomBranches();
 void pickABranchAndScaleIt( int mode );
 inline int  no_scaling_modes() { return 4; }
 
+
 // JUST FOR TESTING PURPOSES
     
-
+                        // to use only when mesh is an empty manifold
+            void        init( Manifold* mesh )                  { m = mesh; }
             void        setMesh( Manifold* mesh);
     inline  Manifold*   getMesh()                               { return m; }
     inline  void        initMesh( )                             { m = new Manifold(); }
@@ -71,7 +75,10 @@ private :
     inline  void        invalidateGeometricInfo()   { _geometric_info.Invalidate(); }
             void        invalidateAll();
             void        buildCleanSelection();
-    
+    inline  void        increase_timestamp              ()
+    {
+        ++_timestamp;
+    }
 
     
     

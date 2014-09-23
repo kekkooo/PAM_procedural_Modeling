@@ -237,6 +237,47 @@ namespace Procedural{
             obj_save(oss.str(), me_active_mesh );
         }
         
+        void align_to_selected ( Manifold& m, vector< VertexID > selected )
+        {
+            // initialize the module
+            Manifold module;
+            build( module );
+            // move the module in a random position in space
+            transform( module, m );
+            set< VertexID > module_poles, fresh_module_ids;
+            // add the module manifold to me_active_mesh ( the manifold contains 2 separate components
+            // save the vertexID of the module's poles and all of its vertex ids in the new manifold
+            copy( module, m, module_poles, fresh_module_ids );
+            // choose the first selected.size() poles from module
+            vector< VertexID > ordered_poles;
+            int count = 0;
+            for( auto pit = module_poles.begin(); pit != module_poles.end()
+                                               && count < selected.size(); ++pit, ++count )
+            {
+                ordered_poles.push_back(*pit);
+            }
+            
+            CGLA::Mat4x4d R, T;
+            Procedural::Geometry::svd_rigid_motion( m, ordered_poles, m, selected, R, T );
+            double  r;
+            Vec3d   pivot;
+            bsphere_of_selected( m, fresh_module_ids, pivot, r );
+            Mat4x4d tr_origin       = translation_Mat4x4d( -pivot );
+            Mat4x4d tr_back         = translation_Mat4x4d( pivot );
+
+            CGLA::Mat4x4d t = T * R;
+//            CGLA::Mat4x4d t = R * T;
+            
+            cout << "rotation "     << R << endl;
+            cout << "translation "  << T << endl;
+            cout << t << endl;
+            for( auto mv : fresh_module_ids )
+            {
+                m.pos( mv ) = t.mul_3D_point( m.pos( mv ));
+            }
+        }
+        
+        
         double match( Manifold& destination, Manifold& module )
         {
             double angle = 0.0;

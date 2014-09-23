@@ -262,7 +262,19 @@ void test_trasform( MeshEditor *me, const std::vector< std::string > &args )
     Procedural::Matching::console_call2( me->active_mesh( ), id);
 }
 
+void test_align_selected( MeshEditor *me, const std::vector< std::string > &args )
+{
+    Manifold& m = me->active_mesh();
+    vector< VertexID > selected;
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit )
+    {
+        if( me->get_vertex_selection()[*vit] ) selected.push_back(*vit);
+    }
+    
+    Procedural::Matching::align_to_selected( m, selected );
 
+
+}
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -271,6 +283,7 @@ void register_match_console_funcs(GLGraphics::MeshEditor* me)
 {
     me->register_console_function( "test.match.do",         test_match, "test.match.do" );
     me->register_console_function( "test.match.transform",  test_trasform, "test.match.transform" );
+    me->register_console_function( "test.match.align_selected",  test_align_selected, "test.match.align_selected" );
 }
 
 void register_basic_console_funcs(GLGraphics::MeshEditor* me)

@@ -18,6 +18,8 @@
 #include <set>
 #include <sstream>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+//#include <MeshEditE/Procedural/Helpers/svd_rigid_motion.h>
+#include <MeshEditE/Procedural/Helpers/svd_alignment.h>
 
 using namespace HMesh;
 using namespace CGLA;
@@ -32,6 +34,7 @@ namespace Procedural{
         
         void        console_call        ( Manifold& me_active_mesh );
         void        console_call2       ( Manifold& me_active_mesh, int baseID = 0 );
+        void        align_to_selected   ( Manifold& m, vector< VertexID > selected );
         
         void        copy                ( Manifold& source, Manifold& destination,
                                           set< VertexID > &source_poles_in_dest,
