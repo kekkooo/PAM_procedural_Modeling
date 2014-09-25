@@ -25,6 +25,8 @@
 #include <MeshEditE/test.h>
 //#include <polarize.h>
 
+#define COPY_EPS 0.000001
+
 using namespace HMesh;
 using namespace CGLA;
 using namespace std;
@@ -259,12 +261,7 @@ namespace Procedural{
             
             CGLA::Mat4x4d R, T;
             Procedural::Geometry::svd_rigid_motion( m, ordered_poles, m, selected, R, T );
-            double  r;
-            Vec3d   pivot;
-            bsphere_of_selected( m, fresh_module_ids, pivot, r );
-            Mat4x4d tr_origin       = translation_Mat4x4d( -pivot );
-            Mat4x4d tr_back         = translation_Mat4x4d( pivot );
-
+            
             CGLA::Mat4x4d t = T * R;
 //            CGLA::Mat4x4d t = R * T;
             
@@ -327,20 +324,30 @@ namespace Procedural{
             return angle;
         }
         
-        
+        // overload of the real method, in order to do not rewrite a lot of code
         void copy( Manifold& source, Manifold& destination,
-                   set< VertexID > &source_poles_in_dest, set< VertexID > &fresh_vertex_IDs )
+                  set< VertexID > &source_poles_in_dest, set< VertexID > &fresh_vertex_IDs)
         {
-            // save old pole VertexID
+            map< VertexID, VertexID > _;
+            copy(source, destination, source_poles_in_dest, fresh_vertex_IDs, _ );
+        }
+        
+        // copies the source manifold onto the destination manifold saving some useful information
+        void copy( Manifold& source, Manifold& destination,
+                   set< VertexID > &source_poles_in_dest, set< VertexID > &fresh_vertex_IDs,
+                   map< VertexID, VertexID > source_to_dest_poles_ID )
+        {
+            // save the set of the original poles in destination
             set< VertexID > old_poles;
             pole_set( destination, old_poles );
-            // save old vertex IDs
+            // save the set of the original vertices IDs of destination
             set< VertexID > old_dest_IDS;
             for( auto v : destination.vertices() ) old_dest_IDS.insert( v );
             
             map< FaceID, vector< FaceID > > face_steps_map;
-            map< FaceID, FaceID >    old_to_new_faces;
+            map< FaceID, FaceID >           old_to_new_faces;
 
+            // for each face of source save the connnectivity and add it to destination
             for( auto f : source.faces( ))
             {
                 vector< Vec3d > vs;
@@ -358,6 +365,8 @@ namespace Procedural{
                 old_to_new_faces[f] = new_f;
             }
             
+            // for each face of source - merge the faces using as reference the number of steps
+            // needed to the walker to get the right edge
             for( auto f : source.faces( ))
             {
                 FaceID new_f   = old_to_new_faces[f];
@@ -381,17 +390,38 @@ namespace Procedural{
                 }
             }
             
-            // add mesh to the other
-            
             destination.cleanup();
-            // find the difference in poles
-            cout << " there are " << destination.no_vertices() << " verts " << endl;
+            // save source poles
+            vector< VertexID > source_poles;
+            for( VertexID pole : source.vertices())
+            {
+                if( is_pole(source, pole))
+                {
+                    source_poles.push_back( pole );
+                    source_to_dest_poles_ID[pole] = InvalidVertexID;
+                }
+            }
+            
+            // find the IDs of the source's poles in destination
             for( auto vid : destination.vertices() )
             {
                 if( is_pole( destination, vid ))
                 {
-                    if( old_poles.count(vid) == 0 )
+                    if( old_poles.count( vid ) == 0 )
+                    {
+                        // this pole comes from source.
                         source_poles_in_dest.insert( vid );
+                        // save also the mapping between their id on source and destination
+                        for( auto it = source_to_dest_poles_ID.begin(); it != source_to_dest_poles_ID.end(); ++it )
+                        {
+                            if( it->second != InvalidVertexID ) continue;
+                            if( ( destination.pos( vid ) - source.pos( it->first )).length() < COPY_EPS )
+                            {
+                                source_to_dest_poles_ID[it->first] = vid;
+                            }
+                            
+                        }
+                    }
                 }
             }
                         
@@ -445,7 +475,16 @@ namespace Procedural{
         {
             for( VertexID v : m.vertices() )
             {
-                tree.insert(m.pos(v), v);
+                tree.insert( m.pos(v), v);
+            }
+            tree.build();
+        }
+        
+        void build_mesh_kdtree ( Manifold& m, set< VertexID > &selected, kd_tree &tree)
+        {
+            for( VertexID v : selected )
+            {
+                tree.insert( m.pos(v), v);
             }
             tree.build();
         }

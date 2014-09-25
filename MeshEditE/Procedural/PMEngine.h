@@ -36,6 +36,7 @@ public :
             void        perturbate                      ( );
             void        smooth_near_junctions           ();
             void        add_module                      ();
+            void        better_add_module               ( int no_poles_to_glue );
             void        get_candidates                  ( std::set< HMesh::VertexID > &selected );
 
     

@@ -39,9 +39,15 @@ namespace Procedural{
         void        copy                ( Manifold& source, Manifold& destination,
                                           set< VertexID > &source_poles_in_dest,
                                           set< VertexID > &fresh_vertex_IDs );
+        void        copy                ( Manifold& source, Manifold& destination,
+                                         set< VertexID > &source_poles_in_dest,
+                                         set< VertexID > &fresh_vertex_IDs,
+                                         map< VertexID, VertexID > source_to_dest_poles_ID);
+
         double      match               ( Manifold& destination, Manifold& module );
         VertexID    find_nearest_match  ( Manifold& source, set< VertexID > &poles, kd_tree &tree, VertexID &choosen_pole );
         void        build_mesh_kdtree   ( Manifold& m, kd_tree &tree );
+        void        build_mesh_kdtree   ( Manifold& m, set< VertexID > &selected, kd_tree &tree);
         void        build               ( Manifold& m, int iter = 0 );
         void        transform           ( Manifold& source, Manifold& destination );
         void        bsphere             ( Manifold& m, Vec3d& centroid, double& radius );

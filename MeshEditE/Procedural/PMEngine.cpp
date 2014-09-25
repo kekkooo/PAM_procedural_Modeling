@@ -18,6 +18,7 @@
 #include "Matches/Matches.h"
 #include <random>
 #include <queue>
+#include <MeshEditE/Procedural/EngineHelpers/module.h>
 
 using namespace Procedural::Operations;
 using namespace Procedural::Operations::Geometric;
@@ -369,8 +370,96 @@ namespace Procedural
     }
     
     
+    void Engine::better_add_module( int no_poles_to_glue )
+    {
+        if ( no_poles_to_glue <= 0 ) return;
+        // initialize the meshes
+        Manifold module;
+        Matching::build( module );
+        Procedural::EngineHelpers::Module _mod = Procedural::EngineHelpers::buildModule(module);
+        assert( no_poles_to_glue <= _mod.d.poles.size( ));
+        
+        // get the candidates C
+        set<VertexID> candidates;
+        get_candidates( candidates );
+        
+        vector< VertexID > P, Q;
+        
+        //1) randomly select the first candidate v1 and randomly choose a pole c1 - put v1 into P and p1 into Q
+        int         c_offset    = gel_rand() % candidates.size();
+        int         p_offset    = c_offset   % _mod.d.poles.size();
+        auto        c_it        = candidates.begin();
+        VertexID    c1          = *c_it;
+        for (int i = 0; i < c_offset; ++c_it, ++i); // move the iterator
+        // put v1 into P and p1 into Q
+        P.push_back( c1 );
+        Q.push_back( _mod.d.poles[p_offset] );
+
+        //2) if no_poles_to_glue > 1
+        if( no_poles_to_glue > 1 )
+        {
+            Vec3d c1_normal = vertex_normal( module, c1 );
+            // prevent to choose c1 again
+            candidates.erase( c_it );
+
+            //2a) build a kdtree and pick only those candidates that are inside a sphere
+            //    centered at c_sphere = c1 + c1_normal * module.max_dist * ( 1/2 )
+            //    and with    radius   = module.max_dist * ( 2/3 )
+            Procedural::Matching::kd_tree tree;
+            Procedural::Matching::build_mesh_kdtree( module, candidates, tree );
+            Vec3d   sohere_center   = m->pos( c1 ) + c1_normal * 0.5;
+            double  sphere_radius   = _mod.d.max_dist * ( 2 / 3 );
+            vector< VertexID > good_candidates;
+            vector< Vec3d >    good_candidates_pos;
+            tree.in_sphere( sohere_center, sphere_radius, good_candidates_pos, good_candidates);
+            assert( good_candidates.size() > 0 );
+
+            // 3) calculate the distance and the angle between the normals of c1 and each cj belonging to C
+            Procedural::EngineHelpers::angle_map    c_angles;
+            Procedural::EngineHelpers::distance_map c_dist;
+            for( VertexID cj : good_candidates )
+            {
+                arc key = std::make_pair( c1, cj );
+                c_dist  [ key ] = ( module.pos( c1 ) - module.pos( cj )).length();
+                Vec3d cj_normal = vertex_normal( module, cj );
+                cj_normal.normalize();
+                c_angles[ key ] = CGLA::dot( c1_normal, cj_normal );
+            }
+            
+            // 4) choose the right combination of poles that minimizes the difference between angles and distances
+            assert( false ); // NOT IMPLEMENTED YET
+            
+            // 5) for each match between cj and pk - add cj to P and pk into Q
+        }
+        
+        //6) build the SVD rigid motion
+        CGLA::Mat4x4d R, T, t;
+        svd_rigid_motion( module, P, *m, Q, R, T );
+        t = T * R;
+        
+        //7) apply the transformation to the module
+        for( VertexID v : module.vertices() )
+        {
+            module.pos( v ) = t.mul_3D_point( module.pos( v ));
+        }
+        
+        //8) copy the module onto m
+        set< VertexID > module_poles;
+        set< VertexID > fresh_vertex_IDs;
+        Procedural::Matching::copy(module, *m, module_poles, fresh_vertex_IDs );
+        
+        //9) deform the module in order to glue perfectly with m
+        assert(false);
+    }
+    
+    
     void Engine::get_candidates( set< VertexID > &selected )
     {
+        invalidateAll();
+        this->_polesList.Update( m, true );
+        this->_edges_info_container.Update( m );
+        this->_geometric_info.Update( m, _edges_info_container );
+
         int distance_limit   = (int) max( log2( _polesList.No_Poles( )), log2( _polesList.MeanPoleValency( )));
         int branch_size      =  ( CGLA::gel_rand() % 3 ) + 2; // this should depend on the branch thickness
         bool there_are_junctions = _polesList.No_Poles() > 2;
@@ -399,7 +488,37 @@ namespace Procedural
             }
         }
         // reduction step. change to obtain a more sparse sampling
-        int manhattan_distance = 1;
+        // uses 8-neighborhood
+////        int reduction_step = 1;
+//        queue<VertexID> q;
+//        q.push( *selected.begin( ));
+//        while( !q.empty( ))
+//        {
+//            VertexID current = q.front();
+//            q.pop();
+//            Walker w = m->walker(current);
+//            // use set to avoid duplicates
+//            set< VertexID > to_delete;
+//            // consider all the faces around the
+//            for (; !w.full_circle(); w = w.circulate_vertex_ccw())
+//            {
+//                if( selected.find( w.vertex( )) != selected.end( ))
+//                {
+//                    to_delete.insert( w.vertex( ));
+//                    q.push( w.vertex( ));
+//                    
+//                }
+//                if( !_v_info.info[ w.vertex() ].is_pole )
+//                {
+//                    if( selected.find( w.next().vertex( )) != selected.end( ))
+//                    {
+//                        to_delete.insert( w.next().vertex( ));
+//                        q.push( w.next().vertex( ));
+//                    }
+//                }
+//            }
+//            for( auto vid : to_delete ) { selected.erase(vid); }
+//        }
         
         
         // add all the poles
