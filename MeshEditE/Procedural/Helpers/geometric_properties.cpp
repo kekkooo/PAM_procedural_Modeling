@@ -97,7 +97,7 @@ int valence ( Manifold& m, VertexID v )
 
 bool is_singularity ( Manifold& m, VertexID v )
 {
-    return (! ( valence(m, v) == 4));
+    return (( valence( m, v ) != 4 ));
 }
         
 

@@ -57,6 +57,7 @@ void show_skin(HMesh::Manifold& m, int j);
 void skeleton_retract(HMesh::Manifold& m, double frac, HMesh::VertexID v=HMesh::InvalidVertexID);
 
 void polar_subdivide(HMesh::Manifold& mani, int MAX_ITER);
+void polar_extract_patches( HMesh::Manifold &m, HMesh::FaceAttributeVector<int> &face_segment );
 void polar_segment(HMesh::Manifold& m, bool show_segments=false);
 int number_rib_edges(HMesh::Manifold& m,  HMesh::HalfEdgeAttributeVector<EdgeInfo>& edge_info, HMesh::HalfEdgeID h);
 

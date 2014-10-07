@@ -405,6 +405,10 @@ namespace Procedural
             //2a) build a kdtree and pick only those candidates that are inside a sphere
             //    centered at c_sphere = c1 + c1_normal * module.max_dist * ( 1/2 )
             //    and with    radius   = module.max_dist * ( 2/3 )
+            // NOTE : need to exclude from the selection those points that lie on on the other side
+            // of the shape if the shapes is non convex.
+            // possible solution : the point c1b that is c1 + c1_normal * radius * 2.
+            //
             Procedural::Matching::kd_tree tree;
             Procedural::Matching::build_mesh_kdtree( module, candidates, tree );
             Vec3d   sohere_center   = m->pos( c1 ) + c1_normal * 0.5;

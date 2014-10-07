@@ -40,9 +40,9 @@ namespace Procedural{
                                           set< VertexID > &source_poles_in_dest,
                                           set< VertexID > &fresh_vertex_IDs );
         void        copy                ( Manifold& source, Manifold& destination,
-                                         set< VertexID > &source_poles_in_dest,
-                                         set< VertexID > &fresh_vertex_IDs,
-                                         map< VertexID, VertexID > source_to_dest_poles_ID);
+                                          set< VertexID > &source_poles_in_dest,
+                                          set< VertexID > &fresh_vertex_IDs,
+                                          map< VertexID, VertexID > source_to_dest_poles_ID);
 
         double      match               ( Manifold& destination, Manifold& module );
         VertexID    find_nearest_match  ( Manifold& source, set< VertexID > &poles, kd_tree &tree, VertexID &choosen_pole );
@@ -63,7 +63,7 @@ namespace Procedural{
 
         
         
-        
-}}
+            
+    }}
 
-#endif /* defined(__MeshEditE__Matches__) */
+    #endif /* defined(__MeshEditE__Matches__) */

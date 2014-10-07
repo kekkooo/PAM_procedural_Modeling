@@ -17,6 +17,8 @@
 #include "Procedural/Helpers/Plane.h"
 #include <MeshEditE/Procedural/Operations/geometric_operations.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+#include <MesheditE/Procedural/Helpers/structural_helpers.h>
+#include "patch_mapping.h"
 
 using namespace GLGraphics;
 using namespace std;
@@ -232,7 +234,78 @@ void bezier ( CGLA::Vec3d p0, CGLA::Vec3d p1, CGLA::Vec3d p2, int n, vector< CGL
     
     
     points.push_back(p2);
+}
+
+void save_colored_obj ( HMesh::Manifold& m, string &path )
+{
+    // assume that path does not includes the file extension
+    string obj_filename = path + ".obj";
+    string mtl_filename = path + ".mtl";
+    // need to build the patch structure
+    HMesh::FaceAttributeVector<int> face_patch;
+//    polar_extract_patches( m, face_patch );
+    build_patches(m, face_patch);
+    int max_patch = numeric_limits<int>::min();
     
+    // *** OBJ ***
+    ofstream os( obj_filename.data( ));
+    assert( !os.bad() );
+    
+    VertexAttributeVector<int> vmap;
+    int k = 0;
+    
+    // mtllib <filename>.mtl
+    os << "mtllib "<< mtl_filename << endl;
+
+    // - elenco dei vertici v <x> <y> <z>
+    for(VertexIDIterator v = m.vertices_begin(); v != m.vertices_end(); ++v){
+        Vec3d p = m.pos(*v);
+        os << "v "<< p[0] << " " << p[1] << " " << p[2] << "\n";
+        vmap[*v] = k++;
+    }
+    
+    // - elenco delle facce su due righe
+    //      usemtl PATCH_X
+    //      elenco vertici
+    for(FaceIDIterator f = m.faces_begin(); f != m.faces_end(); ++f){
+        vector<int> verts;
+        for(Walker w = m.walker(*f); !w.full_circle(); w = w.circulate_face_ccw()){
+            int idx = vmap[w.vertex()];
+            assert(static_cast<size_t>(idx) < m.no_vertices());
+            // move subscript range from 0..size-1 to 1..size according to OBJ standards
+            verts.push_back(idx + 1);
+        }
+        os << "usemtl PATCH_" << face_patch[*f] << endl;;
+        os << "f ";
+        for(size_t i = 0; i < verts.size() ; ++i){
+            os << verts[i];
+            if (i+1==verts.size())
+                break;
+            os << " ";
+        }
+        os<<endl;
+        
+        // keep track of the number of patches
+        if( face_patch[*f] > max_patch ) max_patch = face_patch[*f];
+    }
+    os.close();
+    
+    
+    // *** MTL ***
+    ofstream mtl_os( mtl_filename.data( ));
+    assert( !mtl_os.bad() );
+    
+    // for each patch of the model there will be 2 rows on the MTL file
+    for( int i = 0; i < max_patch; ++i )
+    {
+        mtl_os << "newmtl PATCH_" << i << endl;
+        mtl_os << "Kd 0.535156 0.824219 0.894531" << endl;
+    }
+    // newmtl PATCH_X // where X is the id of the patch
+    // Kd 0.894531 0.535156 0.535156
+    
+    mtl_os.close();
+
 }
 
 

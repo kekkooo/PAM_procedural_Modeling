@@ -31,6 +31,7 @@ void                linspace                                ( double min, double
 CGLA::Mat4x4d       get_rotation_mat4d                      ( CGLA::Vec3d axis, double cosine );
 void                alt_glue_poles                          ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
 void                bezier                                  ( CGLA::Vec3d p0, CGLA::Vec3d p1, CGLA::Vec3d p2, int n, std::vector< CGLA::Vec3d >& points );
+void                save_colored_obj                        ( HMesh::Manifold& m, std::string &path );
 
 
 

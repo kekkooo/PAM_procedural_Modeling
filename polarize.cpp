@@ -1193,6 +1193,20 @@ FaceAttributeVector<int> segment_faces(Manifold& m, const HalfEdgeAttributeVecto
 }
 
 
+void polar_extract_patches( Manifold &m, FaceAttributeVector<int> &face_segment )
+{
+    m.cleanup();
+    
+    HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges(m);
+    for(auto h: m.halfedges())
+        if(edge_info[h].is_rib()) {
+            number_rib_edges(m, edge_info, h);
+            break;
+        }
+    face_segment = segment_faces(m, edge_info);
+}
+
+
 void polar_segment(Manifold& m, bool show_segments)
 {
     m.cleanup();

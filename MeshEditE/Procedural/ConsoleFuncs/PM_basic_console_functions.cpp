@@ -26,6 +26,8 @@
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <MeshEditE/Procedural/PMEngine.h>
 #include <MeshEditE/Procedural/Matches/Matches.h>
+#include "patch_mapping.h"
+#include <MeshEditE/Test.h>
 
 
 using namespace GLGraphics;
@@ -272,9 +274,30 @@ void test_align_selected( MeshEditor *me, const std::vector< std::string > &args
     }
     
     Procedural::Matching::align_to_selected( m, selected );
-
-
 }
+
+void console_save_patched_obj( MeshEditor *me, const std::vector< std::string > &args )
+{
+    Manifold& m = me->active_mesh();
+    const string& file_name = args[0];
+    string path;
+    if(args.size() == 1){
+    stringstream oss;
+    oss << "/Users/francescousai/Documents/Dottorato/Visiting/" << file_name;
+    path = oss.str(), me->active_mesh();
+
+    }
+
+    save_colored_obj( m, path );
+}
+
+void console_build_patches( MeshEditor *me, const std::vector< std::string > &args )
+{
+    Manifold& m = me->active_mesh();
+    HMesh::FaceAttributeVector<int> face_to_patch;
+    build_patches( m, face_to_patch );
+}
+
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -291,6 +314,8 @@ void register_basic_console_funcs(GLGraphics::MeshEditor* me)
     me->register_console_function( "test.shapes.cube_t",     console_test_cube_triangles,    "test.shapes.cube_t"     );
     me->register_console_function( "test.shapes.cube_q",     console_test_cube_quads,        "test.shapes.cube_q"     );
     me->register_console_function( "test.shapes.basic_PAM",  console_test_basic_PAM,         "test.shapes.basic_PAM"  );
+    me->register_console_function( "test.build_patches",     console_build_patches,          "test.build_patches"  );
+    me->register_console_function( "test.save_patched_obj",  console_save_patched_obj,       "test.save_patched_obj"  );
 }
 
 void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)
