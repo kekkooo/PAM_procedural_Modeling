@@ -11,6 +11,7 @@
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <GEL/GLGraphics/ManifoldRenderer.h>
 #include <queue>
+#include <unordered_set>
 
 using namespace HMesh;
 using namespace std;
@@ -24,7 +25,7 @@ bool is_corner ( Manifold& m, VertexID v, HalfEdgeAttributeVector<int> &layout )
     Walker w = m.walker( v );
     vector<HalfEdgeID> out;
     for (; !w.full_circle(); w = w.circulate_vertex_ccw()) { out.push_back( w.halfedge()); }
-    if( out.size() != 4 )
+    if( out.size() != 4 || is_pole( m, v ) )
     {
         return true;
     }
@@ -94,7 +95,10 @@ void build_patches( Manifold& m, FaceAttributeVector<int> &face_to_patch )
     }
     for( VertexID vid : m.vertices())
     {
-        if( is_corner( m, vid, is_layout )) { corners.push_back( vid ); }
+        if( !is_pole(m, vid))
+        {
+            if( is_corner( m, vid, is_layout )) { corners.push_back( vid ); }
+        }
     }
     
     
@@ -115,7 +119,7 @@ void build_patches( Manifold& m, FaceAttributeVector<int> &face_to_patch )
         DebugRenderer::vertex_colors[c] = Vec3f( 1.0, 1.0, 1.0 );
     }
 
-    int current_patch = 0;
+    int current_patch = 1;
     // - ASSIGN PATCH ID TO EACH BORDER FACE
     for( VertexID C : corners )
     {
@@ -201,16 +205,62 @@ void build_patches( Manifold& m, FaceAttributeVector<int> &face_to_patch )
                 to_visit.push( w.opp().face() );
             }
         }
+    }
+    
+    // set all the triangles to the same patch
+    for( VertexID corner : corners )
+    {
+        bool pole = is_pole(m, corner);
+        if( pole )
+        {
+            Walker w = m.walker(corner);
+            for( ; !w.full_circle(); w = w.circulate_vertex_ccw())
+            {
+                face_to_patch[w.face()] = 0;
+            }
+        }
         
     }
     
-    // draw with colors
+    
+    int no_poles = 0;
+    int no_val3  = 0;
+    int no_val5  = 0;
+    int no_val6p = 0;
+    int no_val6p_no_pole = 0;
+
+    
+    for( VertexID v : m.vertices() )
+    {
+        bool pole = is_pole(m, v);
+        int val = valency(m, v);
+        if( val == 3) ++no_val3;
+        if( val == 5) ++no_val5;
+        if( val > 5)  ++no_val6p;
+        if( !pole )
+        {
+            if( val > 5 )
+                ++no_val6p_no_pole;
+        }
+        if( pole ) { ++no_poles; }
+    }
+    
+    
+    std::unordered_set< int > patches;
+    
+    // draw with colors and save the number of patches
     for( FaceID fid : m.faces() )
     {
 //        if( face_to_patch[fid] != -1 )
-            DebugRenderer::face_colors[fid] = get_color(face_to_patch[fid]);
+        DebugRenderer::face_colors[fid] = get_color(face_to_patch[fid]);
+        patches.insert( face_to_patch[fid] );
     }
 
+    cout << "#poles : " << no_poles << " #patches : " << patches.size() << endl ;
+    cout << "#val 3  :          " << no_val3 << endl;
+    cout << "#val 5  :          " << no_val5 << endl;
+    cout << "#val 6+ :          " << no_val6p << endl;
+    cout << "#val 6+ no pole :  " << no_val6p_no_pole << endl;
 
     
 }
