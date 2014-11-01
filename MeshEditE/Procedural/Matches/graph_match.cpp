@@ -7,8 +7,8 @@
 //
 
 #include "graph_match.h"
-#include <MeshEditE/Procedural/Helpers/geometric_properties.h>
-
+//#include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+//#include "geometric_properties.h"
 using namespace std;
 using namespace HMesh;
 
@@ -39,24 +39,24 @@ GraphEdge build_edge( GraphNode n1, GraphNode n2 )
         
 void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, ManifoldToGraph &mtg )
 {
-    vector< CGLA::Vec3d > pos, normals;
-    for( VertexID v : vs )
-    {
-        pos.push_back( m.pos( v ));
-        normals.push_back( Procedural::Geometry::vertex_normal( m, v ));
-    }
-    // calculate costs save them into the graph
-    for( GraphEdge e : g.arcs )
-    {
-        VertexID v1 = mtg.getId( e.first ),
-                 v2 = mtg.getId( e.second );
-        CGLA::Vec3d n1 = Procedural::Geometry::vertex_normal( m, v1 ),
-                    n2 = Procedural::Geometry::vertex_normal( m, v2 );
-
-        double distance = ( m.pos( v1 ) - m.pos( v2 )).length();
-        double angle    = acos( CGLA::dot( n1, n2 ));
-        g.setCost( e, make_pair( distance, angle ));
-    }
+//    vector< CGLA::Vec3d > pos, normals;
+//    for( VertexID v : vs )
+//    {
+//        pos.push_back( m.pos( v ));
+//        normals.push_back( Procedural::Geometry::vertex_normal( m, v ));
+//    }
+//    // calculate costs save them into the graph
+//    for( GraphEdge e : g.arcs )
+//    {
+//        VertexID v1 = mtg.getId( e.first ),
+//                 v2 = mtg.getId( e.second );
+//        CGLA::Vec3d n1 = Procedural::Geometry::vertex_normal( m, v1 ),
+//                    n2 = Procedural::Geometry::vertex_normal( m, v2 );
+//
+//        double distance = ( m.pos( v1 ) - m.pos( v2 )).length();
+//        double angle    = acos( CGLA::dot( n1, n2 ));
+//        g.setCost( e, make_pair( distance, angle ));
+//    }
 }
     
         
@@ -119,6 +119,93 @@ EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &aps,
         g.RemoveNode( choosen );
     }
     return cost_sum;
+}
+        
+EdgeCost getStarTotalCost( GraphStruct &g, GraphNode n )
+{
+    vector< GraphEdge > star;
+    EdgeCost cost = make_pair( 0.0, 0.0 );
+    // prendere la sua star
+    g.getStar( n, star );
+    // calcolare la somma dei costi della star
+    for( GraphEdge e : star )
+    {
+        cost = cost + g.getCost( e );
+    }
+    return cost;
+}
+        
+GraphNode remove_most_expensive_node( GraphStruct &g )
+{
+    map< GraphNode, EdgeCost > total_cost;
+    // per ogni vertice
+    for( size_t idx : g.nodes )
+    {
+        if( g.exists( idx ))
+        {
+            total_cost[idx] = getStarTotalCost( g, idx );
+        }
+    }
+    
+    EdgeCost    max_cost = (*total_cost.begin()).second;
+    GraphNode   choosen  = (*total_cost.begin()).first;
+    
+    // scegliere il vertice con il costo maggiore della star
+    for( auto star_cost : total_cost )
+    {
+        if( star_cost.second > max_cost )
+        {
+            max_cost = star_cost.second;
+            choosen  = star_cost.first;
+        }
+    }
+    // rimuoverlo dal grafo
+    g.RemoveNode( choosen );
+    return choosen;
+}
+        
+        
+        
+// UTILITIES
+std::ostream& graph_print (std::ostream &out, EdgeCost cost)
+{
+    out << "(" << cost.first << ", " << cost.second << ")";
+    return out;
+}
+        
+std::ostream& graph_print (std::ostream &out, GraphNode &node)
+{
+    out << "[" << (long)node << "]";
+    return out;
+}
+
+std::ostream& graph_print (std::ostream &out, GraphEdge &edge)
+{
+    out << "[" << (long)edge.first << ", " << (long)edge.second << "]";
+    return out;
+}
+std::ostream& operator<< (std::ostream &out, GraphStruct &g)
+{
+        out << " the graph has : " << g.no_nodes() << " nodes and " << g.arcs.size() << " edges " << std::endl;
+        out << "the nodes are :" << std::endl;
+        for( GraphNode n : g.nodes )
+        {
+            if(g.exists(n))
+            {
+                graph_print( out, n )  << std::endl;
+            }
+        }
+        out << "the arcs are :" << std::endl;
+        for( auto e : g.arcs )
+        {
+            graph_print(out, e) ;
+            out << " ==> ";
+            graph_print(out, g.getCost(e))  << std::endl ;
+//            out <<  std::endl;
+        }
+        out << "================END=====================" << std::endl << std::endl;
+    //
+    return out;
 }
 
 

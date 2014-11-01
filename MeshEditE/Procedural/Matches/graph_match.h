@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stack>
+#include <ostream>
 #include <GEL/HMesh/Manifold.h>
 
 #define EDGE_COST_EPS 0.00000001
@@ -27,7 +28,7 @@ inline EdgeCost operator +( const EdgeCost& l, const EdgeCost& r )
         { return std::make_pair( l.first + r.first, l.second + r.second ); };
 
 inline EdgeCost operator -( const EdgeCost& l, const EdgeCost& r )
-        { return std::make_pair( fabs( l.first + r.first ), fabs( l.second + r.second )); };
+        { return std::make_pair( fabs( l.first - r.first ), fabs( l.second - r.second )); };
         
 inline bool is_equal( double l, double r ) { return fabs( l - r ) < EDGE_COST_EPS; }
 inline bool operator ==( const EdgeCost& l, EdgeCost& r ) { return is_equal( l.first, r.first ) && is_equal( l.second, r.second ); }
@@ -65,10 +66,7 @@ inline bool operator >=( const EdgeCost& l, const EdgeCost& r)
     return !( l < r );
 }
         
-
 GraphEdge build_edge( GraphNode n1, GraphNode n2 );
-        
-        
         
 struct ManifoldToGraph
 {
@@ -95,6 +93,8 @@ public:
 /// initialization is super-simple as well, just feed the number of nodes
 /// it will create the complete graph, then set the various costs.
 /// if a cost is not set it will be the maximum
+/// nodes cannot be added to this structure
+/// nodes can be deleted from this structure, simply they will be set as -1 at the corresponding index
 struct GraphStruct
 {
 private :
@@ -105,8 +105,15 @@ public :
     std::vector<GraphNode> nodes;
     std::vector<GraphEdge> arcs;
     
-    inline bool exists( GraphNode n ) { return ( n < max_node_idx && nodes[n] == n ); }
+    inline bool exists( GraphNode n ) { return ( n <= max_node_idx && nodes[n] == n ); }
     inline bool exists( GraphEdge e ) { return ( exists( e.first ) && exists( e.second )); }
+    
+    inline size_t no_nodes()
+    {
+        size_t count = 0;
+        for ( auto n : nodes ) { if( exists(n)) ++count; }
+        return count;
+    }
     
     inline void setCost( GraphEdge e, EdgeCost cost )
     {
@@ -126,7 +133,6 @@ public :
         assert( exists( e ));
         return costs[e];
     }
-
     
     inline EdgeCost getCost( GraphNode n1, GraphNode n2 )
     {
@@ -148,20 +154,23 @@ public :
         }
     }
     
+    GraphStruct(){}
+    
     GraphStruct( size_t no_nodes )
     {
         assert( no_nodes >= 0 );
-        double lub = std::numeric_limits<double>::max();
-        EdgeCost c = std::make_pair( lub, lub );
+        max_node_idx = no_nodes - 1;
+        double ub   = std::numeric_limits<double>::max();
+        EdgeCost c  = std::make_pair( ub, ub );
         // add nodes
         for( size_t i = 0; i < no_nodes; ++i )
         {
             nodes.push_back( (int)i );
         }
         // add arcs
-        for( size_t i = 0; i < no_nodes; ++i )
+        for( size_t i = 0; i <= no_nodes; ++i )
         {
-            for( size_t j = i; j < no_nodes; ++j )
+            for( size_t j = i+1; j < no_nodes; ++j )
             {
                 GraphEdge e = build_edge( (int)i, (int)j );
                 arcs.push_back( e );
@@ -177,9 +186,11 @@ public :
     void RemoveNode( size_t node )
     {
         nodes[node] = -1;
+        assert( !exists( node ));
         // save all the arcs where
-        typedef std::vector<GraphEdge>::iterator arc_iter;
-        std::stack<arc_iter> to_delete;
+        typedef std::vector<GraphEdge>::iterator    arc_iter;
+        std::stack<arc_iter>                        to_delete;
+        // mark every arc outgoing from the node to be deleted
         for( arc_iter it = arcs.begin(); it != arcs.end(); ++it )
         {
             if( it->first == node || it->second == node )
@@ -196,7 +207,17 @@ public :
     }
 };
 
-void graphStruct_difference( GraphStruct &g1, GraphStruct &g2, GraphStruct &g );
+
+std::ostream& graph_print (std::ostream &out, EdgeCost cost);
+std::ostream& graph_print (std::ostream &out, GraphNode &node);
+std::ostream& graph_print (std::ostream &out, GraphEdge &edge);
+std::ostream& operator<< (std::ostream &out, GraphStruct &g);
+
+
+
+void        graphStruct_difference(         GraphStruct &g1, GraphStruct &g2, GraphStruct &g );
+GraphNode   remove_most_expensive_node (    GraphStruct &g );
+EdgeCost    getStarTotalCost(               GraphStruct &g, GraphNode n );
 
 EdgeCost get_best_subset( HMesh::Manifold &host,  std::vector<HMesh::VertexID> &aps,
                           HMesh::Manifold &module, std::vector<HMesh::VertexID> &poles,

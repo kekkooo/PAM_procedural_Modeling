@@ -14,7 +14,7 @@
 		<string>https://github.com/kekkooo/PAM_procedural_Modeling.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>MeshEditE.xcodeproj/project.xcworkspace</string>
+	<string>MeshEditE.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>90A33331FE31BF588CDA0EA09FC263054B534315</key>
