@@ -19,9 +19,10 @@
 namespace Procedural{
     namespace GraphMatch{
         
-typedef size_t                     GraphNode;
-typedef std::pair<size_t, size_t>  GraphEdge;
-typedef std::pair<double, double>  EdgeCost;
+typedef size_t                                          GraphNode;
+typedef std::pair<size_t, size_t>                       GraphEdge;
+typedef std::pair<double, double>                       EdgeCost;
+typedef std::pair< HMesh::VertexID, HMesh::VertexID >   Match;
 
 // should define here the operators +,-, >, <, == for the EdgeCost
 inline EdgeCost operator +( const EdgeCost& l, const EdgeCost& r )
@@ -74,8 +75,8 @@ private:
     std::map< HMesh::VertexID, GraphNode > id_to_node;
     std::map< GraphNode, HMesh::VertexID > node_to_id;
 public:
-    inline GraphNode        getNode( HMesh::VertexID v )   { assert( id_to_node.count(v) > 0 ); return id_to_node[v]; }
-    inline HMesh::VertexID  getId  ( GraphNode n )         { assert( node_to_id.count(n) > 0 ); return node_to_id[n]; }
+    inline GraphNode        getNode     ( HMesh::VertexID v )   { assert( id_to_node.count(v) > 0 ); return id_to_node[v]; }
+    inline HMesh::VertexID  getVertexId ( GraphNode n )         { assert( node_to_id.count(n) > 0 ); return node_to_id[n]; }
     ManifoldToGraph( const std::vector<HMesh::VertexID> &vs )
     {
         GraphNode curr = 0;
@@ -219,11 +220,13 @@ void        graphStruct_difference(         GraphStruct &g1, GraphStruct &g2, Gr
 GraphNode   remove_most_expensive_node (    GraphStruct &g );
 EdgeCost    getStarTotalCost(               GraphStruct &g, GraphNode n );
 
-EdgeCost get_best_subset( HMesh::Manifold &host,  std::vector<HMesh::VertexID> &aps,
+EdgeCost get_best_poles_subset
+                        ( HMesh::Manifold &host,  std::vector<HMesh::VertexID> &aps,
                           HMesh::Manifold &module, std::vector<HMesh::VertexID> &poles,
-                          std::vector< size_t > &selected_indices, size_t target );
+                          std::vector< Match > &selected, size_t target );
 
 void     fill_graph    ( HMesh::Manifold &m, std::vector<HMesh::VertexID> &vs, GraphStruct &g );
+
 
 }}
 #endif /* defined(__MeshEditE__graph_match__) */

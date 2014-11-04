@@ -7,14 +7,15 @@
 //
 
 #include "graph_match.h"
-//#include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+#include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 //#include "geometric_properties.h"
 using namespace std;
 using namespace HMesh;
 
 namespace Procedural{
     namespace GraphMatch{
-        
+
+
 void graphStruct_difference( GraphStruct &g1, GraphStruct &g2, GraphStruct &g )
 {
     // they should have the same node set and arc set
@@ -29,6 +30,7 @@ void graphStruct_difference( GraphStruct &g1, GraphStruct &g2, GraphStruct &g )
     }
 }
 
+
 GraphEdge build_edge( GraphNode n1, GraphNode n2 )
 {
     assert( n1 != n2 );
@@ -36,33 +38,33 @@ GraphEdge build_edge( GraphNode n1, GraphNode n2 )
     else          return std::make_pair( n2, n1 );
     
 }
+
         
 void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, ManifoldToGraph &mtg )
 {
-//    vector< CGLA::Vec3d > pos, normals;
-//    for( VertexID v : vs )
-//    {
-//        pos.push_back( m.pos( v ));
-//        normals.push_back( Procedural::Geometry::vertex_normal( m, v ));
-//    }
-//    // calculate costs save them into the graph
-//    for( GraphEdge e : g.arcs )
-//    {
-//        VertexID v1 = mtg.getId( e.first ),
-//                 v2 = mtg.getId( e.second );
-//        CGLA::Vec3d n1 = Procedural::Geometry::vertex_normal( m, v1 ),
-//                    n2 = Procedural::Geometry::vertex_normal( m, v2 );
-//
-//        double distance = ( m.pos( v1 ) - m.pos( v2 )).length();
-//        double angle    = acos( CGLA::dot( n1, n2 ));
-//        g.setCost( e, make_pair( distance, angle ));
-//    }
+    vector< CGLA::Vec3d > pos, normals;
+    for( VertexID v : vs )
+    {
+        pos.push_back( m.pos( v ));
+        normals.push_back( Procedural::Geometry::vertex_normal( m, v ));
+    }
+    // calculate costs save them into the graph
+    for( GraphEdge e : g.arcs )
+    {
+        VertexID v1 = mtg.getVertexId( e.first ),
+                 v2 = mtg.getVertexId( e.second );
+        CGLA::Vec3d n1 = Procedural::Geometry::vertex_normal( m, v1 ),
+                    n2 = Procedural::Geometry::vertex_normal( m, v2 );
+
+        double distance = ( m.pos( v1 ) - m.pos( v2 )).length();
+        double angle    = acos( CGLA::dot( n1, n2 ));
+        g.setCost( e, make_pair( distance, angle ));
+    }
 }
-    
+
         
-EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &aps,
-                          Manifold &module, vector< VertexID > &poles,
-                          vector< size_t > &selected_indices, size_t target )
+EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &aps, Manifold &module,
+                          vector< VertexID > &poles, vector< Match > &selected, size_t target )
 {
     assert( aps.size() == poles.size( ));
     assert( target <= aps.size());
@@ -99,7 +101,6 @@ EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &aps,
                 {
                     total_cost[idx] = total_cost[idx] + g.getCost( e );
                 }
-                
             }
         }
         
@@ -118,8 +119,17 @@ EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &aps,
         // rimuoverlo dal grafo
         g.RemoveNode( choosen );
     }
+    // save the matches
+    for( GraphNode index : g.nodes )
+    {
+        if( g.exists( index ))
+        {
+            selected.push_back( make_pair( mtg_module.getVertexId( index ), mtg_host.getVertexId( index )));
+        }
+    }
     return cost_sum;
 }
+  
         
 EdgeCost getStarTotalCost( GraphStruct &g, GraphNode n )
 {
@@ -134,6 +144,7 @@ EdgeCost getStarTotalCost( GraphStruct &g, GraphNode n )
     }
     return cost;
 }
+        
         
 GraphNode remove_most_expensive_node( GraphStruct &g )
 {
@@ -165,13 +176,13 @@ GraphNode remove_most_expensive_node( GraphStruct &g )
 }
         
         
-        
 // UTILITIES
 std::ostream& graph_print (std::ostream &out, EdgeCost cost)
 {
     out << "(" << cost.first << ", " << cost.second << ")";
     return out;
 }
+   
         
 std::ostream& graph_print (std::ostream &out, GraphNode &node)
 {
@@ -179,11 +190,14 @@ std::ostream& graph_print (std::ostream &out, GraphNode &node)
     return out;
 }
 
+        
 std::ostream& graph_print (std::ostream &out, GraphEdge &edge)
 {
     out << "[" << (long)edge.first << ", " << (long)edge.second << "]";
     return out;
 }
+        
+        
 std::ostream& operator<< (std::ostream &out, GraphStruct &g)
 {
         out << " the graph has : " << g.no_nodes() << " nodes and " << g.arcs.size() << " edges " << std::endl;

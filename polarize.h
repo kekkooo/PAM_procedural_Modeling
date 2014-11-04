@@ -38,7 +38,7 @@ HMesh::HalfEdgeAttributeVector<EdgeInfo> label_PAM_edges(HMesh::Manifold& m);
 
 const CGLA::Vec3f& get_color(int i);
 
-bool is_pole(HMesh::Manifold& m, HMesh::VertexID v);
+bool is_pole( HMesh::Manifold& m, HMesh::VertexID v);
 
 void make_height_fun(const HMesh::Manifold& m, HMesh::VertexAttributeVector<double>& fun,
                      double& vmin, double &vmax);

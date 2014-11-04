@@ -669,6 +669,26 @@ double mean_length_of_outoing_he ( Manifold& m, VertexID vertex )
     return  length;
 }
 
+        
+void bsphere( Manifold& m, Vec3d& centroid, double& radius )
+{
+    Vec3d pmin, pmax;
+    if(m.no_vertices()==0)
+        return;
+    VertexIDIterator v = m.vertices_begin();
+    pmin = pmax = m.pos(*v);
+    ++v;
+    for(; v != m.vertices_end(); ++v){
+        pmin = v_min(m.pos(*v), pmin);
+        pmax = v_max(m.pos(*v), pmax);
+    }
+    
+    Manifold::Vec rad = ( pmax - pmin ) * 0.5f;
+    centroid = pmin + rad;
+    radius = rad.length();
+}
+
+
 
 
 

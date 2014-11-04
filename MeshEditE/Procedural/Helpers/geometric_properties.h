@@ -69,6 +69,7 @@ double              dihedral_angle                          ( CGLA::Vec3d a, CGL
 double              edge_length                             ( HMesh::Manifold& m,
                                                               HMesh::HalfEdgeAttributeVector<double> lengths );
 double              mean_length_of_outoing_he               ( HMesh::Manifold& m, HMesh::VertexID vertex );
+void                bsphere                                 ( HMesh::Manifold& m, CGLA::Vec3d& centroid, double& radius );
 
 
 

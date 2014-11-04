@@ -50,7 +50,7 @@ using namespace HMesh;
 using namespace LinAlg;
 using namespace GLGraphics;
 
-bool is_pole(Manifold& m, VertexID v)
+bool is_pole( Manifold& m, VertexID v)
 {
     Walker w = m.walker(v);
     for(; !w.full_circle(); w = w.circulate_vertex_ccw())
