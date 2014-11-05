@@ -8,8 +8,9 @@
 
 #include "module_alignment.h"
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
-#include <MeshEditE/Procedural/Matches/graph_match.h>
+#include <MeshEditE/Procedural/Operations/structural_operations.h>
 #include <polarize.h>
+#include <unordered_set>
 
 using namespace std;
 using namespace HMesh;
@@ -17,11 +18,13 @@ using namespace CGLA;
 using namespace Geometry;
 using namespace Procedural::Geometry;
 using namespace Procedural::GraphMatch;
+using namespace Procedural::Operations::Structural;
 
 namespace Procedural {
     namespace Helpers{
         namespace ModuleAlignment{
-            
+
+/// prepare the spatial index
 void build_manifold_kdtree( Manifold& m, vector< VertexID > &selected, kd_tree &tree)
 {
     for( VertexID v : selected )
@@ -30,7 +33,8 @@ void build_manifold_kdtree( Manifold& m, vector< VertexID > &selected, kd_tree &
     }
     tree.build();    
 }
-            
+
+/// builds a pseudo-random transformation matrix
 void generate_random_transform( HMesh::Manifold &host, HMesh::Manifold &module, CGLA::Mat4x4d &t )
 {
     // calculate bounding sphere of the two manifolds
@@ -81,19 +85,21 @@ void generate_random_transform( HMesh::Manifold &host, HMesh::Manifold &module, 
     t = rot * CGLA::translation_Mat4x4d( translation );
 }
 
+/// applu pseudo-transformation to the poles of the module
 void transform_module_poles( HMesh::Manifold &host, HMesh::Manifold &module, std::map< HMesh::VertexID, CGLA::Vec3d > &new_pos)
 {
     CGLA::Mat4x4d t;
     generate_random_transform( host, module, t );
     
-    for( auto vid : module.vertices( ))
+    for( auto pole : module.vertices( ))
     {
-        if( is_pole( module, vid )){
-            new_pos[vid] = t.mul_3D_point( module.pos( vid ));
+        if( is_pole( module, pole )){
+            new_pos[pole] = t.mul_3D_point( module.pos( pole ));
         }
     }
 }
-            
+
+/// find correspondances between module and
 void match_module_to_host( Manifold &host, Manifold &module, kd_tree &tree,
                            vector< VertexID > &host_p, vector< VertexID > &module_p )
 {
@@ -108,23 +114,86 @@ void match_module_to_host( Manifold &host, Manifold &module, kd_tree &tree,
             assert( tree.closest_point( module.pos( vid ), distance, foundVec, foundID ));
             
             module_p.push_back( vid );
-            host_p.push_back(   foundID );
+            host_p.push_back( foundID );
+        }
+    }
+    assert(module_p.size() == host_p.size());
+}
+
+EdgeCost get_glueings( Manifold &host, Manifold &module, vector<VertexID> &host_vertices, vector<VertexID> &module_poles,
+                       size_t no_glueings, vector<Match> &matches )
+{
+    EdgeCost cost = get_best_poles_subset(host, host_vertices, module, module_poles, matches, no_glueings);
+    return cost;
+}
+            
+
+void apply_optimal_alignment( Manifold &host, Manifold &module, vector<Match> &matches )
+{
+    Mat4x4d R, T;
+    vector< VertexID > host_v, module_p;
+    for( auto m : matches )
+    {
+        module_p.push_back(m.first);
+        host_v.push_back(m.second);
+    }
+    svd_rigid_motion( module, module_p, host, host_v, R, T );
+    
+    Mat4x4d t = T * R;
+//    cout << "rotation "     << R << endl;
+//    cout << "translation "  << T << endl;
+//    cout << t << endl;
+    for( auto mv : module.vertices() ) { module.pos( mv ) = t.mul_3D_point( module.pos( mv )); }
+}
+            
+void best_configuration( vector<matches_and_cost> matches_and_costs, matches_and_cost &choosen_cost )
+{
+    size_t      index       = 0;
+    EdgeCost    best_cost   = matches_and_costs[0].second;
+    for( int i = 1; i < matches_and_costs.size(); ++i)
+    {
+        if( matches_and_costs[i].second < best_cost )
+        {
+            best_cost   = matches_and_costs[i].second;
+            index       = i;
+        }
+    }
+    choosen_cost = matches_and_costs[index];
+}
+
+void add_necessary_poles( Manifold &host, vector<VertexID> &selected,
+                          Manifold &module, vector<VertexID> &poles, vector<VertexID> &new_ids )
+{
+    HMesh::VertexAttributeVector<int> vertex_selection;
+    // for each selected vertex
+    for( int i = 0; i < selected.size(); ++i )
+    {
+        if( !is_pole( host, selected[i] ))
+        {
+            // clean the selection
+            for( auto v : host.vertices( )) { vertex_selection[v] = 0; }
+            // calculate the right size accordingly to the valence of the corresponding pole
+            /// TODOOOOOOO
+                                        size_t size = -1;
+            assert(size != -1);
+            // call add branch
+            VertexID poleID = add_branch( host, selected[i], size, vertex_selection );
+            assert( poleID != InvalidVertexID );
+            // save the returned value into new_ids
+            new_ids.push_back( poleID );
+        }
+        else
+        {
+            new_ids.push_back(selected[i]);
         }
     }
 }
 
-void get_glueings( Manifold &host, Manifold &module, vertex_match &pole_to_host_vertex,
-                   int no_glueings, vector< VertexID > selected_poles )
-{
-    
-    
-}
-
-
 
             
 void AddModule( Manifold &host, Manifold &module, size_t no_glueings )
-{
+{    
+    vector<matches_and_cost> matches_vector;
 
     /* How this should work
      -) build a kdtree of the host

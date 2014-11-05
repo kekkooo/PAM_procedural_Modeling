@@ -55,9 +55,13 @@ void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, Mani
                  v2 = mtg.getVertexId( e.second );
         CGLA::Vec3d n1 = Procedural::Geometry::vertex_normal( m, v1 ),
                     n2 = Procedural::Geometry::vertex_normal( m, v2 );
+        n1.normalize();
+        n2.normalize();
 
         double distance = ( m.pos( v1 ) - m.pos( v2 )).length();
         double angle    = acos( CGLA::dot( n1, n2 ));
+        assert( distance > 0 );
+        assert( !isnan( angle ));
         g.setCost( e, make_pair( distance, angle ));
     }
 }
