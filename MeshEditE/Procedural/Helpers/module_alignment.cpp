@@ -123,7 +123,7 @@ void match_module_to_host( Manifold &host, Manifold &module, kd_tree &tree,
 EdgeCost get_glueings( Manifold &host, Manifold &module, vector<VertexID> &host_vertices, vector<VertexID> &module_poles,
                        size_t no_glueings, vector<Match> &matches )
 {
-    EdgeCost cost = get_best_poles_subset(host, host_vertices, module, module_poles, matches, no_glueings);
+    EdgeCost cost = get_best_subset(host, host_vertices, module, module_poles, matches, no_glueings);
     return cost;
 }
             
@@ -212,4 +212,5 @@ void AddModule( Manifold &host, Manifold &module, size_t no_glueings )
      -) smooth the added skeleton ( this is something that needs a little more work )
      */
 }
+
 }}}

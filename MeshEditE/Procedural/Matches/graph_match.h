@@ -220,7 +220,7 @@ void        graphStruct_difference(         GraphStruct &g1, GraphStruct &g2, Gr
 GraphNode   remove_most_expensive_node (    GraphStruct &g );
 EdgeCost    getStarTotalCost(               GraphStruct &g, GraphNode n );
 
-EdgeCost get_best_poles_subset
+EdgeCost get_best_subset
                         ( HMesh::Manifold &host,  std::vector<HMesh::VertexID> &aps,
                           HMesh::Manifold &module, std::vector<HMesh::VertexID> &poles,
                           std::vector< Match > &selected, size_t target );

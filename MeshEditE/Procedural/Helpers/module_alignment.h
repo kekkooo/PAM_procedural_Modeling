@@ -17,11 +17,13 @@
 #include <MeshEditE/Procedural/Matches/graph_match.h>
 #include <map>
 
+namespace GEL_Geometry = Geometry;
+
 namespace Procedural {
     namespace Helpers{
         namespace ModuleAlignment{
 
-typedef GEL::KDTree< CGLA::Vec3d, HMesh::VertexID >                         kd_tree;
+typedef GEL_Geometry::KDTree< CGLA::Vec3d, HMesh::VertexID >                         kd_tree;
 typedef std::map< HMesh::VertexID, HMesh::VertexID >                        vertex_match;
 typedef std::pair< std::vector< Procedural::GraphMatch::Match>,
                                 Procedural::GraphMatch::EdgeCost >          matches_and_cost;

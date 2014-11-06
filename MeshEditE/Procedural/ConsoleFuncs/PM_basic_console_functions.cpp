@@ -28,6 +28,7 @@
 #include <MeshEditE/Procedural/Matches/Matches.h>
 #include "patch_mapping.h"
 #include <MeshEditE/Test.h>
+#include <MeshEditE/Procedural/Helpers/manifold_copy.h>
 
 
 using namespace GLGraphics;
@@ -298,6 +299,15 @@ void console_build_patches( MeshEditor *me, const std::vector< std::string > &ar
     build_patches( m, face_to_patch );
 }
 
+void copy_and_delete_test( MeshEditor *me, const std::vector< std::string > &args )
+{
+    std::set<VertexID> m0v, m1v;
+    assert( me->get_mesh(0).no_vertices() > 0 );
+    assert( me->get_mesh(1).no_vertices() > 0 );
+    Procedural::Helpers::add_manifold(me->get_mesh(0), me->get_mesh(1), m0v, m1v);
+    Procedural::Helpers::test_delete(me->get_mesh(0), m1v );
+}
+
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -307,6 +317,7 @@ void register_match_console_funcs(GLGraphics::MeshEditor* me)
     me->register_console_function( "test.match.do",         test_match, "test.match.do" );
     me->register_console_function( "test.match.transform",  test_trasform, "test.match.transform" );
     me->register_console_function( "test.match.align_selected",  test_align_selected, "test.match.align_selected" );
+    me->register_console_function( "test.copy_and_delete_test",  copy_and_delete_test, "copy_and_delete_test" );
 }
 
 void register_basic_console_funcs(GLGraphics::MeshEditor* me)
