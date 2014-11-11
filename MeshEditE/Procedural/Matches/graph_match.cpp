@@ -36,7 +36,6 @@ GraphEdge build_edge( GraphNode n1, GraphNode n2 )
     assert( n1 != n2 );
     if( n1 < n2 ) return std::make_pair( n1, n2 );
     else          return std::make_pair( n2, n1 );
-    
 }
 
         
@@ -66,7 +65,21 @@ void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, Mani
     }
 }
 
+
+EdgeCost get_best_subset( Manifold &m,  vector<Match> &proposed, vector< Match > &selected, size_t target )
+{
+    vector<VertexID> host_vertices, module_poles;
+    for( auto pole_and_vertex : proposed )
+    {
+        module_poles.push_back(  pole_and_vertex.first);
+        host_vertices.push_back( pole_and_vertex.second );
+    }
+    
+    EdgeCost c = get_best_subset(m, host_vertices, m, module_poles, selected, target );
+    return c;
+}
         
+
 EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &aps, Manifold &module,
                           vector< VertexID > &poles, vector< Match > &selected, size_t target )
 {

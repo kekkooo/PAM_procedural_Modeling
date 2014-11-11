@@ -64,6 +64,8 @@ HMesh::HalfEdgeID   BranchCutDirection  ( HMesh::Manifold& m, HMesh::VertexID,
 void                LabelJunctions      ( HMesh::Manifold& m,
                                           HMesh::HalfEdgeAttributeVector<EdgeInfo> &edge_info );
         
+HMesh::VertexID     get_other_end_pole  ( HMesh::Manifold &m, HMesh::VertexID pole, HMesh::FaceID f);
+        
 
         
 }}

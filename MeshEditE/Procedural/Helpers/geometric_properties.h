@@ -13,6 +13,7 @@
 #include <GEL/HMesh/Manifold.h>
 #include <GEL/CGLA/Vec3d.h>
 #include "polarize.h"
+#include <set>
 
 
 namespace Procedural{
@@ -70,6 +71,8 @@ double              edge_length                             ( HMesh::Manifold& m
                                                               HMesh::HalfEdgeAttributeVector<double> lengths );
 double              mean_length_of_outoing_he               ( HMesh::Manifold& m, HMesh::VertexID vertex );
 void                bsphere                                 ( HMesh::Manifold& m, CGLA::Vec3d& centroid, double& radius );
+void                bsphere                                 ( HMesh::Manifold& m, std::vector<HMesh::VertexID> &vertices, CGLA::Vec3d& centroid, double& radius );
+void                bsphere                                 ( HMesh::Manifold& m, const std::set<HMesh::VertexID> &vertices, CGLA::Vec3d& centroid, double& radius );
 
 
 

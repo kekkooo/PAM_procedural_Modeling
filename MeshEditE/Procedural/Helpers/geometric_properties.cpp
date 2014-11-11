@@ -673,12 +673,13 @@ double mean_length_of_outoing_he ( Manifold& m, VertexID vertex )
 void bsphere( Manifold& m, Vec3d& centroid, double& radius )
 {
     Vec3d pmin, pmax;
-    if(m.no_vertices()==0)
-        return;
+    if( m.no_vertices() == 0 ) { return; }
+
     VertexIDIterator v = m.vertices_begin();
     pmin = pmax = m.pos(*v);
     ++v;
-    for(; v != m.vertices_end(); ++v){
+    for(; v != m.vertices_end(); ++v )
+    {
         pmin = v_min(m.pos(*v), pmin);
         pmax = v_max(m.pos(*v), pmax);
     }
@@ -688,7 +689,38 @@ void bsphere( Manifold& m, Vec3d& centroid, double& radius )
     radius = rad.length();
 }
 
+void bsphere ( Manifold& m, vector<VertexID> &vertices, Vec3d& centroid, double& radius )
+{
+    Vec3d pmin, pmax;
+    if( m.no_vertices() == 0 ) { return; }
 
+    pmin = pmax = m.pos( vertices.front() );
+    for( VertexID v : vertices )
+    {
+        pmin = v_min( m.pos( v ), pmin );
+        pmax = v_max( m.pos( v ), pmax );
+    }
+    Manifold::Vec rad = ( pmax - pmin ) * 0.5f;
+    centroid = pmin + rad;
+    radius = rad.length();
+
+}
+
+void bsphere ( Manifold& m, const set<VertexID> &vertices, Vec3d& centroid, double& radius )
+{
+    Vec3d pmin, pmax;
+    if( m.no_vertices() == 0 ) { return; }
+    
+    pmin = pmax = m.pos( *vertices.begin() );
+    for( VertexID v : vertices )
+    {
+        pmin = v_min( m.pos( v ), pmin );
+        pmax = v_max( m.pos( v ), pmax );
+    }
+    Manifold::Vec rad = ( pmax - pmin ) * 0.5f;
+    centroid = pmin + rad;
+    radius = rad.length();
+}
 
 
 

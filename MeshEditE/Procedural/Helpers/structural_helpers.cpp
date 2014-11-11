@@ -181,6 +181,30 @@ void LabelJunctions ( Manifold& m, HalfEdgeAttributeVector<EdgeInfo> &edge_info 
         }
     }
 }
+        
+/// gets the pole that is on the other end of the chain of opposite rib edges
+VertexID get_other_end_pole  ( Manifold &m, VertexID pole, FaceID f)
+{
+    assert( pole != InvalidVertexID );
+    assert( f    != InvalidFaceID   );
+    assert( m.walker(f).vertex() == pole || m.walker(f).next().vertex() == pole ||
+            m.walker(f).prev().vertex() == pole );
+    assert( is_pole( m, pole ));
+    
+    Walker w = m.walker( f );
+    for( ; w.vertex() != pole; w = w.next() );
+    Walker right = w, left = w.next();
+    while( !is_pole( m, left.vertex() ))
+    {
+        left    = left.next().opp().next();
+        right   = right.prev().opp().prev();
+    }
+    assert( left.face() == right.face() );
+    assert( left.next().halfedge() == right.halfedge());
+    assert( is_pole(m, left.vertex( )));
+    
+    return left.vertex();
+}
 
     
 }}

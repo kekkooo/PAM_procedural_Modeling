@@ -12,6 +12,9 @@
 #include <MeshEditE/Procedural/Operations/structural_operations.h>
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+#include <MeshEditE/Procedural/Helpers/module_alignment.h>
+#include <GEL/HMesh/obj_load.h>
+
 
 using namespace GLGraphics;
 using namespace std;
@@ -131,15 +134,37 @@ void console_test_add_branch_on_high_angles( MeshEditor *me, const std::vector< 
             me->get_vertex_selection()[vid] = 1;
             add_branch( m, vid, 1, me->get_vertex_selection( ));
         }
-        
     }
-    
     me->active_visobj().clear_selection();
     m.cleanup();
-
-    
 }
 
+void console_test_add_module( MeshEditor *me, const std::vector< std::string > &args )
+{
+    me->save_active_mesh();
+    stringstream    oss;
+    Manifold        module;
+    Manifold&       host                = me->active_mesh();
+    string          filename            = "test_match.obj";
+    int             target_glueings     = 2;
+
+
+
+    if( args.size() > 0 ){
+        istringstream a0( args[0] );
+        a0 >> filename;
+    }
+    
+    if( args.size() > 1 ){
+        istringstream a1( args[1] );
+        a1 >> target_glueings;
+    }
+
+    
+    oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results/" << filename;
+    obj_load( oss.str(), module );
+    Procedural::Helpers::ModuleAlignment::AddModule( host, module, 2 );
+}
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -155,6 +180,10 @@ namespace Procedural{
             me->register_console_function( "test.structure.glue_poles", console_test_glue_poles, "test.structure.glue_poles" );
             
             me->register_console_function( "test.structure.add_branch_on_high_angles", console_test_add_branch_on_high_angles, "test.structure.add_branch_on_high_angles" );
+
+            me->register_console_function( "test.add_module", console_test_add_module, "console_test_add_module" );
+            
+            
             
         }
 }}

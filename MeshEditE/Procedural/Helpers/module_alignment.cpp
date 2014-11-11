@@ -11,6 +11,7 @@
 #include <MeshEditE/Procedural/Operations/structural_operations.h>
 #include <polarize.h>
 #include <unordered_set>
+#include <MeshEditE/Procedural/Helpers/manifold_copy.h>
 
 using namespace std;
 using namespace HMesh;
@@ -25,7 +26,7 @@ namespace Procedural {
         namespace ModuleAlignment{
 
 /// prepare the spatial index
-void build_manifold_kdtree( Manifold& m, vector< VertexID > &selected, kd_tree &tree)
+void build_manifold_kdtree( Manifold& m, set< VertexID > &selected, kd_tree &tree)
 {
     for( VertexID v : selected )
     {
@@ -35,27 +36,28 @@ void build_manifold_kdtree( Manifold& m, vector< VertexID > &selected, kd_tree &
 }
 
 /// builds a pseudo-random transformation matrix
-void generate_random_transform( HMesh::Manifold &host, HMesh::Manifold &module, CGLA::Mat4x4d &t )
+void generate_random_transform( HMesh::Manifold &m, const set<VertexID> &host_vs,
+                                const set<VertexID> &module_vs, CGLA::Mat4x4d &t )
 {
     // calculate bounding sphere of the two manifolds
     Vec3d  host_centroid, module_centroid;
     double host_radius, module_radius;
-    Procedural::Geometry::bsphere( module, module_centroid,   module_radius );
-    Procedural::Geometry::bsphere( host,   host_centroid,     host_radius   );
+    Procedural::Geometry::bsphere( m, module_vs, module_centroid,   module_radius );
+    Procedural::Geometry::bsphere( m, host_vs,   host_centroid,     host_radius   );
     
     // choose a random edge as translation direction and another as rotation axis
-    size_t  tr_edge_number  = CGLA::gel_rand() % host.no_halfedges();
-    size_t  rot_edge_number = CGLA::gel_rand() % module.no_halfedges();
+    size_t  tr_edge_number  = CGLA::gel_rand() % m.no_halfedges();
+    size_t  rot_edge_number = CGLA::gel_rand() % m.no_vertices();
     int     count           = 0;
     HalfEdgeID tr_candidate;
-    for( auto it = host.halfedges_begin(); it != host.halfedges_end() && count < tr_edge_number; ++it, ++count )
+    for( auto it = m.halfedges_begin(); it != m.halfedges_end() && count < tr_edge_number; ++it, ++count )
     {
         tr_candidate = *it;
     }
     assert( tr_candidate != InvalidHalfEdgeID );
     count = 0;
     HalfEdgeID rot_candidate;
-    for( auto it = module.halfedges_begin(); it != module.halfedges_end() && count < rot_edge_number; ++it, ++count )
+    for( auto it = m.halfedges_begin(); it != m.halfedges_end() && count < rot_edge_number; ++it, ++count )
     {
         rot_candidate = *it;
     }
@@ -64,13 +66,14 @@ void generate_random_transform( HMesh::Manifold &host, HMesh::Manifold &module, 
     cout << "translataion -> " << tr_candidate << " # rotation " << rot_candidate << endl;
     
     // get the actual vectors
-    Vec3d tr_dir    = host.pos( host.walker( tr_candidate ).vertex( )) -
-    host.pos( host.walker( tr_candidate ).opp().vertex( ));
-    Vec3d rot_axis  = module.pos( module.walker( rot_candidate ).vertex( )) -
-    module.pos( module.walker( rot_candidate ).opp().vertex( ));
-    tr_dir += rot_axis;
+    Vec3d tr_dir    = m.pos( m.walker( tr_candidate ).vertex( )) -
+                      m.pos( m.walker( tr_candidate ).opp().vertex( ));
+    Vec3d rot_axis  = m.pos( m.walker( rot_candidate ).vertex( )) -
+                      m.pos( m.walker( rot_candidate ).opp().vertex( ));
+          tr_dir    += rot_axis;
     tr_dir.normalize();
-    tr_dir *= ( host_radius );
+          tr_dir    *= ( host_radius );
+
     double  rot_x       = ( gel_rand() % 70 ) / 100.0,
             rot_y       = ( gel_rand() % 70 ) / 100.0,
             rot_z       = ( gel_rand() % 70 ) / 100.0,
@@ -85,65 +88,61 @@ void generate_random_transform( HMesh::Manifold &host, HMesh::Manifold &module, 
     t = rot * CGLA::translation_Mat4x4d( translation );
 }
 
-/// applu pseudo-transformation to the poles of the module
-void transform_module_poles( HMesh::Manifold &host, HMesh::Manifold &module, std::map< HMesh::VertexID, CGLA::Vec3d > &new_pos)
+/// m contains both the host and the module
+Mat4x4d transform_module_poles( HMesh::Manifold &m, const set<VertexID> &host_vs, const set<VertexID> &module_vs,
+                                std::map< HMesh::VertexID, CGLA::Vec3d > &new_pos)
 {
     CGLA::Mat4x4d t;
-    generate_random_transform( host, module, t );
-    
-    for( auto pole : module.vertices( ))
+    generate_random_transform( m, host_vs, module_vs, t );
+    for( auto pole : module_vs )
     {
-        if( is_pole( module, pole )){
-            new_pos[pole] = t.mul_3D_point( module.pos( pole ));
+        if( is_pole( m, pole )){
+            new_pos[pole] = t.mul_3D_point( m.pos( pole ));
         }
     }
+    return t;
 }
 
-/// find correspondances between module and
-void match_module_to_host( Manifold &host, Manifold &module, kd_tree &tree,
-                           vector< VertexID > &host_p, vector< VertexID > &module_p )
+/// find correspondances between module and host
+void match_module_to_host( Manifold &m, kd_tree &tree, map<VertexID, Vec3d> &module_poles_positions,
+                           vertex_match &pole_to_host_vertex )
 {
-    for( auto vid : module.vertices( ))
+    for( auto id_and_pos : module_poles_positions)
     {
-        if( is_pole( module, vid )){
-            double      distance = numeric_limits<double>::max();
-            Vec3d       foundVec;
-            VertexID    foundID;
-            // here there could be problems because I should be sure that there will not be
-            // two poles assigned to the same candidate vertex on the host
-            assert( tree.closest_point( module.pos( vid ), distance, foundVec, foundID ));
-            
-            module_p.push_back( vid );
-            host_p.push_back( foundID );
-        }
+        assert( is_pole( m, id_and_pos.first ));
+        double      distance = numeric_limits<double>::max();
+        Vec3d       foundVec;
+        VertexID    foundID;
+        // here there could be problems because I should be sure that there will not be
+        // two poles assigned to the same candidate vertex on the host
+        // closest point should always return true
+        bool        have_found = tree.closest_point( id_and_pos.second , distance, foundVec, foundID );
+        assert( have_found );
+        
+        pole_to_host_vertex[id_and_pos.first] = foundID;
     }
-    assert(module_p.size() == host_p.size());
-}
-
-EdgeCost get_glueings( Manifold &host, Manifold &module, vector<VertexID> &host_vertices, vector<VertexID> &module_poles,
-                       size_t no_glueings, vector<Match> &matches )
-{
-    EdgeCost cost = get_best_subset(host, host_vertices, module, module_poles, matches, no_glueings);
-    return cost;
 }
             
 
-void apply_optimal_alignment( Manifold &host, Manifold &module, vector<Match> &matches )
+void apply_optimal_alignment( Manifold &m, const set<VertexID> &module_vs, match_info &choosen_match_info )
 {
     Mat4x4d R, T;
     vector< VertexID > host_v, module_p;
-    for( auto m : matches )
+    for( auto m : choosen_match_info.matches )
     {
         module_p.push_back(m.first);
         host_v.push_back(m.second);
     }
-    svd_rigid_motion( module, module_p, host, host_v, R, T );
     
+    // before calculating the optimal rigid motion, transform the module using the given initial transformation
+    // that is the random transformation used.
+    for( auto mv : module_vs ) { m.pos( mv ) = choosen_match_info.random_transform.mul_3D_point(m.pos( mv )); }
+    svd_rigid_motion( m, module_p, m, host_v, R, T );
     Mat4x4d t = T * R;
 //    cout << "rotation "     << R << endl;
 //    cout << "translation "  << T << endl;
 //    cout << t << endl;
-    for( auto mv : module.vertices() ) { module.pos( mv ) = t.mul_3D_point( module.pos( mv )); }
+    for( auto mv : module_vs ) { m.pos( mv ) = t.mul_3D_point( m.pos( mv )); }
 }
             
 void best_configuration( vector<matches_and_cost> matches_and_costs, matches_and_cost &choosen_cost )
@@ -161,39 +160,101 @@ void best_configuration( vector<matches_and_cost> matches_and_costs, matches_and
     choosen_cost = matches_and_costs[index];
 }
 
-void add_necessary_poles( Manifold &host, vector<VertexID> &selected,
-                          Manifold &module, vector<VertexID> &poles, vector<VertexID> &new_ids )
+/// If some of the selected vertices from the host are not poles, then they must be converted into poles.
+/// Since doing this changes the structure of the mesh, we need to clean up the Manifold
+/// and update the sets of vertices' IDs of the host and the module
+void add_necessary_poles( Manifold &m, vector<VertexID> &selected, set<VertexID> &host_vs, set<VertexID> &module_vs )
 {
-    HMesh::VertexAttributeVector<int> vertex_selection;
-    // for each selected vertex
+    vector<VertexID>                    host_poles_to_remap, host_poles_remapped;
+    set<VertexID>                       module_vs_remapped,  host_vs_remapped;
+    HMesh::VertexAttributeVector<int>   vertex_selection;
+    IDRemap                             remap;
+    // aggiungo i poli e salvo il loro id
     for( int i = 0; i < selected.size(); ++i )
     {
-        if( !is_pole( host, selected[i] ))
+        if( is_pole( m, selected[i] ))
         {
             // clean the selection
-            for( auto v : host.vertices( )) { vertex_selection[v] = 0; }
+            for( auto v : m.vertices( )) { vertex_selection[v] = 0; }
             // calculate the right size accordingly to the valence of the corresponding pole
             /// TODOOOOOOO
-                                        size_t size = -1;
-            assert(size != -1);
-            // call add branch
-            VertexID poleID = add_branch( host, selected[i], size, vertex_selection );
+            int size = -1;
+            assert( size != -1 );
+            VertexID poleID = add_branch( m, selected[i], size, vertex_selection );
             assert( poleID != InvalidVertexID );
-            // save the returned value into new_ids
-            new_ids.push_back( poleID );
+            host_poles_to_remap.push_back( poleID );
         }
         else
         {
-            new_ids.push_back(selected[i]);
+            host_poles_to_remap.push_back( selected[i] );
         }
     }
+    m.cleanup( remap );
+    // re-align the saved IDs
+    for( VertexID pole : host_poles_to_remap )
+    {
+        assert( remap.vmap.count(pole) > 0 );
+        host_poles_remapped.push_back( remap.vmap[pole] );
+    }
+    for( auto p : remap.vmap )
+    {
+        if( p.second == InvalidVertexID ) { continue; }
+        if( module_vs.count( p.first ) > 0 )    { module_vs_remapped.insert( p.second ); }
+        else                                    { host_vs_remapped.insert( p.second );   }
+    }
+    
+    selected    = std::move( host_poles_remapped );
+    module_vs   = std::move( module_vs_remapped );
+    host_vs     = std::move( host_vs_remapped );
+    
 }
 
 
             
 void AddModule( Manifold &host, Manifold &module, size_t no_glueings )
 {    
-    vector<matches_and_cost> matches_vector;
+    vector<matches_and_cost>    matches_vector;
+    kd_tree                     tree;
+    set<VertexID>               host_IDs, module_IDs;
+    vector<match_info>          proposed_matches;
+    
+    add_manifold( host, module, host_IDs, module_IDs );
+    build_manifold_kdtree( host, host_IDs, tree );
+    // for now it will be just for one time
+    {
+        map<VertexID, Vec3d>    transformed_module_poles;
+        vertex_match            module_to_host;
+        vector<Match>           current_matches, best_matches;
+        match_info              mi;
+        
+        mi.random_transform =
+            transform_module_poles( host, host_IDs, module_IDs, transformed_module_poles );
+        match_module_to_host( host, tree, transformed_module_poles, module_to_host );
+        for( auto pole_and_vertex : module_to_host )
+        {
+            current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
+        }
+        EdgeCost c = get_best_subset( host, current_matches, best_matches, no_glueings );
+
+        mi.cost     = c;
+        mi.matches  = best_matches;
+        proposed_matches.push_back( mi );
+    }
+    assert(proposed_matches.size() > 0);
+    // find the best solution between the proposed ones
+    size_t      selected = 0;
+    EdgeCost    max_cost = proposed_matches[0].cost;
+    for( int i = 1; i < proposed_matches.size(); ++i )
+    {
+        if( proposed_matches[i].cost < max_cost )
+        {
+            selected = i;
+            max_cost = proposed_matches[i].cost;
+        }
+    }
+    // FROM NOW ON, THE OPERATIONS WILL USE THE SELECTED MATCHES
+    apply_optimal_alignment( host, module_IDs, proposed_matches[selected] );
+    
 
     /* How this should work
      -) build a kdtree of the host
@@ -211,6 +272,47 @@ void AddModule( Manifold &host, Manifold &module, size_t no_glueings )
      -) glue each choosen module's pole to its correspondent host's pole.
      -) smooth the added skeleton ( this is something that needs a little more work )
      */
+}
+            
+bool ID_and_dist_comparer( ID_and_dist &l, ID_and_dist &r ) { return ( l.second < r.second ); }
+            
+void find_second_closest( const Manifold &m, const kd_tree &tree, const VertexID &closest,
+                          VertexID &second_closest, set<VertexID> &assigned)
+{
+    assert( assigned.count(closest) > 0 );
+    // consider closest
+    Vec3d       cp          = m.pos( closest );
+    // find the nearest of the vertices in its 1-ring
+    double      min_dist    = numeric_limits<double>::max();
+    for( Walker w = m.walker( closest ); !w.full_circle(); w = w.circulate_vertex_ccw())
+    {
+        double dist = ( cp - m.pos( w.vertex( ))).length( );
+        if( dist < min_dist ){ min_dist = dist; }
+    }
+    // take that distance as radius and use it with tree.in_sphere with center in closest
+    double              radius          = min_dist * 1.1;
+    vector<VertexID>    in_sphere_ID;
+    vector<Vec3d>       in_sphere_points;
+    IDs_and_dists       ids_and_dists;
+
+    tree.in_sphere( cp, radius, in_sphere_points, in_sphere_ID );
+    // take the nearest point
+    assert( in_sphere_ID.size() == in_sphere_points.size());
+    for( int i = 0; i < in_sphere_points.size(); ++i)
+    {
+        ids_and_dists.push_back( make_pair(in_sphere_ID[i], (cp - in_sphere_points[i]).length()));
+    }
+    // sort in ascending order accordingly to the distance
+    std::sort( ids_and_dists.begin(), ids_and_dists.end(), ID_and_dist_comparer );
+    IDs_and_dists::iterator it      = ids_and_dists.begin();
+    bool                    done    = ( assigned.count( it->first ) == 0 );
+    while ( !done )
+    {
+        ++it;
+        done    = ( assigned.count( it->first ) == 0 );
+    }
+    second_closest = it->first;
+    assigned.insert( it->first );    
 }
 
 }}}

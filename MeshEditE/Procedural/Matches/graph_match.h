@@ -224,6 +224,9 @@ EdgeCost get_best_subset
                         ( HMesh::Manifold &host,  std::vector<HMesh::VertexID> &aps,
                           HMesh::Manifold &module, std::vector<HMesh::VertexID> &poles,
                           std::vector< Match > &selected, size_t target );
+EdgeCost get_best_subset
+                        ( HMesh::Manifold &m,  std::vector<Match> &proposed,
+                          std::vector< Match > &selected, size_t target );
 
 void     fill_graph    ( HMesh::Manifold &m, std::vector<HMesh::VertexID> &vs, GraphStruct &g );
 
