@@ -147,8 +147,7 @@ void console_test_add_module( MeshEditor *me, const std::vector< std::string > &
     Manifold&       host                = me->active_mesh();
     string          filename            = "test_match.obj";
     int             target_glueings     = 2;
-
-
+    std::vector<Procedural::GraphMatch::Match> matches;
 
     if( args.size() > 0 ){
         istringstream a0( args[0] );
@@ -159,11 +158,16 @@ void console_test_add_module( MeshEditor *me, const std::vector< std::string > &
         istringstream a1( args[1] );
         a1 >> target_glueings;
     }
-
     
-    oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results/" << filename;
+    oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results/8v_poles/" << filename;
     obj_load( oss.str(), module );
-    Procedural::Helpers::ModuleAlignment::AddModule( host, module, 2 );
+    Procedural::Helpers::ModuleAlignment::AddModule( host, module, 2, matches );
+    for( Procedural::GraphMatch::Match m : matches )
+    {
+        me->get_vertex_selection()[m.first]     = 1;
+        me->get_vertex_selection()[m.second]    = 1;
+    }
+    
 }
 
 namespace Procedural{

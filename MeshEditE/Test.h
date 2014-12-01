@@ -21,19 +21,23 @@
 
 
 // other stuff                      : other.h
-bool                test_ring_barycenter                    ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
-CGLA::Vec3d         simple_random_direction                 ( HMesh::Manifold& m, HMesh::VertexID   v, double face_normal_weight );
-CGLA::Vec3d         alt_simple_random_direction             ( HMesh::Manifold& m, HMesh::VertexID   v );
-CGLA::Vec3f         color_ramp                              ( int value, int max );
-CGLA::Vec3f         color_ramp2                             ( int value, int max );
-void                linspace                                ( double min, double max, int num,
-                                                             std::vector<double> &values);
-CGLA::Mat4x4d       get_rotation_mat4d                      ( CGLA::Vec3d axis, double cosine );
-void                alt_glue_poles                          ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
-void                bezier                                  ( CGLA::Vec3d p0, CGLA::Vec3d p1, CGLA::Vec3d p2, int n, std::vector< CGLA::Vec3d >& points );
-void                save_colored_obj                        ( HMesh::Manifold& m, std::string &path );
-
-
+bool            test_ring_barycenter            ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
+CGLA::Vec3d     simple_random_direction         ( HMesh::Manifold& m, HMesh::VertexID   v, double face_normal_weight );
+CGLA::Vec3d     alt_simple_random_direction     ( HMesh::Manifold& m, HMesh::VertexID   v );
+CGLA::Vec3f     color_ramp                      ( int value, int max );
+CGLA::Vec3f     color_ramp2                     ( int value, int max );
+void            linspace                        ( double min, double max, int num,
+                                                      std::vector<double> &values);
+CGLA::Mat4x4d   get_rotation_mat4d              ( CGLA::Vec3d axis, double cosine );
+CGLA::Mat4x4d   get_alignment_for_2_vectors     ( CGLA::Vec3d v1, CGLA::Vec3d v2, CGLA::Vec3d centroid );
+void            alt_glue_poles                  ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
+void            bezier                          ( CGLA::Vec3d p0, CGLA::Vec3d p1, CGLA::Vec3d p2, int n, std::vector< CGLA::Vec3d >& points );
+void            save_colored_obj                ( HMesh::Manifold &m, std::string &path );
+void            save_intermediate_result        ( HMesh::Manifold &m, const std::string &path, int step_number );
+// takes two manifolds and two poles and returns the number of ccw nexts should be done
+// on p2, in order to minimize the angle distance between the two triangle fans
+int             get_starter_offset              ( HMesh::Manifold &m1, HMesh::VertexID p1,
+                                                  HMesh::Manifold &m2, HMesh::VertexID p2 );
 
 
 #endif /* defined(__MeshEditE__Test__) */

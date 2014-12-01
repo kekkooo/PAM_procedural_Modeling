@@ -141,6 +141,7 @@ EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &aps, Manifold &m
     {
         if( g.exists( index ))
         {
+            cost_sum = cost_sum + getStarTotalCost( g, index );
             selected.push_back( make_pair( mtg_module.getVertexId( index ), mtg_host.getVertexId( index )));
         }
     }

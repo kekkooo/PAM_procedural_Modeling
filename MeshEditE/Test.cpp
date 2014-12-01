@@ -9,6 +9,7 @@
 #include "Test.h"
 #include <GEL/GLGraphics/MeshEditor.h>
 #include <GEL/CGLA/Vec3d.h>
+#include <GEL/HMesh/obj_save.h>
 
 #include <map>
 #include <queue>
@@ -19,6 +20,7 @@
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <MesheditE/Procedural/Helpers/structural_helpers.h>
 #include "patch_mapping.h"
+
 
 using namespace GLGraphics;
 using namespace std;
@@ -170,6 +172,22 @@ CGLA::Mat4x4d get_rotation_mat4d ( CGLA::Vec3d axis, double angle )
     return t;
 }
 
+CGLA::Mat4x4d   get_alignment_for_2_vectors     ( Vec3d v1, Vec3d v2, Vec3d centroid )
+{
+    Vec3d   rotation_axis   = CGLA::cross( v1, v2 );
+    double  rotation_angle  = std::acos( CGLA::dot( v1, v2 ));
+    Mat4x4d rot             = get_rotation_mat4d( rotation_axis, rotation_angle);
+    // find center of the module mesh
+    Mat4x4d tr_origin = translation_Mat4x4d( -centroid );
+    Mat4x4d tr_back   = translation_Mat4x4d( centroid );
+    Mat4x4d t =  tr_back * rot * tr_origin;
+
+//    cout << rot         << endl << endl;
+//    cout << tr_origin   << endl << endl;
+//    cout << tr_back     << endl << endl;
+//    cout << t           << endl << endl;
+    return t;
+}
 
 void alt_glue_poles(Manifold& mani, VertexID vid0, VertexID vid1)
 {
@@ -231,9 +249,14 @@ void bezier ( CGLA::Vec3d p0, CGLA::Vec3d p1, CGLA::Vec3d p2, int n, vector< CGL
                         + ( t * t ) * p2;
         points.push_back( pi );
     }
-    
-    
     points.push_back(p2);
+}
+
+void save_intermediate_result ( HMesh::Manifold &m, const std::string &folder_path, int step_number )
+{
+    stringstream oss;
+    oss << folder_path << "step" << step_number << ".obj";
+    HMesh::obj_save( oss.str(), m );
 }
 
 void save_colored_obj ( HMesh::Manifold& m, string &path )
@@ -306,6 +329,58 @@ void save_colored_obj ( HMesh::Manifold& m, string &path )
     
     mtl_os.close();
 
+}
+
+int get_starter_offset( Manifold &m1, VertexID p1, Manifold &m2, VertexID p2 )
+{
+    assert( valency( m1, p1 ) == valency( m2, p2 ));
+    
+    std::vector<HalfEdgeID> ring_p1, ring_p2;
+    std::vector<double>     angles_p1, angles_p2, diffs;
+    std::vector<Vec3d>      vecs_p1, vecs_p2;
+    Vec3d                   p1_pos = m1.pos( p1 ),
+                            p2_pos = m2.pos( p2 );
+    Walker                  w1 = m1.walker( p1 ),
+                            w2 = m2.walker( p2 );
+    for( ; w1.full_circle(); w1 = w1.circulate_vertex_ccw() )
+    {
+        ring_p1.push_back( w1.halfedge( ));
+        vecs_p1.push_back( m1.pos( w1.vertex()) - p1_pos );
+    }
+    for( ; w2.full_circle(); w2 = w2.circulate_vertex_ccw() )
+    {
+        ring_p2.push_back( w1.halfedge( ));
+        vecs_p2.push_back( m2.pos( w2.vertex()) - p2_pos );
+    }
+    
+    for( int i = 1; i < ring_p1.size(); ++i )
+    {
+        angles_p1.push_back( acos( dot( vecs_p1[i-1], vecs_p1[i] )));
+        angles_p2.push_back( acos( dot( vecs_p2[i-1], vecs_p2[i] )));
+    }
+    angles_p1.push_back( acos( dot( vecs_p1[vecs_p1.size() - 1], vecs_p1[0] )));
+    angles_p2.push_back( acos( dot( vecs_p2[vecs_p2.size() - 1], vecs_p2[0] )));
+#pragma message "scritto di getto, da verificare"
+    for( int i = 0; i < ring_p1.size(); ++i ){
+        for( int j = 0; j < ring_p1.size(); ++j )
+        {
+            int i1 = j,
+                i2 = ( i + j ) % ring_p1.size();
+            double diff_sum = 0.0;
+            for( int k = 0; k < ring_p1.size(); ++k )
+            {
+                diff_sum += fabs( angles_p1[i1] - angles_p2[i2] );
+            }
+            diffs.push_back( diff_sum );
+        }
+    }
+    // find the index at the difference is min
+    int min_index = 0;
+    for( int i = 1; i < ring_p1.size(); ++i )
+    {
+        if( diffs[i] < diffs[min_index] ) { min_index = i; }
+    }
+    return min_index;
 }
 
 

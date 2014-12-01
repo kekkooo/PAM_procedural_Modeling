@@ -206,7 +206,20 @@ void remove_branch ( HMesh::Manifold& m, HMesh::VertexID pole, HMesh::HalfEdgeAt
 }
             
             
-void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
+bool glue_poles ( Manifold &m, VertexID pole1, VertexID pole2 )
+{
+    // early termination in case the input vertices are not poles
+    if( !is_pole( m, pole1 ))                       return false;
+    if( !is_pole( m, pole2 ))                       return false;
+    if( valency( m, pole1 ) != valency( m, pole2 )) return false;
+    
+    
+    
+    return true;
+}
+            
+            
+void glue_poles_with_valence_equalization ( Manifold& m, VertexID pole1, VertexID pole2 )
 {
     // early termination in case the input vertices are not poles
     if( !is_pole( m, pole1 )) return;
@@ -374,7 +387,6 @@ void glue_poles ( Manifold& m, VertexID pole1, VertexID pole2 )
         auto hep = he_to_stitch[i];
         assert( m.stitch_boundary_edges( hep.first, hep.second ));
     }
-    
     
     
     split_ring_of_quads( m, hook_for_splitting );

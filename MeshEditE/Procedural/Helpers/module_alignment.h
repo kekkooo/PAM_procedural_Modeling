@@ -10,13 +10,16 @@
 #define __MeshEditE__module_alignment__
 
 #include <stdio.h>
+
+#include <map>
+#include <set>
+
 #include <GEL/HMesh/Manifold.h>
 #include <GEL/Geometry/KDTree.h>
 #include <GEL/CGLA/Mat4x4d.h>
+
 #include <MeshEditE/Procedural/Helpers/svd_alignment.h>
 #include <MeshEditE/Procedural/Matches/graph_match.h>
-#include <map>
-#include <set>
 
 namespace GEL_Geometry = Geometry;
 
@@ -24,6 +27,11 @@ namespace Procedural {
     namespace Helpers{
         namespace ModuleAlignment{
 
+#define TEST_PATH "/Users/francescousai/Documents/Dottorato/Visiting/Results/add/"
+// REMEMBER - Procedural::GraphMatch::Match is a pair ( module's pole, host's vertex )
+
+            
+            
 typedef GEL_Geometry::KDTree< CGLA::Vec3d, HMesh::VertexID >            kd_tree;
 typedef std::map< HMesh::VertexID, HMesh::VertexID >                    vertex_match;
 typedef std::pair< std::vector< Procedural::GraphMatch::Match>,
@@ -36,7 +44,8 @@ struct match_info{
     CGLA::Mat4x4d                               random_transform;
 };
         
-void AddModule(                 HMesh::Manifold &host, HMesh::Manifold &module, size_t no_glueings );
+void AddModule(                 HMesh::Manifold &host, HMesh::Manifold &module, size_t no_glueings,
+                                std::vector<Procedural::GraphMatch::Match> &matches );
 void build_manifold_kdtree(     HMesh::Manifold& m, std::set< HMesh::VertexID > &selected, kd_tree &tree);
 CGLA::Mat4x4d transform_module_poles(
                                 HMesh::Manifold &host, const std::set<HMesh::VertexID> &host_vs,
@@ -53,13 +62,14 @@ Procedural::GraphMatch::EdgeCost
                                 std::vector< HMesh::VertexID > &module_p );
 void apply_optimal_alignment(   HMesh::Manifold &m, const std::set<HMesh::VertexID> &module_vs, match_info &choosen_match_info );
 void best_configuration(        std::vector<matches_and_cost> matches_and_costs, matches_and_cost &choosen_cost );
-void add_necessary_poles(       HMesh::Manifold &host, std::vector<HMesh::VertexID> &selected,
-                                HMesh::Manifold &module, std::vector<HMesh::VertexID> &poles, std::vector<HMesh::VertexID> &new_ids );
+void add_necessary_poles(       HMesh::Manifold &m, std::vector<Procedural::GraphMatch::Match> &matches,
+                                std::set<HMesh::VertexID> &host_vs, std::set<HMesh::VertexID> &module_vs );
 void find_second_closest(       const HMesh::Manifold &m, const kd_tree &tree, const HMesh::VertexID &closest,
                                 HMesh::VertexID &second_closest, std::set<HMesh::VertexID> &assigned);
-        
-        
-        
+void align_module_normals_to_host(
+                                HMesh::Manifold &m, std::set<HMesh::VertexID> &module_IDs, std::vector<Procedural::GraphMatch::Match> &matches );
+void glue_matches(              HMesh::Manifold &m, std::vector<Procedural::GraphMatch::Match> &matches );
+
 }}}
 
 #endif /* defined(__MeshEditE__module_alignment__) */

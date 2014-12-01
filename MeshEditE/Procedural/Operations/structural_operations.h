@@ -24,7 +24,9 @@ void            cut_branch     ( HMesh::Manifold& m, HMesh::HalfEdgeID h );
 void            cut_branch     ( HMesh::Manifold& m, HMesh::HalfEdgeID h, HMesh::VertexID pole);
 void            cut_branch     ( HMesh::Manifold& m, HMesh::VertexID v, HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info );
 void            remove_branch  ( HMesh::Manifold& m, HMesh::VertexID pole, HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info );
-void            glue_poles     ( HMesh::Manifold& m, HMesh::VertexID pole1, HMesh::VertexID pole2 );
+void            glue_poles_with_valence_equalization
+                               ( HMesh::Manifold& m, HMesh::VertexID pole1, HMesh::VertexID pole2 );
+bool            glue_poles     ( HMesh::Manifold &m, HMesh::VertexID pole1, HMesh::VertexID pole2 );
 
 }}}
 #endif /* defined(__MeshEditE__structural_opeations__) */

@@ -308,6 +308,20 @@ void copy_and_delete_test( MeshEditor *me, const std::vector< std::string > &arg
     Procedural::Helpers::test_delete(me->get_mesh(0), m1v );
 }
 
+void poles_info( MeshEditor *me, const std::vector< std::string > &args )
+{
+    for( VertexID id : me->active_mesh().vertices())
+    {
+        if( is_pole( me->active_mesh(), id ))
+        {
+            int v = valency( me->active_mesh(), id );
+//            cout << id << ") has valence " << v << endl;
+            me->printf("%d) has valence : %d", id, v );
+        }
+    }
+}
+
+
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -318,6 +332,7 @@ void register_match_console_funcs(GLGraphics::MeshEditor* me)
     me->register_console_function( "test.match.transform",  test_trasform, "test.match.transform" );
     me->register_console_function( "test.match.align_selected",  test_align_selected, "test.match.align_selected" );
     me->register_console_function( "test.copy_and_delete_test",  copy_and_delete_test, "copy_and_delete_test" );
+    me->register_console_function( "test.poles_info",  poles_info, "test.poles_info" );
 }
 
 void register_basic_console_funcs(GLGraphics::MeshEditor* me)
