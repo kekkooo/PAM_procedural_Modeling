@@ -175,7 +175,7 @@ CGLA::Mat4x4d get_rotation_mat4d ( CGLA::Vec3d axis, double angle )
 CGLA::Mat4x4d   get_alignment_for_2_vectors     ( Vec3d v1, Vec3d v2, Vec3d centroid )
 {
     Vec3d   rotation_axis   = CGLA::cross( v1, v2 );
-    double  rotation_angle  = std::acos( CGLA::dot( v1, v2 ));
+    double  rotation_angle  = get_angle( v1, v2 );
     Mat4x4d rot             = get_rotation_mat4d( rotation_axis, rotation_angle);
     // find center of the module mesh
     Mat4x4d tr_origin = translation_Mat4x4d( -centroid );
@@ -355,11 +355,11 @@ int get_starter_offset( Manifold &m1, VertexID p1, Manifold &m2, VertexID p2 )
     
     for( int i = 1; i < ring_p1.size(); ++i )
     {
-        angles_p1.push_back( acos( dot( vecs_p1[i-1], vecs_p1[i] )));
-        angles_p2.push_back( acos( dot( vecs_p2[i-1], vecs_p2[i] )));
+        angles_p1.push_back( get_angle(vecs_p1[i-1], vecs_p1[i] ));
+        angles_p2.push_back( get_angle(vecs_p2[i-1], vecs_p2[i] ));
     }
-    angles_p1.push_back( acos( dot( vecs_p1[vecs_p1.size() - 1], vecs_p1[0] )));
-    angles_p2.push_back( acos( dot( vecs_p2[vecs_p2.size() - 1], vecs_p2[0] )));
+    angles_p1.push_back( get_angle( vecs_p1[vecs_p1.size() - 1], vecs_p1[0] ));
+    angles_p2.push_back( get_angle( vecs_p2[vecs_p1.size() - 1], vecs_p2[0] ));
 #pragma message "scritto di getto, da verificare"
     for( int i = 0; i < ring_p1.size(); ++i ){
         for( int j = 0; j < ring_p1.size(); ++j )
@@ -381,6 +381,52 @@ int get_starter_offset( Manifold &m1, VertexID p1, Manifold &m2, VertexID p2 )
         if( diffs[i] < diffs[min_index] ) { min_index = i; }
     }
     return min_index;
+}
+
+void bridge_pole_one_rings(Manifold& mani, VertexID vid0, VertexID vid1)
+{
+    vector<VertexID> loop0;
+    Walker hw0 = mani.walker(vid0);
+    for(;!hw0.full_circle(); hw0 = hw0.circulate_vertex_ccw()) {
+        loop0.push_back(hw0.vertex());
+    }
+    
+    vector<VertexID> loop1;
+    Walker hw1 = mani.walker(vid1);
+    for(;!hw1.full_circle(); hw1 = hw1.circulate_vertex_ccw()){
+        loop1.push_back(hw1.vertex());
+    }
+    
+    vector<pair<VertexID, VertexID> > connections;
+    
+    size_t L0= loop0.size();
+    size_t L1= loop1.size();
+    
+    assert(L0==L1);
+    
+    size_t L = L0;
+    
+    float min_len = FLT_MAX;
+    int j_off_min_len = -1;
+    for(int j_off = 0; j_off < L; ++j_off)
+    {
+        float len = 0;
+        for(int i=0;i<L;++i)
+            len += sqr_length(mani.pos(loop0[i]) - mani.pos(loop1[(L+j_off - i)%L]));
+        if(len < min_len)
+        {
+            j_off_min_len = j_off;
+            min_len = len;
+        }
+    }
+    for(int i=0;i<L;++i)
+        connections.push_back(pair<VertexID, VertexID>(loop0[i],loop1[(L+ j_off_min_len - i)%L]));
+    // Merge the two one rings producing two faces.
+    FaceID f0 = mani.merge_one_ring(vid0);
+    FaceID f1 = mani.merge_one_ring(vid1);
+    
+    // Bridge the just created faces.
+    vector<HalfEdgeID> newhalfedges = mani.bridge_faces(f0, f1, connections);
 }
 
 

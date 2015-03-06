@@ -1652,7 +1652,6 @@ void smooth_and_refit(HMesh::Manifold& m_in,  HMesh::Manifold& m_ref, int iter, 
 
 void polar_subdivide(HMesh::Manifold& mani, int MAX_ITER)
 {
-    
     // Time stamp all vertices
     int T=0;
     VertexAttributeVector<int> time_stamp;
@@ -1784,19 +1783,13 @@ void polar_subdivide(HMesh::Manifold& mani, int MAX_ITER)
                     mani.pos(w.vertex()) = new_p1[j];
                     touched[w.vertex()] = 1;
                 }
-                
             }
         }
         for(VertexIDIterator vi = mani.vertices_begin(); vi != mani.vertices_end(); ++vi)
             if(!touched[*vi])
                 mani.pos(*vi) = new_vertices[*vi];
-        
     }
-    
-    
 }
-
-
 
 VertexID polar_add_branch(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs)
 {
@@ -1822,10 +1815,6 @@ void refine_poles(HMesh::Manifold& m, HMesh::VertexAttributeVector<int>& vs)
         if(vs[vid]==1 && is_pole(m,vid))
         {
             vector<HalfEdgeID> hvec;
-            circulate_vertex_ccw(m, vid, [&](HalfEdgeID h){
-                hvec.push_back(h);
-            });
-            for(auto h: hvec) m.split_edge(h);
             circulate_vertex_ccw(m, vid, [&](Walker w){
                 m.split_face_by_edge(w.face(), w.prev().opp().vertex(), w.vertex());
             });

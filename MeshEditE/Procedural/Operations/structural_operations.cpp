@@ -16,6 +16,7 @@
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include <MeshEditE/Procedural/Operations/Algorithms.h>
 #include "polarize.h"
+#include "Test.h"
 
 using namespace HMesh;
 using namespace std;
@@ -213,9 +214,76 @@ bool glue_poles ( Manifold &m, VertexID pole1, VertexID pole2 )
     if( !is_pole( m, pole2 ))                       return false;
     if( valency( m, pole1 ) != valency( m, pole2 )) return false;
     
-    
+    bridge_pole_one_rings( m, pole1, pole2 );
     
     return true;
+    
+//    int starter_offset = get_starter_offset( m, pole1, m, pole2 );
+//    vector< HalfEdgeID > hes_pole1, hes_pole2;
+//    assert( starter_offset > 0 && starter_offset < valency( m, pole2 ));
+//    
+//    Walker pole1_chain_walker = m.walker( pole1 ).next();
+//    // just to check
+//    assert( !is_pole( m, pole1_chain_walker.vertex( )));
+//    assert( !is_pole( m, pole1_chain_walker.prev().vertex( )));
+//
+//    Walker pole2_chain_walker = m.walker( pole2 );
+//    // I need to select cycle for starter_offset times with the pole2_walker
+//    for( int i = 0; i < starter_offset; ++i ) { pole2_chain_walker.circulate_vertex_ccw(); }
+//    // it needs to be positioned at the edge opposite to the pole
+//    pole2_chain_walker = pole2_chain_walker.next();
+//    
+//    // delete poles
+//    m.remove_vertex( pole1 );
+//    m.remove_vertex( pole2 );
+//    
+//    while( !pole1_chain_walker.full_circle( ))
+//    {
+//        hes_pole1.push_back( pole1_chain_walker.halfedge( ));
+//        hes_pole2.push_back( pole2_chain_walker.halfedge( ));
+//        pole1_chain_walker = pole1_chain_walker.next();
+//        pole2_chain_walker = pole2_chain_walker.prev();
+//    }
+////    assert( pole2_chain_walker.full_circle( ));
+//    assert( hes_pole1.size() == hes_pole2.size( ));
+//    
+//    vector< pair< HalfEdgeID, HalfEdgeID > > he_to_stitch;
+//    HalfEdgeID hook_for_splitting = InvalidHalfEdgeID;
+//    // save pairs of edges that have to be stitched
+//    for( int i = 0; i < hes_pole1.size(); i++ )
+//    {
+//        
+//        vector<Vec3d> new_vs;
+//        new_vs.push_back( m.pos( m.walker( hes_pole1[i] ).prev().vertex() )     );
+//        new_vs.push_back( m.pos( m.walker( hes_pole1[i] ).vertex() )            );
+//        new_vs.push_back( m.pos( m.walker( hes_pole2[i] ).prev().vertex() )     );
+//        new_vs.push_back( m.pos( m.walker( hes_pole2[i] ).vertex() )            );
+//        
+//        FaceID new_f = m.add_face( new_vs );
+//        
+//        Walker new_f_walker = m.walker( new_f );
+//        HalfEdgeID  h1 = new_f_walker.opp().halfedge(),
+//        h3 = new_f_walker.next().next().opp().halfedge();
+//        if( hook_for_splitting == InvalidHalfEdgeID ) hook_for_splitting = new_f_walker.next().halfedge();
+//        
+//        he_to_stitch.push_back( make_pair( hes_pole1[i], h1 ));
+//        he_to_stitch.push_back( make_pair( hes_pole2[i], h3 ));
+//        
+//    }
+//    
+//    assert(pole2_chain_walker.full_circle());
+//    
+//    for( int i = 0; i < he_to_stitch.size(); i++ )
+//    {
+//        auto hep = he_to_stitch[i];
+//        assert( m.stitch_boundary_edges( hep.first, hep.second ));
+//    }
+//    
+//    
+//    split_ring_of_quads( m, hook_for_splitting );
+//    
+//    
+//    return true;
 }
             
             
@@ -312,8 +380,8 @@ void glue_poles_with_valence_equalization ( Manifold& m, VertexID pole1, VertexI
             // calculate the vectors
             Vec3d       a_dir       = p1_a - p2_a;
             Vec3d       b_dir       = p1_b - p2_b;
-            double      angle_a     = angle( a_dir, pole_pole );
-            double      angle_b     = angle( b_dir, pole_pole );
+            double      angle_a     = get_angle( a_dir, pole_pole );
+            double      angle_b     = get_angle( b_dir, pole_pole );
             double      angle_sum   = angle_a + angle_b;
             double      angle_diff  = fabs( angle_a - angle_b );
             

@@ -159,6 +159,7 @@ namespace Procedural
         _v_info.remap = r.vmap;
         _edges_info_container.Update( m, true, true );
         _geometric_info.Update( m, _edges_info_container );
+        _polesList.Update( m, true);
         _v_info.Update( *m, _timestamp, _polesList, _geometric_info );
         increase_timestamp();
 
@@ -326,7 +327,7 @@ namespace Procedural
         
         Vec3d   pn              = Geometry::vertex_normal( *m, other_pole );
         Vec3d   rotation_axis   = CGLA::cross( other_vn, pn );
-        double  rotation_angle  = std::acos( CGLA::dot( other_vn, pn ));
+        double  rotation_angle  = Geometry::get_angle( other_vn, pn );
         double  pace            = rotation_angle / 2.0;
         double  r;
         Vec3d   pivot;
@@ -563,7 +564,7 @@ namespace Procedural
             {
                 CGLA::Vec3d up( 0.0, 1.0, 0.0 );
                 // add branches only on the upper side
-                double angle = Geometry::angle( up, vertex_normal(*m, vid) );
+                double angle = Geometry::get_angle( up, vertex_normal(*m, vid) );
                 if( angle > M_PI_2 ) continue;
 
                 

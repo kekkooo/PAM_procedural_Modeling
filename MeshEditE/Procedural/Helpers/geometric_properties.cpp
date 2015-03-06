@@ -169,12 +169,13 @@ bool is_2_neighbor_of_pole ( HMesh::Manifold& m, HMesh::VertexID v )
 }
    
 // should be in a separate class
-double angle ( CGLA::Vec3d l, CGLA::Vec3d r)
+double get_angle ( CGLA::Vec3d l, CGLA::Vec3d r)
 {
     l.normalize();
     r.normalize();
     double cos = CGLA::dot( l, r );
-    return acos(cos);
+    double in_range_cos = in_range( cos, -1.0, 1.0 );
+    return acos( in_range_cos );
 }
         
 double dihedral_angle ( Vec3d a, Vec3d b, Vec3d c, Vec3d d )
@@ -190,6 +191,7 @@ double dihedral_angle ( Vec3d a, Vec3d b, Vec3d c, Vec3d d )
     
     // limit formulation
     double limit_cs = ( dot( u, u ) * dot( v, w )) - ( dot( u, w ) * dot( u, v ));
+    double limit_cs_in_range = in_range( limit_cs, -1.0, 1.0 );
     double limit_ag = acos( limit_cs );
     
     // debug
@@ -720,6 +722,19 @@ void bsphere ( Manifold& m, const set<VertexID> &vertices, Vec3d& centroid, doub
     Manifold::Vec rad = ( pmax - pmin ) * 0.5f;
     centroid = pmin + rad;
     radius = rad.length();
+}
+
+Vec3d vec_from_edge( const Manifold& m, HalfEdgeID he )
+{
+    return (
+            m.pos( m.walker( he ).vertex( )) -
+            m.pos( m.walker( he ).opp().vertex( )));
+}
+
+// it is not required that v1 and v2 stay on the same edge
+Vec3d vec_from_verts ( const Manifold& m, VertexID v1, VertexID v2  )
+{
+    return ( m.pos( v2 ) - m.pos( v1 ));
 }
 
 

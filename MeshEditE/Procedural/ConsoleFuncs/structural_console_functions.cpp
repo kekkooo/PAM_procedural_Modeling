@@ -161,7 +161,7 @@ void console_test_add_module( MeshEditor *me, const std::vector< std::string > &
     
     oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results/8v_poles/" << filename;
     obj_load( oss.str(), module );
-    Procedural::Helpers::ModuleAlignment::AddModule( host, module, 2, matches );
+    Procedural::Helpers::ModuleAlignment::AddModule( host, module, target_glueings, matches );
     for( Procedural::GraphMatch::Match m : matches )
     {
         me->get_vertex_selection()[m.first]     = 1;

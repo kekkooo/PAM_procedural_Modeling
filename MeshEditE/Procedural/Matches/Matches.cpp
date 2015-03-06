@@ -155,7 +155,7 @@ namespace Procedural{
             
             Vec3d   pn              = Geometry::vertex_normal( me_active_mesh, other_pole );
             Vec3d   rotation_axis   = CGLA::cross( other_vn, pn );
-            double  rotation_angle  = std::acos( CGLA::dot( other_vn, pn ));
+            double  rotation_angle  = Geometry::get_angle( other_vn, pn );
             double  pace            = rotation_angle / 2.0;
             double  r;
             Vec3d   pivot;
@@ -296,7 +296,7 @@ namespace Procedural{
             Vec3d pole_to_glue_normal   = Procedural::Geometry::vertex_normal( destination, pole_to_glue );
             Vec3d candidate_normal      = Procedural::Geometry::vertex_normal( destination, candidate );
             // calculate the angle
-            angle = std::acos( CGLA::dot(pole_to_glue_normal, candidate_normal ));
+            angle = Geometry::get_angle( pole_to_glue_normal, candidate_normal );
             cout << " angle : " << angle << endl;
             if ( angle < M_PI_2 ) return angle;
             
@@ -637,7 +637,7 @@ namespace Procedural{
         {
             Vec3d   pn              = Geometry::vertex_normal( m, pole );
             Vec3d   rotation_axis   = CGLA::cross( axis_to_align_with, pn );
-            double  rotation_angle  = std::acos( CGLA::dot( axis_to_align_with, pn ));
+            double  rotation_angle  = Geometry::get_angle( axis_to_align_with, pn );
             Mat4x4d rot             = get_rotation_mat4d( rotation_axis, rotation_angle);
             // find center of the module mesh
             Vec3d  centroid;

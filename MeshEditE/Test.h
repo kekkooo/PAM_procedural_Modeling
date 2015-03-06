@@ -38,6 +38,16 @@ void            save_intermediate_result        ( HMesh::Manifold &m, const std:
 // on p2, in order to minimize the angle distance between the two triangle fans
 int             get_starter_offset              ( HMesh::Manifold &m1, HMesh::VertexID p1,
                                                   HMesh::Manifold &m2, HMesh::VertexID p2 );
+void            bridge_pole_one_rings           ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
+
+inline template<typename T>
+T            in_range                        ( T value, T low, T high )
+{
+    if( value < low  ) return low;
+    if( value > high ) return high;
+    return value;
+}
+
 
 
 #endif /* defined(__MeshEditE__Test__) */

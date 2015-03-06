@@ -61,7 +61,7 @@ void generate_random_transform( HMesh::Manifold &m, const set<VertexID> &host_vs
     }
     assert( tr_candidate != InvalidHalfEdgeID );
     count = 0;
-    HalfEdgeID rot_candidate;
+    HalfEdgeID rot_candidate = *m.halfedges_begin();
     for( auto it = m.halfedges_begin(); it != m.halfedges_end() && count < rot_edge_number; ++it, ++count )
     {
         rot_candidate = *it;
@@ -73,6 +73,8 @@ void generate_random_transform( HMesh::Manifold &m, const set<VertexID> &host_vs
     // get the actual vectors
     Vec3d tr_dir    = m.pos( m.walker( tr_candidate ).vertex( )) -
                       m.pos( m.walker( tr_candidate ).opp().vertex( ));
+//    Vec3d tr_dir    = vec_from_edge( m, tr_candidate );
+    
     Vec3d rot_axis  = m.pos( m.walker( rot_candidate ).vertex( )) -
                       m.pos( m.walker( rot_candidate ).opp().vertex( ));
           tr_dir    += rot_axis;
@@ -209,8 +211,10 @@ void add_necessary_poles( Manifold &m, vector<Match> &matches, set<VertexID> &ho
             for( auto v : m.vertices( )) { vertex_selection[v] = 0; }
             // calculate the right size accordingly to the valence of the corresponding pole
             /// TODOOOOOOO
-            int size = -1;
-            assert( size != -1 );
+#pragma message("size here is arbitrary")
+            int size = 2;
+//            int size = -1;
+//            assert( size != -1 );
             VertexID poleID = add_branch( m, matches[i].second, size, vertex_selection );
             assert( poleID != InvalidVertexID );
             matches[i].second = poleID;
@@ -334,6 +338,7 @@ void AddModule( Manifold &host, Manifold &module, size_t no_glueings, vector<Mat
     align_module_normals_to_host( host, module_IDs, proposed_matches[selected].matches );
     save_intermediate_result(host, TEST_PATH, 3);
     add_necessary_poles( host, proposed_matches[selected].matches, host_IDs, module_IDs );
+    glue_matches( host, proposed_matches[selected].matches );
     
 
     /* How this should work
@@ -427,9 +432,9 @@ void align_module_normals_to_host( Manifold &m, set<VertexID> &module_IDs, vecto
             
 void glue_matches( HMesh::Manifold &m, std::vector<Procedural::GraphMatch::Match> &matches )
 {
-    for( Match m : matches )
+    for( Match match : matches )
     {
-        
+        Procedural::Operations::Structural::glue_poles( m, match.first, match.second );
     }
     
 }

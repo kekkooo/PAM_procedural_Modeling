@@ -65,7 +65,7 @@ void                dihedral_angles                         ( HMesh::Manifold& m
                                                              HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info,
                                                              HMesh::VertexAttributeVector<double> &angles );
 
-double              angle                                   ( CGLA::Vec3d l, CGLA::Vec3d r );
+double              get_angle                               ( CGLA::Vec3d l, CGLA::Vec3d r );
 double              dihedral_angle                          ( CGLA::Vec3d a, CGLA::Vec3d b, CGLA::Vec3d c, CGLA::Vec3d d );
 double              edge_length                             ( HMesh::Manifold& m,
                                                               HMesh::HalfEdgeAttributeVector<double> lengths );
@@ -74,7 +74,8 @@ void                bsphere                                 ( HMesh::Manifold& m
 void                bsphere                                 ( HMesh::Manifold& m, std::vector<HMesh::VertexID> &vertices, CGLA::Vec3d& centroid, double& radius );
 void                bsphere                                 ( HMesh::Manifold& m, const std::set<HMesh::VertexID> &vertices, CGLA::Vec3d& centroid, double& radius );
 
-
+CGLA::Vec3d         vec_from_edge                           ( const HMesh::Manifold& m, HMesh::HalfEdgeID he );
+CGLA::Vec3d         vec_from_verts                          ( const HMesh::Manifold& m, HMesh::VertexID v1, HMesh::VertexID v2  );
 
 }}
 

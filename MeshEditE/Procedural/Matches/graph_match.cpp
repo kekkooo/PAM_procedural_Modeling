@@ -58,7 +58,8 @@ void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, Mani
         n2.normalize();
 
         double distance = ( m.pos( v1 ) - m.pos( v2 )).length();
-        double angle    = acos( CGLA::dot( n1, n2 ));
+        double angle    = Geometry::get_angle( n1, n2 );
+        
         assert( distance > 0 );
         assert( !isnan( angle ));
         g.setCost( e, make_pair( distance, angle ));
