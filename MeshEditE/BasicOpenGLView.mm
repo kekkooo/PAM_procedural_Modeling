@@ -364,6 +364,8 @@ GLenum glReportError (int where = -1)
     Procedural::ConsoleFuncs::register_algorithm_console_funcs(&me);
     Procedural::ConsoleFuncs::register_geometric_console_funcs(&me);
     Procedural::ConsoleFuncs::register_structural_console_funcs(&me);
+    Procedural::ConsoleFuncs::register_test_console_funcs(&me);
+
     
     NSLog(@"OpenGL Initialized");
 }

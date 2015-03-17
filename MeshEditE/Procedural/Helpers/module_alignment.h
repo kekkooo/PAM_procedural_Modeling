@@ -30,6 +30,10 @@ namespace Procedural {
 #define TEST_PATH "/Users/francescousai/Documents/Dottorato/Visiting/Results/add/"
 // REMEMBER - Procedural::GraphMatch::Match is a pair ( module's pole, host's vertex )
 
+/*=========================================================================*
+ *                                  TYPEDEFS                               *
+ *=========================================================================*/
+            
 typedef GEL_Geometry::KDTree< CGLA::Vec3d, HMesh::VertexID >            kd_tree;
 typedef std::map< HMesh::VertexID, HMesh::VertexID >                    vertex_match;
 typedef std::pair< std::vector< Procedural::GraphMatch::Match>,
@@ -41,6 +45,10 @@ struct match_info{
     std::vector<Procedural::GraphMatch::Match>  matches;            // the matches
     CGLA::Mat4x4d                               random_transform;   // transform applied to the vertice
 };
+
+/*=========================================================================*
+ *                     FUNCTION DECLARATIONS                               *
+ *=========================================================================*/
         
 void AddModule(                 HMesh::Manifold &host, HMesh::Manifold &module, size_t no_glueings,
                                 std::vector<Procedural::GraphMatch::Match> &matches );
@@ -78,6 +86,9 @@ void align_module_normals_to_host(
                                 std::vector<Procedural::GraphMatch::Match> &matches );
 
 void glue_matches(              HMesh::Manifold &m, std::vector<Procedural::GraphMatch::Match> &matches );
+            
+CGLA::Mat4x4d
+     random_rotation_matrix_arvo(float x1, float x2, float x3);
 
 }}}
 

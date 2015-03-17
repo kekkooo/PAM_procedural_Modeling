@@ -29,6 +29,7 @@
 #include "patch_mapping.h"
 #include <MeshEditE/Test.h>
 #include <MeshEditE/Procedural/Helpers/manifold_copy.h>
+#include <MeshEditE/Tests/test_random_rotation.h>
 
 
 using namespace GLGraphics;
@@ -322,6 +323,42 @@ void poles_info( MeshEditor *me, const std::vector< std::string > &args )
 }
 
 
+/*=========================================================================*
+ *                     Test Console Funcs                                  *
+ *=========================================================================*/
+
+void console_test_set_host_and_module( MeshEditor *me, const std::vector< std::string > &args )
+{
+    Manifold module;
+    stringstream oss;
+    string filename = "1.obj";
+    if( args.size() > 0 ){
+        istringstream a0( args[0] );
+        a0 >> filename;
+    }
+
+    oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results/8v_poles/" << filename;
+    obj_load( oss.str(), module );
+
+    Tests::RandomRotationTest &test = Tests::RandomRotationTest::getInstance();
+    test.setHost( me->active_mesh() );
+    test.setModule( module );
+}
+
+void console_test_randomly_rotate( MeshEditor *me, const std::vector< std::string > &args )
+{
+    Tests::RandomRotationTest &test = Tests::RandomRotationTest::getInstance();
+    test.resetOriginalModulePosition();
+    test.rotate();
+}
+
+void console_test_translate_outside_bsphere( MeshEditor *me, const std::vector< std::string > &args )
+{
+    Tests::RandomRotationTest &test = Tests::RandomRotationTest::getInstance();
+    test.translateOutsideBSphere();
+}
+
+
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -340,9 +377,17 @@ void register_basic_console_funcs(GLGraphics::MeshEditor* me)
     me->register_console_function( "test.shapes.cube_t",     console_test_cube_triangles,    "test.shapes.cube_t"     );
     me->register_console_function( "test.shapes.cube_q",     console_test_cube_quads,        "test.shapes.cube_q"     );
     me->register_console_function( "test.shapes.basic_PAM",  console_test_basic_PAM,         "test.shapes.basic_PAM"  );
-    me->register_console_function( "test.build_patches",     console_build_patches,          "test.build_patches"  );
+    me->register_console_function( "test.build_patches",     console_build_patches,          "test.build_patches"     );
     me->register_console_function( "test.save_patched_obj",  console_save_patched_obj,       "test.save_patched_obj"  );
 }
+        
+void register_test_console_funcs( GLGraphics::MeshEditor* me )
+{
+    me->register_console_function( "test.set_host_and_module",   console_test_set_host_and_module, "test.set_host_and_module"     );
+    me->register_console_function( "test.randomly_rotate",      console_test_randomly_rotate, "test.randomly_rotate"        );
+    me->register_console_function( "test.translate_outside_bsphere",   console_test_translate_outside_bsphere, "test.translate_outside_bsphere"        );
+}
+    
 
 void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)
 {
@@ -384,7 +429,6 @@ void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)
       "test.save_to_results_folder",
       console_test_save_to_results_folder,
       "test.save_to_results_folder"        );
-
 }
 
 }}

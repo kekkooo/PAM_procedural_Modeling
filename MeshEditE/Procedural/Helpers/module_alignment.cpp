@@ -40,7 +40,8 @@ void build_manifold_kdtree( Manifold& m, set< VertexID > &selected, kd_tree &tre
     tree.build();    
 }
 
-/// builds a pseudo-random transformation matrix
+/// builds a pseudo-random transformation Tr that brings the module
+/// in a possibly collision-free position outside the host's bounding sphere
 void generate_random_transform( HMesh::Manifold &m, const set<VertexID> &host_vs,
                                 const set<VertexID> &module_vs, CGLA::Mat4x4d &t )
 {
@@ -71,16 +72,14 @@ void generate_random_transform( HMesh::Manifold &m, const set<VertexID> &host_vs
     cout << "translataion -> " << tr_candidate << " # rotation " << rot_candidate << endl;
     
     // get the actual vectors
-    Vec3d tr_dir    = m.pos( m.walker( tr_candidate ).vertex( )) -
-                      m.pos( m.walker( tr_candidate ).opp().vertex( ));
-//    Vec3d tr_dir    = vec_from_edge( m, tr_candidate );
+    Vec3d tr_dir    = vec_from_edge( m, tr_candidate );
+    Vec3d rot_axis  = vec_from_edge( m, rot_candidate );
     
-    Vec3d rot_axis  = m.pos( m.walker( rot_candidate ).vertex( )) -
-                      m.pos( m.walker( rot_candidate ).opp().vertex( ));
-          tr_dir    += rot_axis;
+    tr_dir    += rot_axis;
 //    tr_dir.normalize();
 //          tr_dir    *= ( host_radius );
 
+    // What the hell I'm doing here???
     double  rot_x       = ( gel_rand() % 70 ) / 100.0,
             rot_y       = ( gel_rand() % 70 ) / 100.0,
             rot_z       = ( gel_rand() % 70 ) / 100.0,
@@ -95,6 +94,7 @@ void generate_random_transform( HMesh::Manifold &m, const set<VertexID> &host_vs
     t = rot * CGLA::translation_Mat4x4d( translation );
     // try to avoid intersections
     Vec3d transformed_centroid  = t.mul_3D_point( module_centroid );
+    // this does not work if the centroid is the same e.g. both on the origin
     Vec3d centroid_dir          = transformed_centroid - host_centroid;
 //    put the module outside the hosts bsphere
     if( centroid_dir.length() < host_radius + module_radius )
@@ -439,5 +439,77 @@ void glue_matches( HMesh::Manifold &m, std::vector<Procedural::GraphMatch::Match
     
 }
 
+/*=========================================================================*
+ *  R A N D _ R O T A T I O N      Author: Jim Arvo, 1991                  *
+ *  Modified by                            Francesco Usai, 2015            *
+ *                                                                         *
+ *  This routine maps three values (x[0], x[1], x[2]) in the range [0,1]   *
+ *  into a 3x3 rotation matrix, M.  Uniformly distributed random variables *
+ *  x0, x1, and x2 create uniformly distributed random rotation matrices.  *
+ *  To create small uniformly distributed "perturbations", supply          *
+ *  samples in the following ranges                                        *
+ *                                                                         *
+ *      x[0] in [ 0, d ]                                                   *
+ *      x[1] in [ 0, 1 ]                                                   *
+ *      x[2] in [ 0, d ]                                                   *
+ *                                                                         *
+ * where 0 < d < 1 controls the size of the perturbation.  Any of the      *
+ * random variables may be stratified (or "jittered") for a slightly more  *
+ * even distribution.                                                      *
+ *                                                                         *
+ *=========================================================================*/
+Mat4x4d random_rotation_matrix_arvo( float x1, float x2, float x3 )
+{
+    Mat4x4d M; // = rotation_Mat4x4d(XAXIS, M_PI * 2.0 * x_1 );
+    
+    float theta = x1 * M_PI * 2.0; /* Rotation about the pole (Z).      */
+    float phi   = x2 * M_PI * 2.0; /* For direction of pole deflection. */
+    float z     = x3 * 2.0;        /* For magnitude of pole deflection. */
 
+    /* Compute a vector V used for distributing points over the sphere  */
+    /* via the reflection I - V Transpose(V).  This formulation of V    */
+    /* will guarantee that if x[1] and x[2] are uniformly distributed,  */
+    /* the reflected points will be uniform on the sphere.  Note that V */
+    /* has length sqrt(2) to eliminate the 2 in the Householder matrix. */
+    
+    float r  = sqrt( z );
+    float Vx = sin( phi ) * r;
+    float Vy = cos( phi ) * r;
+    float Vz = sqrt( 2.0 - z );
+
+    /* Compute the row vector S = Transpose(V) * R, where R is a simple */
+    /* rotation by theta about the z-axis.  No need to compute Sz since */
+    /* it's just Vz.                                                    */
+    
+    float st = sin( theta );
+    float ct = cos( theta );
+    float Sx = Vx * ct - Vy * st;
+    float Sy = Vx * st + Vy * ct;
+    
+    /* Construct the rotation matrix  ( V Transpose(V) - I ) R, which   */
+    /* is equivalent to V S - R.                                        */
+    
+    float m_00 = Vx * Sx - ct,
+          m_01 = Vx * Sy - st,
+          m_02 = Vx * Vz,
+          m_03 = 0;
+    Vec4d r0 = Vec4d( m_00, m_01, m_02, m_03 );
+    
+    float m_10 = Vy * Sx + st,
+          m_11 = Vy * Sy - ct,
+          m_12 = Vy * Vz,
+          m_13 = 0;
+    Vec4d r1 = Vec4d( m_10, m_11, m_12, m_13 );
+    
+    float m_20 = Vz * Sx,
+          m_21 = Vz * Sy,
+          m_22 = 1.0 - z,   /* This equals Vz * Vz - 1.0 */
+          m_23 = 0;
+    Vec4d r2 = Vec4d( m_20, m_21, m_22, m_23 );
+    Vec4d r3 = Vec4d( 0.0, 0.0, 0.0, 1.0 );
+    
+    M = Mat4x4d( r0, r1, r2, r3 );
+    return M;
+}
+  
 }}}
