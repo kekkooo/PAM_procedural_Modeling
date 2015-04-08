@@ -10,13 +10,6 @@
 #include <GEL/GLGraphics/MeshEditor.h>
 #include <sstream>
 #include <random>
-//#include <strstream>
-//#include <istream>
-//#include <fstream>
-//#include <string>
-//#include <regex>
-//#include <set>
-//#include <queue>
 #include <GEL/HMesh/obj_save.h>
 #include "polarize.h"
 #include <MeshEditE/Procedural/Operations/basic_shapes.h>
@@ -363,7 +356,7 @@ void console_test_translate_outside_bsphere( MeshEditor *me, const std::vector< 
 namespace Procedural{
     namespace ConsoleFuncs{
         
-void register_match_console_funcs(GLGraphics::MeshEditor* me)
+void register_match_console_funcs( GLGraphics::MeshEditor* me )
 {
     me->register_console_function( "test.match.do",         test_match, "test.match.do" );
     me->register_console_function( "test.match.transform",  test_trasform, "test.match.transform" );
@@ -372,7 +365,7 @@ void register_match_console_funcs(GLGraphics::MeshEditor* me)
     me->register_console_function( "test.poles_info",  poles_info, "test.poles_info" );
 }
 
-void register_basic_console_funcs(GLGraphics::MeshEditor* me)
+void register_basic_console_funcs( GLGraphics::MeshEditor* me )
 {
     me->register_console_function( "test.shapes.cube_t",     console_test_cube_triangles,    "test.shapes.cube_t"     );
     me->register_console_function( "test.shapes.cube_q",     console_test_cube_quads,        "test.shapes.cube_q"     );
@@ -387,6 +380,14 @@ void register_test_console_funcs( GLGraphics::MeshEditor* me )
     me->register_console_function( "test.randomly_rotate",      console_test_randomly_rotate, "test.randomly_rotate"        );
     me->register_console_function( "test.translate_outside_bsphere",   console_test_translate_outside_bsphere, "test.translate_outside_bsphere"        );
 }
+        
+void register_engine_console_funcs( GLGraphics::MeshEditor* me )
+{
+    me->register_console_function( "test.set_host_and_module",   console_test_set_host_and_module, "test.set_host_and_module"     );
+    me->register_console_function( "test.select",      console_test_randomly_rotate, "test.randomly_rotate"        );
+    me->register_console_function( "test.translate_outside_bsphere",   console_test_translate_outside_bsphere, "test.translate_outside_bsphere"        );
+}
+
     
 
 void register_algorithm_console_funcs(GLGraphics::MeshEditor* me)

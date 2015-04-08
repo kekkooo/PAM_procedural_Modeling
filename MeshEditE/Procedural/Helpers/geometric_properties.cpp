@@ -723,6 +723,22 @@ void bsphere ( Manifold& m, const set<VertexID> &vertices, Vec3d& centroid, doub
     centroid = pmin + rad;
     radius = rad.length();
 }
+        
+void bsphere( vector< Vec3d > &points, Vec3d& centroid, double& radius )
+{
+    Vec3d pmin, pmax;
+    if( points.size() == 0 ) { return; }
+    
+    pmin = pmax = *points.begin();
+    for( Vec3d p : points )
+    {
+        pmin = v_min( p, pmin );
+        pmax = v_max( p, pmax );
+    }
+    Manifold::Vec rad = ( pmax - pmin ) * 0.5f;
+    centroid = pmin + rad;
+    radius = rad.length();
+}
 
 Vec3d vec_from_edge( const Manifold& m, HalfEdgeID he )
 {
