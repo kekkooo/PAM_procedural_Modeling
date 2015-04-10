@@ -8,6 +8,7 @@
 
 #include "graph_match.h"
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+
 //#include "geometric_properties.h"
 using namespace std;
 using namespace HMesh;
@@ -38,7 +39,7 @@ GraphEdge build_edge( GraphNode n1, GraphNode n2 )
     else          return std::make_pair( n2, n1 );
 }
 
-        
+// fills the given graph with costs associated to each arc
 void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, ManifoldToGraph &mtg )
 {
     vector< CGLA::Vec3d > pos, normals;
@@ -65,6 +66,33 @@ void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, Mani
         g.setCost( e, make_pair( distance, angle ));
     }
 }
+        
+void normalize_costs( GraphStruct &g1, GraphStruct g2 ){
+    double max_distance = 0.0;
+    // get the maximum distance between g1 and g2
+    for( GraphEdge e : g1.arcs )
+    {
+        double current_distance = g1.getCost(e).first;
+        if( current_distance > max_distance ) { max_distance = current_distance; }
+    }
+    for( GraphEdge e : g2.arcs )
+    {
+        double current_distance = g1.getCost(e).first;
+        if( current_distance > max_distance ) { max_distance = current_distance; }
+    }
+    
+    // normalize edge cost values
+    for( GraphEdge e : g1.arcs )
+    {
+        g1.setCost(e, std::make_pair( g1.getCost(e).first / max_distance, g1.getCost(e).second / M_PI ));
+#warning here I need a well thoughed assert
+    }
+    for( GraphEdge e : g2.arcs )
+    {
+        g2.setCost(e, std::make_pair( g2.getCost(e).first / max_distance, g2.getCost(e).second / M_PI ));
+#warning here I need a well thoughed assert
+    }
+}
 
 
 EdgeCost get_best_subset( Manifold &m,  vector<Match> &proposed, vector< Match > &selected, size_t target )
@@ -81,25 +109,31 @@ EdgeCost get_best_subset( Manifold &m,  vector<Match> &proposed, vector< Match >
 }
         
 
-EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &aps, Manifold &module,
-                          vector< VertexID > &poles, vector< Match > &selected, size_t target )
+/// taking as input the host mesh and the module mesh, with the respective
+/// vertices that are candidates for glueing. Taking also the target number of glueings,
+/// it returns the matches that minimize the cost of glueing them.
+EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &host_candidates,
+                          Manifold &module, vector< VertexID > &poles,
+                          vector< Match > &selected, size_t target )
 {
-    assert( aps.size() == poles.size( ));
-    assert( target <= aps.size());
-    size_t no_nodes = aps.size();
+    assert( host_candidates.size() == poles.size( ));
+    assert( target <= host_candidates.size());
+    
+    size_t no_nodes = host_candidates.size();
     EdgeCost cost_sum = make_pair( 0.0, 0.0 );
     GraphStruct gm( no_nodes );
     GraphStruct gh( no_nodes );
     GraphStruct g( 0 );
     ManifoldToGraph mtg_module( poles );
-    ManifoldToGraph mtg_host( aps );
+    ManifoldToGraph mtg_host( host_candidates );
 
     // fill graph costs for module
     fill_graph( module, poles, gm, mtg_module );
     // fill graph costs for host
-    fill_graph( host, aps, gh, mtg_host );
+    fill_graph( host, host_candidates, gh, mtg_host );
     // build difference graph
     graphStruct_difference( gm, gh, g );
+
     // iterate removing until the target is found
     size_t iterations = no_nodes - target;
     for( size_t i = 0; i < iterations; ++i )

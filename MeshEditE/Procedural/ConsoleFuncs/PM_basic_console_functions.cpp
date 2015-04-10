@@ -330,7 +330,7 @@ void console_test_set_host_and_module( MeshEditor *me, const std::vector< std::s
         a0 >> filename;
     }
 
-    oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results/8v_poles/" << filename;
+    oss << "/Users/francescousai/Documents/Dottorato/Conferenze/CGI_PG2015/Shapes/Modules/" << filename;
     obj_load( oss.str(), module );
 
     Tests::RandomRotationTest &test = Tests::RandomRotationTest::getInstance();
@@ -381,12 +381,6 @@ void register_test_console_funcs( GLGraphics::MeshEditor* me )
     me->register_console_function( "test.translate_outside_bsphere",   console_test_translate_outside_bsphere, "test.translate_outside_bsphere"        );
 }
         
-void register_engine_console_funcs( GLGraphics::MeshEditor* me )
-{
-    me->register_console_function( "test.set_host_and_module",   console_test_set_host_and_module, "test.set_host_and_module"     );
-    me->register_console_function( "test.select",      console_test_randomly_rotate, "test.randomly_rotate"        );
-    me->register_console_function( "test.translate_outside_bsphere",   console_test_translate_outside_bsphere, "test.translate_outside_bsphere"        );
-}
 
     
 

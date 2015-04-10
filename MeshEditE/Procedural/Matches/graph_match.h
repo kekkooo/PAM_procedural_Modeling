@@ -75,8 +75,8 @@ private:
     std::map< HMesh::VertexID, GraphNode > id_to_node;
     std::map< GraphNode, HMesh::VertexID > node_to_id;
 public:
-    inline GraphNode        getNode     ( HMesh::VertexID v )   { assert( id_to_node.count(v) > 0 ); return id_to_node[v]; }
-    inline HMesh::VertexID  getVertexId ( GraphNode n )         { assert( node_to_id.count(n) > 0 ); return node_to_id[n]; }
+    inline GraphNode        getNode     ( HMesh::VertexID v )   { assert( id_to_node.count( v ) > 0 ); return id_to_node[v]; }
+    inline HMesh::VertexID  getVertexId ( GraphNode n )         { assert( node_to_id.count( n ) > 0 ); return node_to_id[n]; }
     ManifoldToGraph( const std::vector<HMesh::VertexID> &vs )
     {
         GraphNode curr = 0;
@@ -160,9 +160,9 @@ public :
     GraphStruct( size_t no_nodes )
     {
         assert( no_nodes >= 0 );
-        max_node_idx = no_nodes - 1;
-        double ub   = std::numeric_limits<double>::max();
-        EdgeCost c  = std::make_pair( ub, ub );
+        max_node_idx        = no_nodes - 1;
+        double max_value    = std::numeric_limits<double>::max();
+        EdgeCost c          = std::make_pair( max_value, max_value );
         // add nodes
         for( size_t i = 0; i < no_nodes; ++i )
         {
@@ -183,11 +183,15 @@ public :
     /// removing a node of the graph involves :
     /// putting -1 in its corresponding position in the node's vector
     /// removing all of its arcs
-    /// putting 0 as cost for each of its arcs
+    /// putting max_value as cost for each of its arcs
     void RemoveNode( size_t node )
     {
+        double max_value    = std::numeric_limits<double>::max();
+        EdgeCost c          = std::make_pair( max_value, max_value );
+
         nodes[node] = -1;
         assert( !exists( node ));
+
         // save all the arcs where
         typedef std::vector<GraphEdge>::iterator    arc_iter;
         std::stack<arc_iter>                        to_delete;
@@ -200,7 +204,7 @@ public :
         // remove them ( popping from the stack will guarantee of deleting them from back to front
         while( !to_delete.empty( ))
         {
-            costs[(*to_delete.top())] = std::make_pair( 0.0, 0.0 );
+            costs[(*to_delete.top())] = c;
             arcs.erase( to_delete.top( ));
             to_delete.pop();
         }
@@ -221,14 +225,15 @@ GraphNode   remove_most_expensive_node (    GraphStruct &g );
 EdgeCost    getStarTotalCost(               GraphStruct &g, GraphNode n );
 
 EdgeCost get_best_subset
-                        ( HMesh::Manifold &host,  std::vector<HMesh::VertexID> &aps,
+                        ( HMesh::Manifold &host,  std::vector<HMesh::VertexID> &host_candidates,
                           HMesh::Manifold &module, std::vector<HMesh::VertexID> &poles,
                           std::vector< Match > &selected, size_t target );
 EdgeCost get_best_subset
                         ( HMesh::Manifold &m,  std::vector<Match> &proposed,
                           std::vector< Match > &selected, size_t target );
 
-void     fill_graph    ( HMesh::Manifold &m, std::vector<HMesh::VertexID> &vs, GraphStruct &g );
+void     fill_graph     ( HMesh::Manifold &m, std::vector<HMesh::VertexID> &vs, GraphStruct &g );
+void     normalize_costs( GraphStruct &g1, GraphStruct g2 );
 
 
 }}

@@ -25,6 +25,9 @@ using namespace Procedural::Geometry;
 using namespace Procedural::Helpers::ModuleAlignment;
 using namespace Procedural::GraphMatch;
 
+/*=========================================================================*
+ *                     PRIVATE FUNCTIONS                                   *
+ *=========================================================================*/
 
 StatefulEngine::StatefulEngine()
 {
@@ -32,33 +35,7 @@ StatefulEngine::StatefulEngine()
     unsigned seed = chrono::system_clock::now().time_since_epoch().count();
     randomizer.seed( seed );
     treeIsValid = false;
-}
-
-StatefulEngine& StatefulEngine::getCurrentEngine(){
-    static StatefulEngine instance;
-    return instance;
-}
-
-void StatefulEngine::setHost( Manifold &host ){
-    assert( this->m == NULL );
-    this->m = &host;
-}
-
-void StatefulEngine::setModule( Manifold &module ){
-    assert( this->m != NULL );
-    assert( this->H_vertices.size() > 0 );
-    assert( this->M_vertices.size() == 0 );
-    add_manifold( (*this->m), module, H_vertices, M_vertices );
-}
-
-void StatefulEngine::consolidate(){
-    assert( this->m != NULL );
-    assert( this->H_vertices.size() > 0 );
-    assert( this->M_vertices.size() > 0 );
-    // in this way you lose any reference to which vertices are from host and module
-    H_vertices.clear();
-    M_vertices.clear();
-    treeIsValid = false;
+    dim_constraint = DimensionalityConstraint::Constrained_3D;
 }
 
 
@@ -66,11 +43,12 @@ void StatefulEngine::buildRandomTransform( CGLA::Mat4x4d &t ){
     // must be initialized
     float rand_max =  static_cast<float>( randomizer.max( )); //RAND_MAX / ( M_PI * 2.0 );
     float x1 = static_cast<float>( randomizer( )) / rand_max,
-          x2 = static_cast<float>( randomizer( )) / rand_max,
-          x3 = static_cast<float>( randomizer( )) / rand_max;
+    x2 = static_cast<float>( randomizer( )) / rand_max,
+    x3 = static_cast<float>( randomizer( )) / rand_max;
     
     t = ModuleAlignment::random_rotation_matrix_arvo( x1, x2, x3 );
 }
+
 
 void StatefulEngine::buildCollisionAvoidingTranslation( const CGLA::Mat4x4d &rot, CGLA::Mat4x4d &tr )
 {
@@ -93,6 +71,7 @@ void StatefulEngine::buildCollisionAvoidingTranslation( const CGLA::Mat4x4d &rot
     tr = CGLA::translation_Mat4x4d( dir );
 }
 
+
 void StatefulEngine::buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t ){
     Mat4x4d rot, tr;
     // build random transform
@@ -100,14 +79,16 @@ void StatefulEngine::buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t ){
     // build collision avoiding translation
     buildCollisionAvoidingTranslation( rot, tr );
     // return composition
-    t = tr + rot;
+    t = tr * rot;
 }
+
 
 void StatefulEngine::buildHostKdTree(){
     assert( this->m != NULL );
     assert( this->H_vertices.size() > 0 );
     
-    ModuleAlignment::build_manifold_kdtree( (*this->m), this->H_vertices, this->tree );
+//    ModuleAlignment::build_manifold_kdtree( (*this->m), this->H_vertices, this->tree );
+    ModuleAlignment::build_manifold_kdtree( (*this->m), this->H_candidates.getCandidates(), this->tree );
     treeIsValid = true;
 }
 
@@ -116,14 +97,49 @@ void StatefulEngine::transformModulePoles( CGLA::Mat4x4d &t, VertexPosMap &new_p
     assert( this->m != NULL );
     assert( this->H_vertices.size() > 0 );
     assert( this->M_vertices.size() > 0 );
-
+    
     for( VertexID vid : M_vertices ){
         if( !is_pole( (*this->m), vid )) continue;
         new_pos[vid] = t.mul_3D_point( m->pos( vid ));
     }
 }
 
+
 bool ID_and_dist_comparer( ID_and_dist &l, ID_and_dist &r ) { return ( l.second < r.second ); }
+
+
+void StatefulEngine::matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatch& M_pole_to_H_vertex ){
+    set<VertexID> assigned_vertices;
+    for( auto id_and_pos : module_poles_positions)
+    {
+        assert( is_pole( *this->m, id_and_pos.first ));
+        double      distance    = numeric_limits<double>::max();
+        Vec3d       foundVec;
+        VertexID    foundID = InvalidVertexID, second_choiceID = InvalidVertexID;
+        // here there could be problems because I should be sure that there will not be
+        // two poles assigned to the same candidate vertex on the host
+        // closest point should always return true
+        bool        have_found  = tree.closest_point( id_and_pos.second , distance, foundVec, foundID );
+        
+        cout << id_and_pos.first << " # " << id_and_pos.second << "# matched : " << foundID << " # dist : " << distance << endl;
+        assert( have_found );
+        assert( foundID != InvalidVertexID );
+        
+        if( assigned_vertices.count( foundID ) == 0 )
+        {
+            assigned_vertices.insert( foundID );
+            M_pole_to_H_vertex[id_and_pos.first] = foundID;
+        }
+        else
+        {
+            findSecondClosest( foundID, second_choiceID, assigned_vertices );
+            assert( second_choiceID != InvalidVertexID );
+            assigned_vertices.insert( second_choiceID );
+            M_pole_to_H_vertex[id_and_pos.first] = second_choiceID;
+        }
+    }
+}
+
 
 void StatefulEngine::findSecondClosest(const HMesh::VertexID &closest, HMesh::VertexID &second_closest, VertexSet &assigned){
     assert( assigned.count(closest) > 0 );
@@ -162,48 +178,80 @@ void StatefulEngine::findSecondClosest(const HMesh::VertexID &closest, HMesh::Ve
     }
     second_closest = it->first;
     assigned.insert( it->first );
-
 }
 
-void StatefulEngine::matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatch& M_pole_to_H_vertex ){
-    set<VertexID> assigned_vertices;
-    for( auto id_and_pos : module_poles_positions)
-    {
-        assert( is_pole( *this->m, id_and_pos.first ));
-        double      distance    = numeric_limits<double>::max();
-        Vec3d       foundVec;
-        VertexID    foundID = InvalidVertexID, second_choiceID = InvalidVertexID;
-        // here there could be problems because I should be sure that there will not be
-        // two poles assigned to the same candidate vertex on the host
-        // closest point should always return true
-        bool        have_found  = tree.closest_point( id_and_pos.second , distance, foundVec, foundID );
-        
-        cout << id_and_pos.first << " # " << id_and_pos.second << "# matched : " << foundID << " # dist : " << distance << endl;
-        assert( have_found );
-        assert( foundID != InvalidVertexID );
-        
-        if( assigned_vertices.count( foundID ) == 0 )
-        {
-            assigned_vertices.insert( foundID );
-            M_pole_to_H_vertex[id_and_pos.first] = foundID;
-        }
-        else
-        {
-            findSecondClosest( foundID, second_choiceID, assigned_vertices );
-            assert( second_choiceID != InvalidVertexID );
-            assigned_vertices.insert( second_choiceID );
-            M_pole_to_H_vertex[id_and_pos.first] = second_choiceID;
+
+void StatefulEngine::alignUsingBestMatch( ){
+    if( best_match.IsValid( )){
+        apply_optimal_alignment( *m, M_vertices, best_match.getMatchInfo() );
+        align_module_normals_to_host( *m, M_vertices, best_match.getMatchInfo().matches );
+    }
+}
+
+void StatefulEngine::actualGlueing(){
+    if( best_match.IsValid( )){
+        add_necessary_poles( *m, best_match.getMatchInfo().matches, H_vertices, M_vertices );
+        glue_matches( *m, best_match.getMatchInfo().matches );
+        consolidate();
+    }
+}
+
+void StatefulEngine::fillCandidateSet(){
+#warning nowadays it considers just the poles
+    assert( this->m != NULL );
+    assert( this->H_vertices.size() > 0 );
+    
+    for( VertexID vid : m->vertices( )){
+        if( is_pole( *m, vid )) {
+            CandidateInfo _;
+            H_candidates.insert( vid, _ );
         }
     }
 }
 
+/*=========================================================================*
+ *                     PUBLIC FUNCTIONS                                    *
+ *=========================================================================*/
+
+StatefulEngine& StatefulEngine::getCurrentEngine(){
+    static StatefulEngine instance;
+    return instance;
+}
+
+
+void StatefulEngine::setHost( Manifold &host ){
+//    assert( this->m == NULL );
+    this->m = &host;
+}
+
+void StatefulEngine::setModule( Manifold &module ){
+    assert( this->m != NULL );
+    assert( this->H_vertices.size() == 0 );
+    assert( this->M_vertices.size() == 0 );
+    add_manifold( (*this->m), module, H_vertices, M_vertices );
+    fillCandidateSet();
+    buildHostKdTree();    
+}
+
+void StatefulEngine::consolidate(){
+    assert( this->m != NULL );
+    assert( this->H_vertices.size() > 0 );
+    assert( this->M_vertices.size() > 0 );
+    // in this way you lose any reference to which vertices are from host and module
+    H_vertices.clear();
+    M_vertices.clear();
+    H_candidates.clear();
+    treeIsValid = false;
+}
+
+
 void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings ){
-//    assert( this->m != NULL );
-//    assert( this->H_vertices.size() > 0 );
-//    assert( this->M_vertices.size() > 0 );
+        assert( this->m != NULL );
+        assert( this->H_vertices.size() > 0 );
+        assert( this->M_vertices.size() > 0 );
     
     assert( no_tests > 0 );
-
+    
     vector< matches_and_cost >    matches_vector;
     vector< match_info >          proposed_matches;
     
@@ -217,7 +265,7 @@ void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings 
         transformModulePoles( mi.random_transform, transformed_M_poles );
         // convert this call to be inside StatefulEngine, in order to avoid passing the first two parameters
         match_module_to_host( *this->m, this->tree, transformed_M_poles, M_to_H );
-
+        
         for( auto pole_and_vertex : M_to_H )
         {
             // cout << pole_and_vertex.first << ", " << pole_and_vertex.second << endl;
@@ -233,7 +281,7 @@ void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings 
     
     std::cout << "after filling " << endl;
     assert( proposed_matches.size() > 0 );
-
+    
     // find the best solution between the proposed ones
     size_t      selected = 0;
     EdgeCost    max_cost = proposed_matches[0].cost;
@@ -249,8 +297,9 @@ void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings 
     }
     
     best_match.setMatchInfo( proposed_matches[selected] );
-
-//    save_intermediate_result(host, TEST_PATH, 3);
+    cout << best_match.getMatchInfo().random_transform << endl;
+    
+    //    save_intermediate_result(host, TEST_PATH, 3);
     
     /* How this should work
      -) build a kdtree of the host
@@ -268,22 +317,18 @@ void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings 
      -) glue each choosen module's pole to its correspondent host's pole.
      -) smooth the added skeleton ( this is something that needs a little more work )
      */
-//    result = std::move( proposed_matches[selected].matches );
+    //    result = std::move( proposed_matches[selected].matches );
 }
 
-void StatefulEngine::alignUsingBestMatch( ){
-    if( best_match.IsValid( )){
-        apply_optimal_alignment( *m, M_vertices, best_match.getMatchInfo() );
-        align_module_normals_to_host( *m, M_vertices, best_match.getMatchInfo().matches );
-    }
+
+void StatefulEngine::glueModuleToHost(){
+    alignUsingBestMatch();
+    actualGlueing();
 }
 
-void StatefulEngine::actualGlueing(){
-    if( best_match.IsValid( )){
-        add_necessary_poles( *m, best_match.getMatchInfo().matches, H_vertices, M_vertices );
-        glue_matches( *m, best_match.getMatchInfo().matches );
-    }
-}
+
+
+
 
 
 

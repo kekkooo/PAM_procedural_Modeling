@@ -31,7 +31,7 @@ namespace Procedural {
         namespace ModuleAlignment{
 
 /// prepare the spatial index
-void build_manifold_kdtree( Manifold& m, set< VertexID > &selected, kd_tree &tree)
+void build_manifold_kdtree( Manifold& m, const set< VertexID > &selected, kd_tree &tree)
 {
     for( VertexID v : selected )
     {
@@ -168,7 +168,6 @@ void apply_optimal_alignment( Manifold &m, const set<VertexID> &module_vs, match
     // before calculating the optimal rigid motion, transform the module using the given initial transformation
     // that is the random transformation used.
     for( auto mv : module_vs ) { m.pos( mv ) = choosen_match_info.random_transform.mul_3D_point(m.pos( mv )); }
-//    return;
     save_intermediate_result(m, TEST_PATH , 1);
     svd_rigid_motion( m, module_p, m, host_v, R, T );
     Mat4x4d t = T * R;

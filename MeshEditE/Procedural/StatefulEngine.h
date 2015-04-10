@@ -37,24 +37,49 @@ typedef std::map<HMesh::VertexID, CGLA::Vec3d>                          VertexPo
 typedef std::set<HMesh::VertexID>                                       VertexSet;
 typedef std::map< HMesh::VertexID, HMesh::VertexID >                    VertexMatch;
 typedef GEL_Geometry::KDTree< CGLA::Vec3d, HMesh::VertexID >            kD_Tree;
-        struct MatchInfoProxy{
-        private:
-            Procedural::Helpers::ModuleAlignment::match_info matchInfo;
-            bool                                             isValid    = false;
-        public:
-            bool IsValid() { return isValid; }
-            Procedural::Helpers::ModuleAlignment::match_info& getMatchInfo() {
-                return  matchInfo;
-            }
-            void setMatchInfo( Procedural::Helpers::ModuleAlignment::match_info& mi )
-            {
-                matchInfo = mi;
-                isValid = true;
-            }
-        };
+struct MatchInfoProxy{
+    private:
+        Procedural::Helpers::ModuleAlignment::match_info matchInfo;
+        bool                                             isValid    = false;
+    public:
+        bool IsValid() { return isValid; }
+        Procedural::Helpers::ModuleAlignment::match_info& getMatchInfo() {
+            return  matchInfo;
+        }
+        void setMatchInfo( Procedural::Helpers::ModuleAlignment::match_info& mi )
+        {
+            matchInfo = mi;
+            isValid = true;
+        }
+};
+        
+struct CandidateInfo{
+    HMesh::VertexID id;
+};
+struct CandidateSet{
+public:
+    const VertexSet& getCandidates(){ return candidates; }
+    void insert( HMesh::VertexID id, CandidateInfo info ){
+        candidates.insert( id );
+        candidate_infos[id] = info;
+    }
+    CandidateInfo getInfo( HMesh::VertexID id ){
+        assert( candidates.count(id) > 0 );
+        return candidate_infos[id];
+    }
+    void clear(){
+        candidates.clear();
+        candidate_infos.clear();
+    }
+private:
+    VertexSet candidates;
+    HMesh::AttributeVector<CandidateInfo, HMesh::VertexID> candidate_infos;
+};
 
 /// Stateful Engine class
 class StatefulEngine{
+    
+    enum DimensionalityConstraint { Constrained_1D, Constrained_2D, Constrained_3D };
     
     /************************************************
      * METHODS                                      *
@@ -68,6 +93,16 @@ class StatefulEngine{
             void            testMultipleTransformations( int no_tests, int no_glueings );
             void            glueModuleToHost();
             void            consolidate();
+    
+            void            alignUsingBestMatch( );
+            void            actualGlueing();
+
+
+/* INLINE FUNCTIONS*/
+    inline  void            setConstraint1D( ){ dim_constraint = StatefulEngine::DimensionalityConstraint::Constrained_1D; }
+    inline  void            setConstraint2D( ){ dim_constraint = StatefulEngine::DimensionalityConstraint::Constrained_2D; }
+    inline  void            setConstraint3D( ){ dim_constraint = StatefulEngine::DimensionalityConstraint::Constrained_3D; }
+    inline  DimensionalityConstraint getConstraint() { return  dim_constraint; }
     
     private :
                             StatefulEngine();
@@ -89,8 +124,7 @@ class StatefulEngine{
             void            matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatch& M_pole_to_H_vertex );
             void            findSecondClosest( const HMesh::VertexID &closest, HMesh::VertexID &second_closest,
                                                VertexSet &assigned);
-            void            alignUsingBestMatch( );
-            void            actualGlueing();
+            void            fillCandidateSet();
 
 
     
@@ -106,11 +140,13 @@ private:
     
     VertexSet           H_vertices,
                         M_vertices;
+    CandidateSet        H_candidates;
     
     // VertexPosMap        M_original_pos_map;
     std::mt19937_64     randomizer;
 //    Procedural::GraphMatch::match_info          best_match;
     MatchInfoProxy      best_match;
+    DimensionalityConstraint dim_constraint;
 
 
 };

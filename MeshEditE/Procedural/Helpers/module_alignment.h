@@ -52,7 +52,7 @@ struct match_info{
         
 void AddModule(                 HMesh::Manifold &host, HMesh::Manifold &module, size_t no_glueings,
                                 std::vector<Procedural::GraphMatch::Match> &matches );
-void build_manifold_kdtree(     HMesh::Manifold& m, std::set< HMesh::VertexID > &selected, kd_tree &tree);
+void build_manifold_kdtree(     HMesh::Manifold& m, const std::set< HMesh::VertexID > &selected, kd_tree &tree);
 
 CGLA::Mat4x4d transform_module_poles(
                                 HMesh::Manifold &host, const std::set<HMesh::VertexID> &host_vs,
