@@ -94,6 +94,10 @@ class StatefulEngine{
             void            glueModuleToHost();
             void            consolidate();
     
+    
+            void            applyRandomTransform();
+            void            applyOptimalAlignment( );
+            void            alignModuleNormalsToHost( );
             void            alignUsingBestMatch( );
             void            actualGlueing();
 
@@ -122,7 +126,7 @@ class StatefulEngine{
 
             /// this is to fix - look inside
             void            matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatch& M_pole_to_H_vertex );
-            void            findSecondClosest( const HMesh::VertexID &closest, HMesh::VertexID &second_closest,
+            bool            findSecondClosest( const HMesh::VertexID &closest, HMesh::VertexID &second_closest,
                                                VertexSet &assigned);
             void            fillCandidateSet();
 
@@ -135,7 +139,7 @@ class StatefulEngine{
      ***********************************************/
 private:
     bool                treeIsValid;
-    kD_Tree             tree;
+    kD_Tree*             tree;
     HMesh::Manifold     *m;
     
     VertexSet           H_vertices,
@@ -147,6 +151,9 @@ private:
 //    Procedural::GraphMatch::match_info          best_match;
     MatchInfoProxy      best_match;
     DimensionalityConstraint dim_constraint;
+    
+    
+    double              last_x1, last_x2, last_x3;
 
 
 };

@@ -8,10 +8,15 @@
 
 #include "StatefulEngine.h"
 
+#include <GEL/GLGraphics/ManifoldRenderer.h>
+
 #include "polarize.h"
 
 #include "MeshEditE/Procedural/Helpers/manifold_copy.h"
 #include "MeshEditE/Procedural/Helpers/geometric_properties.h"
+#include "MeshEditE/Procedural/Helpers/svd_alignment.h"
+
+#include "Test.h"
 
 
 using namespace std;
@@ -31,11 +36,12 @@ using namespace Procedural::GraphMatch;
 
 StatefulEngine::StatefulEngine()
 {
-    this->m = NULL;
-    unsigned seed = chrono::system_clock::now().time_since_epoch().count();
+    this->m         = NULL;
+    this->tree      = NULL;
+    unsigned seed   = chrono::system_clock::now().time_since_epoch().count();
     randomizer.seed( seed );
-    treeIsValid = false;
-    dim_constraint = DimensionalityConstraint::Constrained_3D;
+    treeIsValid     = false;
+    dim_constraint  = DimensionalityConstraint::Constrained_3D;
 }
 
 
@@ -45,6 +51,8 @@ void StatefulEngine::buildRandomTransform( CGLA::Mat4x4d &t ){
     float x1 = static_cast<float>( randomizer( )) / rand_max,
     x2 = static_cast<float>( randomizer( )) / rand_max,
     x3 = static_cast<float>( randomizer( )) / rand_max;
+    
+    last_x1 = x1;   last_x2 = x2;   last_x3 = x3;
     
     t = ModuleAlignment::random_rotation_matrix_arvo( x1, x2, x3 );
 }
@@ -64,7 +72,15 @@ void StatefulEngine::buildCollisionAvoidingTranslation( const CGLA::Mat4x4d &rot
     bsphere( *(this->m), H_vertices, H_centroid, H_radius );
     // build the collision avoiding translation
     Vec3d   dir     = M_centroid - H_centroid;
+    double  dir_len = dir.length();
     double  length  = H_radius + M_radius - dir.length();
+    
+    cout << "Dir : " << dir << " # with length : " << dir_len << endl;
+    
+    if( fabs( dir_len ) < 0.0000000001 ){
+        dir = Vec3d( last_x1, last_x2, last_x3 );
+    }
+    
     dir.normalize();
     dir *= length;
     
@@ -76,8 +92,10 @@ void StatefulEngine::buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t ){
     Mat4x4d rot, tr;
     // build random transform
     buildRandomTransform( rot );
+    cout << "Random Rotation" << endl << rot ;
     // build collision avoiding translation
     buildCollisionAvoidingTranslation( rot, tr );
+    cout << "Random Translation" << endl << tr ;
     // return composition
     t = tr * rot;
 }
@@ -86,9 +104,11 @@ void StatefulEngine::buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t ){
 void StatefulEngine::buildHostKdTree(){
     assert( this->m != NULL );
     assert( this->H_vertices.size() > 0 );
+    assert( this->tree == NULL );
     
 //    ModuleAlignment::build_manifold_kdtree( (*this->m), this->H_vertices, this->tree );
-    ModuleAlignment::build_manifold_kdtree( (*this->m), this->H_candidates.getCandidates(), this->tree );
+    this->tree = new kD_Tree();
+    ModuleAlignment::build_manifold_kdtree( (*this->m), this->H_candidates.getCandidates(), *this->tree );
     treeIsValid = true;
 }
 
@@ -104,87 +124,207 @@ void StatefulEngine::transformModulePoles( CGLA::Mat4x4d &t, VertexPosMap &new_p
     }
 }
 
-
+/// returns true if L < R
 bool ID_and_dist_comparer( ID_and_dist &l, ID_and_dist &r ) { return ( l.second < r.second ); }
 
 
 void StatefulEngine::matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatch& M_pole_to_H_vertex ){
-    set<VertexID> assigned_vertices;
+
+    typedef vector<ID_and_dist >                                Near_Pole_Vector;
+    typedef map< VertexID, Near_Pole_Vector >                   Candidate_Neighbors;
+    
+    VertexSet assigned_candidates, unassigned_poles;
+    Candidate_Neighbors candidateNeighbors;
+    // from module's pole to host's candidate
+    VertexMatch internal_match;
+    
+    // find the nearest host candidate for each module's pole
+    // and, for each candidate matched, store its matched pole and distance
     for( auto id_and_pos : module_poles_positions)
     {
         assert( is_pole( *this->m, id_and_pos.first ));
         double      distance    = numeric_limits<double>::max();
         Vec3d       foundVec;
         VertexID    foundID = InvalidVertexID, second_choiceID = InvalidVertexID;
-        // here there could be problems because I should be sure that there will not be
-        // two poles assigned to the same candidate vertex on the host
-        // closest point should always return true
-        bool        have_found  = tree.closest_point( id_and_pos.second , distance, foundVec, foundID );
+    
+        bool        have_found  = (*tree).closest_point( id_and_pos.second , distance, foundVec, foundID );
         
         cout << id_and_pos.first << " # " << id_and_pos.second << "# matched : " << foundID << " # dist : " << distance << endl;
         assert( have_found );
         assert( foundID != InvalidVertexID );
+
+        assert( H_candidates.getCandidates().count(foundID) > 0 );
         
-        if( assigned_vertices.count( foundID ) == 0 )
-        {
-            assigned_vertices.insert( foundID );
-            M_pole_to_H_vertex[id_and_pos.first] = foundID;
+        // instantiate vector if putting the first value
+        if( candidateNeighbors.count( foundID ) == 0 ){
+            candidateNeighbors[foundID] = Near_Pole_Vector();
         }
-        else
-        {
-            findSecondClosest( foundID, second_choiceID, assigned_vertices );
-            assert( second_choiceID != InvalidVertexID );
-            assigned_vertices.insert( second_choiceID );
-            M_pole_to_H_vertex[id_and_pos.first] = second_choiceID;
+        candidateNeighbors[foundID].push_back( make_pair( id_and_pos.first, distance ));
+        assigned_candidates.insert( foundID );
+        internal_match[id_and_pos.first] = foundID;
+    }
+    
+    // here I should process all the candidateNeighbors for which the number of matched
+    // poles > 1 and try to assign them to not assigned candidates
+    for( auto item : candidateNeighbors ){
+        assert( item.second.size() > 0 );
+        if( item.second.size() == 1 ) {
+            M_pole_to_H_vertex[item.second.front().first] = item.first;
         }
+        else{
+            // get the nearest matched pole
+            ID_and_dist nearest = item.second.front();
+            for( ID_and_dist id_dist : item.second ){
+                if( ID_and_dist_comparer( id_dist, nearest )){
+                    nearest = id_dist;
+                }
+            }
+            // save the nearest match into the output map
+            M_pole_to_H_vertex[nearest.first] = item.first;
+            assigned_candidates.insert( item.first );
+            // put all the other poles into the unassigned set
+            for( ID_and_dist id_dist : item.second ){
+                if( id_dist.first != nearest.first ){ unassigned_poles.insert( id_dist.first ); }
+            }
+        }
+    }
+    
+    // for each unassigned pole try to find a secondary nearest match
+    for( VertexID unassigned : unassigned_poles ){
+        VertexID second_cloesest = InvalidVertexID;
+        if( findSecondClosest( internal_match[unassigned], second_cloesest, assigned_candidates )){
+            assert( H_candidates.getCandidates().count(second_cloesest) > 0 );
+            M_pole_to_H_vertex[unassigned] = second_cloesest;
+        }
+    }
+    
+    // sanity check
+    map<VertexID, int> _candidates, _poles;
+    for( auto item : M_pole_to_H_vertex ){
+        _poles[item.first] = 0;
+        _candidates[item.second] = 0;
+    }
+    
+    for( auto item : M_pole_to_H_vertex ){
+        _poles[item.first] = _poles[item.first] + 1;
+        _candidates[item.second] = _candidates[item.second] + 1;
+        // each pole MUST be assigned to only one candidate and each candidate to only one pole
+        assert(_poles.count(item.first) <= 1);
+        assert(_candidates.count(item.second) <= 1);
     }
 }
 
 
-void StatefulEngine::findSecondClosest(const HMesh::VertexID &closest, HMesh::VertexID &second_closest, VertexSet &assigned){
-    assert( assigned.count(closest) > 0 );
+bool StatefulEngine::findSecondClosest(const HMesh::VertexID &closest, HMesh::VertexID &second_closest, VertexSet &assigned){
+    assert( assigned.count( closest ) > 0 );
     // consider closest
-    Vec3d       cp          = m->pos( closest );
-    // find the nearest of the vertices in its 1-ring
-    double      min_dist    = numeric_limits<double>::max();
+    Vec3d       closest_pos = m->pos( closest );
+    // find the mean distance from 1-neighbors
+    double      mean_dist   = numeric_limits<double>::max();
+    size_t      valence     = 0;
     for( Walker w = m->walker( closest ); !w.full_circle(); w = w.circulate_vertex_ccw())
     {
-        if( assigned.count(w.vertex())) { continue; }   // skip all assigned vertices
-        double dist = ( cp - m->pos( w.vertex( ))).length( );
-        if( dist < min_dist ){ min_dist = dist; }
+        double dist = ( closest_pos - m->pos( w.vertex( ))).length( );
+        mean_dist += dist;
+        ++valence;
     }
     // take that distance as radius and use it with tree.in_sphere with center in closest
-    double              radius          = min_dist * 1.1;
+    double              query_radius = mean_dist / (float)valence;
     vector<VertexID>    in_sphere_ID;
     vector<Vec3d>       in_sphere_points;
     IDs_and_dists       ids_and_dists;
     
-    tree.in_sphere( cp, radius, in_sphere_points, in_sphere_ID );
+    (*tree).in_sphere( closest_pos, query_radius, in_sphere_points, in_sphere_ID );
     // take the nearest point
     assert( in_sphere_ID.size() == in_sphere_points.size());
     for( int i = 0; i < in_sphere_points.size(); ++i)
     {
-        ids_and_dists.push_back( make_pair(in_sphere_ID[i], (cp - in_sphere_points[i]).length()));
+        ids_and_dists.push_back( make_pair( in_sphere_ID[i], (closest_pos - in_sphere_points[i] ).length( )));
     }
     // sort in ascending order accordingly to the distance
     std::sort( ids_and_dists.begin(), ids_and_dists.end(), ID_and_dist_comparer );
     IDs_and_dists::iterator it      = ids_and_dists.begin();
-    bool                    done    = ( assigned.count( it->first ) == 0 );
-    while ( !done )
+    bool                    done    = false;
+    while ( !done && it != ids_and_dists.end( ) )
     {
-        ++it;
-        assert( it != ids_and_dists.end( ));
         done    = ( assigned.count( it->first ) == 0 );
+        if( !done ) { ++it; }
     }
-    second_closest = it->first;
-    assigned.insert( it->first );
+    if( done ){
+        second_closest = it->first;
+        assigned.insert( it->first );
+    }
+    return done;
+}
+
+void StatefulEngine::applyRandomTransform(){
+    for( auto mv : M_vertices ) {
+        m->pos( mv ) = best_match.getMatchInfo().random_transform.mul_3D_point( m->pos( mv ));
+    }
+}
+
+
+void StatefulEngine::applyOptimalAlignment(){
+    Mat4x4d R, T;
+    vector< VertexID > host_v, module_p;
+    for( auto m : best_match.getMatchInfo().matches )
+    {
+        module_p.push_back(m.first);
+        host_v.push_back(m.second);
+        Vec3f red( 1, 0, 0 ), blue(0, 1, 0);
+        
+        // use debug colors to exploit the matched vertices
+        GLGraphics::DebugRenderer::vertex_colors[m.first] = red;
+        GLGraphics::DebugRenderer::vertex_colors[m.second] = blue;
+        
+        // TODO
+        // do that fucking dimensionality constraint
+    }
+    //#warning there is an active return here!
+    //    return;
+    
+    //    save_intermediate_result(m, TEST_PATH , 1);
+    svd_rigid_motion( *m, module_p, *m, host_v, R, T );
+    Mat4x4d t = T * R;
+    for( auto mv : M_vertices ) { m->pos( mv ) = t.mul_3D_point( m->pos( mv )); }
+}
+
+void StatefulEngine::alignModuleNormalsToHost(){
+    CGLA::Vec3d host_vec( 0 ), module_vec( 0 ), centroid( 0 );
+    double      _;
+    for( Match match : best_match.getMatchInfo().matches )
+    {
+        centroid += m->pos( match.first );
+        Vec3d mn = vertex_normal( *m, match.first );
+        Vec3d hn = vertex_normal( *m, match.second );
+        mn.normalize();
+        hn.normalize();
+        module_vec  += mn;
+        host_vec    -= hn;
+    }
+    module_vec.normalize();
+    host_vec.normalize();
+    centroid /= best_match.getMatchInfo().matches.size();
+    // need to carefully choose which centroid I should use.
+    //    bsphere( m, module_IDs, centroid, _ );
+    Mat4x4d t = get_alignment_for_2_vectors( module_vec, host_vec, centroid );
+    cout << t;
+    for( VertexID v : M_vertices )
+    {
+        m->pos(v) = t.mul_3D_point( m->pos( v ));
+    }
+
 }
 
 
 void StatefulEngine::alignUsingBestMatch( ){
     if( best_match.IsValid( )){
-        apply_optimal_alignment( *m, M_vertices, best_match.getMatchInfo() );
-        align_module_normals_to_host( *m, M_vertices, best_match.getMatchInfo().matches );
+        applyRandomTransform();
+        applyOptimalAlignment( );
+        alignModuleNormalsToHost();
+    }
+    else{
+        cout << "Warning : Best Match is not valid " << endl;
     }
 }
 
@@ -196,16 +336,25 @@ void StatefulEngine::actualGlueing(){
     }
 }
 
+
+
+
 void StatefulEngine::fillCandidateSet(){
-#warning nowadays it considers just the poles
+#warning nowadays it considers just the poles, and the not-connected-to-pole vertices
     assert( this->m != NULL );
     assert( this->H_vertices.size() > 0 );
     
-    for( VertexID vid : m->vertices( )){
+    for( VertexID vid : H_vertices ){
         if( is_pole( *m, vid )) {
             CandidateInfo _;
             H_candidates.insert( vid, _ );
         }
+        
+        if( !is_neighbor_of_pole( *m, vid )) {
+            CandidateInfo _;
+            H_candidates.insert( vid, _ );
+        }
+
     }
 }
 
@@ -242,6 +391,10 @@ void StatefulEngine::consolidate(){
     M_vertices.clear();
     H_candidates.clear();
     treeIsValid = false;
+    kD_Tree* temp = tree;
+    tree = NULL;
+    delete temp;
+
 }
 
 
@@ -249,8 +402,7 @@ void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings 
         assert( this->m != NULL );
         assert( this->H_vertices.size() > 0 );
         assert( this->M_vertices.size() > 0 );
-    
-    assert( no_tests > 0 );
+        assert( no_tests > 0 );
     
     vector< matches_and_cost >    matches_vector;
     vector< match_info >          proposed_matches;
@@ -262,9 +414,11 @@ void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings 
         match_info      mi;
         
         buildCollisionAvoidingRandomTransform( mi.random_transform );
+        cout << mi.random_transform;
         transformModulePoles( mi.random_transform, transformed_M_poles );
         // convert this call to be inside StatefulEngine, in order to avoid passing the first two parameters
-        match_module_to_host( *this->m, this->tree, transformed_M_poles, M_to_H );
+//        match_module_to_host( *this->m, this->tree, transformed_M_poles, M_to_H );
+        matchModuleToHost( transformed_M_poles, M_to_H );
         
         for( auto pole_and_vertex : M_to_H )
         {
@@ -272,11 +426,11 @@ void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings 
             current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
         }
         EdgeCost c = get_best_subset( *this->m, current_matches, best_matches, no_glueings );
-        graph_print( cout, c ) << endl;;
+//        graph_print( cout, c ) << endl;;
         mi.cost     = c;
         mi.matches  = best_matches;
         proposed_matches.push_back( mi );
-        graph_print( cout, proposed_matches[i].cost ) << endl;;
+//        graph_print( cout, proposed_matches[i].cost ) << endl;;
     }
     
     std::cout << "after filling " << endl;
@@ -285,10 +439,10 @@ void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings 
     // find the best solution between the proposed ones
     size_t      selected = 0;
     EdgeCost    max_cost = proposed_matches[0].cost;
-    graph_print( cout, max_cost ) << endl;
+//    graph_print( cout, max_cost ) << endl;
     for( int i = 1; i < proposed_matches.size(); ++i )
     {
-        graph_print( cout, proposed_matches[i].cost ) << endl;;
+//        graph_print( cout, proposed_matches[i].cost ) << endl;
         if( proposed_matches[i].cost < max_cost )
         {
             selected = i;
@@ -297,7 +451,8 @@ void StatefulEngine::testMultipleTransformations( int no_tests, int no_glueings 
     }
     
     best_match.setMatchInfo( proposed_matches[selected] );
-    cout << best_match.getMatchInfo().random_transform << endl;
+    cout << "Best Match random transform: " << endl
+         << best_match.getMatchInfo().random_transform << endl;
     
     //    save_intermediate_result(host, TEST_PATH, 3);
     

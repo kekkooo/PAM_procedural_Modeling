@@ -45,8 +45,11 @@ void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, Mani
     vector< CGLA::Vec3d > pos, normals;
     for( VertexID v : vs )
     {
-        pos.push_back( m.pos( v ));
-        normals.push_back( Procedural::Geometry::vertex_normal( m, v ));
+        assert( v != InvalidVertexID );
+        CGLA::Vec3d p = m.pos(v),
+                    n = Procedural::Geometry::vertex_normal( m, v );
+        pos.push_back( p);
+        normals.push_back( n );
     }
     // calculate costs save them into the graph
     for( GraphEdge e : g.arcs )

@@ -148,6 +148,17 @@ Vec3d vertex_normal ( Manifold& m, VertexID v)
     return vn;
 }
         
+bool is_neighbor_of_pole( HMesh::Manifold& m, HMesh::VertexID v)
+{
+    Walker w = m.walker( v );
+    bool found = false;
+    for( ; !w.full_circle() && !found; w = w.circulate_vertex_ccw( )){
+        found = is_pole( m, w.vertex( ));
+    }
+    return found;
+    
+}
+        
 bool is_2_neighbor_of_pole ( HMesh::Manifold& m, HMesh::VertexID v )
 {
     bool itis = false;

@@ -9,13 +9,17 @@
 #include "module_alignment.h"
 
 #include <unordered_set>
+#include <random>
 
+#include <GEL/GLGraphics/ManifoldRenderer.h>
+
+#include <polarize.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <MeshEditE/Procedural/Operations/structural_operations.h>
 #include <MeshEditE/Procedural/Helpers/manifold_copy.h>
-#include <polarize.h>
+
 #include "Test.h"
-#include <random>
+
 
 
 using namespace std;
@@ -121,6 +125,10 @@ Mat4x4d transform_module_poles( HMesh::Manifold &m, const set<VertexID> &host_vs
     }
     return t;
 }
+            
+            
+
+            
 
 /// find correspondances between module and host
 void match_module_to_host( Manifold &m, kd_tree &tree, map<VertexID, Vec3d> &module_poles_positions,
@@ -154,7 +162,7 @@ void match_module_to_host( Manifold &m, kd_tree &tree, map<VertexID, Vec3d> &mod
         }
     }
 }
-            
+
 
 void apply_optimal_alignment( Manifold &m, const set<VertexID> &module_vs, match_info &choosen_match_info )
 {
@@ -164,16 +172,26 @@ void apply_optimal_alignment( Manifold &m, const set<VertexID> &module_vs, match
     {
         module_p.push_back(m.first);
         host_v.push_back(m.second);
+        Vec3f red( 1, 0, 0 ), blue(0, 1, 0);
+        
+        // use debug colors to exploit the matched vertices
+        GLGraphics::DebugRenderer::vertex_colors[m.first] = red;
+        GLGraphics::DebugRenderer::vertex_colors[m.second] = blue;
+
+        // TODO
+        // do that fucking dimensionality constraint
     }
     // before calculating the optimal rigid motion, transform the module using the given initial transformation
     // that is the random transformation used.
+//    cout << choosen_match_info.random_transform;
     for( auto mv : module_vs ) { m.pos( mv ) = choosen_match_info.random_transform.mul_3D_point(m.pos( mv )); }
-    save_intermediate_result(m, TEST_PATH , 1);
+    
+//#warning there is an active return here!
+//    return;
+    
+//    save_intermediate_result(m, TEST_PATH , 1);
     svd_rigid_motion( m, module_p, m, host_v, R, T );
     Mat4x4d t = T * R;
-//    cout << "rotation "     << R << endl;
-//    cout << "translation "  << T << endl;
-//    cout << t << endl;
     for( auto mv : module_vs ) { m.pos( mv ) = t.mul_3D_point( m.pos( mv )); }
 }
             
@@ -423,6 +441,7 @@ void align_module_normals_to_host( Manifold &m, set<VertexID> &module_IDs, vecto
     // need to carefully choose which centroid I should use.
 //    bsphere( m, module_IDs, centroid, _ );
     Mat4x4d t = get_alignment_for_2_vectors( module_vec, host_vec, centroid );
+    cout << t;
     for( VertexID v : module_IDs )
     {
         m.pos(v) = t.mul_3D_point( m.pos( v ));

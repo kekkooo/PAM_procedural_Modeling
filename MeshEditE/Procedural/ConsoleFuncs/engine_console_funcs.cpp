@@ -89,13 +89,23 @@ void optimal_transform( MeshEditor *me, const std::vector< std::string > &args )
     if( no_tests < 1 ) { no_tests = BASE_NO_TESTS; }
     if( no_glueings < 1 ) { no_glueings = BASE_NO_GLUEINGS; }
     
+    cout << "testing " << no_tests << " times " << " for " << no_glueings << " glueings" << endl;
+    
     StatefulEngine &s = StatefulEngine::getCurrentEngine();
     s.testMultipleTransformations( no_tests, no_glueings );
-    s.alignUsingBestMatch();
+//    s.alignUsingBestMatch();
 }
 
-void glue_current( MeshEditor *me, const std::vector< std::string > &args ){
+void align_module( MeshEditor *me, const std::vector< std::string > &args ){
     StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    //    s.glueModuleToHost();
+    s.alignUsingBestMatch();
+    
+}
+
+
+void glue_current( MeshEditor *me, const std::vector< std::string > &args ){
+        StatefulEngine &s = StatefulEngine::getCurrentEngine();
 //    s.glueModuleToHost();
     s.actualGlueing();
     
@@ -130,6 +140,28 @@ void set_constraint_dimensionality( MeshEditor *me, const std::vector< std::stri
     }
 }
 
+/************************************************
+ * DEBUG CALLS                                  *
+ ***********************************************/
+
+void art( MeshEditor *me, const std::vector< std::string > &args ){
+    StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    s.applyRandomTransform();
+
+}
+
+void apa( MeshEditor *me, const std::vector< std::string > &args ){
+    StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    s.applyOptimalAlignment();
+
+}
+
+void amnth( MeshEditor *me, const std::vector< std::string > &args ){
+    StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    s.alignModuleNormalsToHost();
+
+}
+
 namespace Procedural{
     namespace ConsoleFuncs{
 
@@ -138,8 +170,15 @@ void register_engine_console_funcs( GLGraphics::MeshEditor* me )
     me->register_console_function( "engine.set_host",   set_host, "engine.set_host_and_module" );
     me->register_console_function( "engine.set_module",   set_module, "engine.set_host_and_module" );
     me->register_console_function( "engine.optimal_transform", optimal_transform, "engine.optimal_transform" );
-    me->register_console_function( "engine.set_constraint_dimensionality", set_constraint_dimensionality, "engine.set_constraint_dimensionality" );
+    me->register_console_function( "engine.align", align_module, "engine.align" );
     me->register_console_function( "engine.glue_current", glue_current, "engine.glue_current" );
+    
+    me->register_console_function( "engine.set_constraint_dimensionality", set_constraint_dimensionality, "engine.set_constraint_dimensionality" );
+    
+    // experimental - debug purposes
+    me->register_console_function( "engine.debug.apply_random_transform", art, "engine.debug.apply_random_transform" );
+    me->register_console_function( "engine.debug.apply_optimal_alignment", apa, "engine.debug.apply_optimal_alignment" );
+    me->register_console_function( "engine.debug.align_Module_normals_to_host", amnth, "engine.debug.align_Module_normals_to_host" );
     
 }
 }}
