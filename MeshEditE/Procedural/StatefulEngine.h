@@ -23,6 +23,7 @@
 #include <GEL/CGLA/Mat4x4d.h>
 
 #include "MeshEditE/Procedural/Helpers/module_alignment.h"
+#include "MeshEditE/Procedural/EngineHelpers/InfoContainers.h"
 
 namespace GEL_Geometry = Geometry;
 
@@ -35,8 +36,20 @@ namespace Procedural{
 typedef std::vector<HMesh::VertexID>                                    VertexList;
 typedef std::map<HMesh::VertexID, CGLA::Vec3d>                          VertexPosMap;
 typedef std::set<HMesh::VertexID>                                       VertexSet;
-typedef std::map< HMesh::VertexID, HMesh::VertexID >                    VertexMatch;
+typedef std::map< HMesh::VertexID, HMesh::VertexID >                    VertexMatchMap;
 typedef GEL_Geometry::KDTree< CGLA::Vec3d, HMesh::VertexID >            kD_Tree;
+        
+typedef std::pair< std::vector< Procedural::GraphMatch::Match>,
+                                Procedural::GraphMatch::EdgeCost >      matchesAndCost;
+typedef std::pair<HMesh::VertexID, double>                              IdDistPair;
+typedef std::vector<IdDistPair>                                         IDsDistsVector;
+//struct match_info{
+//    Procedural::GraphMatch::EdgeCost            cost;               // total cost of the match
+//    std::vector<Procedural::GraphMatch::Match>  matches;            // the matches
+//    CGLA::Mat4x4d                               random_transform;   // transform applied to the vertice
+//};
+
+        
 struct MatchInfoProxy{
     private:
         Procedural::Helpers::ModuleAlignment::match_info matchInfo;
@@ -90,7 +103,7 @@ class StatefulEngine{
     static  StatefulEngine& getCurrentEngine();
             void            setHost( HMesh::Manifold &host );
             void            setModule( HMesh::Manifold &module );
-            void            testMultipleTransformations( int no_tests, int no_glueings );
+            void            testMultipleTransformations( int no_tests, size_t no_glueings );
             void            glueModuleToHost();
             void            consolidate();
     
@@ -125,10 +138,11 @@ class StatefulEngine{
             void            transformModulePoles( CGLA::Mat4x4d &t, VertexPosMap &new_pos );
 
             /// this is to fix - look inside
-            void            matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatch& M_pole_to_H_vertex );
-            bool            findSecondClosest( const HMesh::VertexID &closest, HMesh::VertexID &second_closest,
-                                               VertexSet &assigned);
+            void            matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatchMap& M_pole_to_H_vertex );
+            bool            findSecondClosest( const HMesh::VertexID &pole, const HMesh::VertexID &closest,
+                                               HMesh::VertexID &second_closest, VertexSet &assigned );
             void            fillCandidateSet();
+            void            addNecessaryPoles();
 
 
     
@@ -138,22 +152,23 @@ class StatefulEngine{
      * ATTRIBUTES                                   *
      ***********************************************/
 private:
-    bool                treeIsValid;
-    kD_Tree*             tree;
+
     HMesh::Manifold     *m;
-    
     VertexSet           H_vertices,
                         M_vertices;
-    CandidateSet        H_candidates;
-    
-    // VertexPosMap        M_original_pos_map;
-    std::mt19937_64     randomizer;
-//    Procedural::GraphMatch::match_info          best_match;
-    MatchInfoProxy      best_match;
     DimensionalityConstraint dim_constraint;
+
+    kD_Tree*             tree;
+    bool                treeIsValid;
     
+    CandidateSet        H_candidates;
+    Procedural::EngineHelpers::EdgeInfoContainer edge_info;
     
+    MatchInfoProxy      best_match;
+    
+    std::mt19937_64     randomizer;
     double              last_x1, last_x2, last_x3;
+    size_t              current_glueing_target;
 
 
 };

@@ -8,6 +8,8 @@
 
 #include "structural_helpers.h"
 
+#include "geometric_properties.h"
+
 using namespace HMesh;
 using namespace std;
 
@@ -204,6 +206,27 @@ VertexID get_other_end_pole  ( Manifold &m, VertexID pole, FaceID f)
     assert( is_pole(m, left.vertex( )));
     
     return left.vertex();
+}
+        
+bool safe_to_add_branch( Manifold &m, VertexID v, size_t size, HalfEdgeAttributeVector<EdgeInfo> &edge_info ){
+    assert( size > 0 );
+    if( is_pole( m, v )) { return false; }
+    if( Procedural::Geometry::is_neighbor_of_pole( m, v )) { return false; }
+    if( valency( m, v ) != 4 ) { return false; }
+    
+    Walker w = m.walker( v );
+    for( ; !w.full_circle() && !edge_info[w.halfedge()].is_rib(); w = w.circulate_vertex_ccw());
+    assert(!w.full_circle()); // if true, probably edge_info is not initialized
+    Walker left     = w;
+    Walker right    = w.circulate_vertex_ccw().circulate_vertex_ccw();
+    
+    bool found_pole = false;
+    for( size_t i = 0; i < size && !found_pole; ++i ){
+        found_pole = found_pole || is_pole(m, left.vertex( )) || is_pole(m, right.vertex( ));
+        left  = left.next().opp().next();
+        right = right.next().opp().next();
+    }
+    return  ( !found_pole );
 }
 
     

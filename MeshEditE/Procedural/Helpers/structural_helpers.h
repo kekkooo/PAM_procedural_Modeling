@@ -66,6 +66,9 @@ void                LabelJunctions      ( HMesh::Manifold& m,
         
 HMesh::VertexID     get_other_end_pole  ( HMesh::Manifold &m, HMesh::VertexID pole, HMesh::FaceID f);
         
+bool                safe_to_add_branch  ( HMesh::Manifold &m, HMesh::VertexID v, size_t size,
+                                          HMesh::HalfEdgeAttributeVector<EdgeInfo> &edge_info);
+        
 
         
 }}
