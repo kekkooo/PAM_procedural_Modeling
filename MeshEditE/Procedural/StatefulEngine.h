@@ -43,11 +43,6 @@ typedef std::pair< std::vector< Procedural::GraphMatch::Match>,
                                 Procedural::GraphMatch::EdgeCost >      matchesAndCost;
 typedef std::pair<HMesh::VertexID, double>                              IdDistPair;
 typedef std::vector<IdDistPair>                                         IDsDistsVector;
-//struct match_info{
-//    Procedural::GraphMatch::EdgeCost            cost;               // total cost of the match
-//    std::vector<Procedural::GraphMatch::Match>  matches;            // the matches
-//    CGLA::Mat4x4d                               random_transform;   // transform applied to the vertice
-//};
 
         
 struct MatchInfoProxy{
@@ -126,7 +121,7 @@ class StatefulEngine{
                             StatefulEngine( StatefulEngine const& ) = delete;
             void operator   = (StatefulEngine const&)               = delete;
 
-            void            buildRandomTransform( CGLA::Mat4x4d &t );
+            void            buildRandomRotation( CGLA::Mat4x4d &t );
             // you can assume that the module's poles are vertices of its convex hull
             void            buildCollisionAvoidingTranslation(
                                 const CGLA::Mat4x4d &rot, CGLA::Mat4x4d &tr );
@@ -143,6 +138,8 @@ class StatefulEngine{
                                                HMesh::VertexID &second_closest, VertexSet &assigned );
             void            fillCandidateSet();
             void            addNecessaryPoles();
+    
+            void            buildTransformationList( std::vector< CGLA::Mat4x4d> &transformations );
 
 
     
@@ -155,7 +152,8 @@ private:
 
     HMesh::Manifold     *m;
     VertexSet           H_vertices,
-                        M_vertices;
+                        M_vertices,
+                        M_poles;
     DimensionalityConstraint dim_constraint;
 
     kD_Tree*             tree;

@@ -49,7 +49,7 @@ StatefulEngine::StatefulEngine()
 }
 
 
-void StatefulEngine::buildRandomTransform( CGLA::Mat4x4d &t ){
+void StatefulEngine::buildRandomRotation( CGLA::Mat4x4d &t ){
     // must be initialized
     float rand_max =  static_cast<float>( randomizer.max( )); //RAND_MAX / ( M_PI * 2.0 );
     float x1 = static_cast<float>( randomizer( )) / rand_max,
@@ -95,7 +95,7 @@ void StatefulEngine::buildCollisionAvoidingTranslation( const CGLA::Mat4x4d &rot
 void StatefulEngine::buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t ){
     Mat4x4d rot, tr;
     // build random transform
-    buildRandomTransform( rot );
+    buildRandomRotation( rot );
     cout << "Random Rotation" << endl << rot ;
     // build collision avoiding translation
     buildCollisionAvoidingTranslation( rot, tr );
@@ -286,8 +286,6 @@ void StatefulEngine::applyOptimalAlignment(){
         GLGraphics::DebugRenderer::vertex_colors[m.first] = red;
         GLGraphics::DebugRenderer::vertex_colors[m.second] = blue;
         
-        // TODO
-        // do that fucking dimensionality constraint
     }
     //#warning there is an active return here!
     //    return;
@@ -348,19 +346,12 @@ void StatefulEngine::actualGlueing(){
 }
 
 
-
 void StatefulEngine::fillCandidateSet(){
-#warning nowadays it considers just the poles, and the not-connected-to-pole vertices
     assert( this->m != NULL );
     assert( this->H_vertices.size() > 0 );
     
     for( VertexID vid : H_vertices ){
         if( is_pole( *m, vid )) {
-            CandidateInfo _;
-            H_candidates.insert( vid, _ );
-        }
-        
-        if( !is_neighbor_of_pole( *m, vid )) {
             CandidateInfo _;
             H_candidates.insert( vid, _ );
         }
@@ -442,16 +433,23 @@ void StatefulEngine::setModule( Manifold &module ){
     assert( this->M_vertices.size() == 0 );
     add_manifold( (*this->m), module, H_vertices, M_vertices );
     fillCandidateSet();
-    buildHostKdTree();    
+    buildHostKdTree();
+    for( VertexID vid : M_vertices ){
+        if( is_pole( *m, vid )){
+            M_poles.insert( vid );
+        }
+    }
 }
 
 void StatefulEngine::consolidate(){
     assert( this->m != NULL );
     assert( this->H_vertices.size() > 0 );
     assert( this->M_vertices.size() > 0 );
+    assert( this->M_poles.size() > 0 );
     // in this way you lose any reference to which vertices are from host and module
     H_vertices.clear();
     M_vertices.clear();
+    M_poles.clear();
     H_candidates.clear();
     treeIsValid = false;
     edge_info.Invalidate();
@@ -472,16 +470,24 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     
     vector< matchesAndCost >    matches_vector;
     vector< match_info >        proposed_matches;
+    vector< Mat4x4d >           Ts;
     
-    for( int i = 0; i < no_tests; ++i ){
+    buildTransformationList( Ts );
+    
+//    for( int i = 0; i < no_tests; ++i ){
+    for( Mat4x4d T : Ts ){
+
         VertexPosMap    transformed_M_poles;
         VertexMatchMap  M_to_H;
         vector<Match>   current_matches, best_matches;
         match_info       mi;
         
-        buildCollisionAvoidingRandomTransform( mi.random_transform );
-        cout << mi.random_transform;
-        transformModulePoles( mi.random_transform, transformed_M_poles );
+        mi.random_transform = T;
+        cout << T;
+        
+        for( VertexID M_pole : M_poles ){
+            transformed_M_poles[M_pole] = T.mul_3D_point( m->pos( M_pole ));
+        }
         
         matchModuleToHost( transformed_M_poles, M_to_H );
         
@@ -550,8 +556,36 @@ void StatefulEngine::glueModuleToHost(){
     actualGlueing();
 }
 
+void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations ){
+    size_t no_M_poles = M_poles.size();
+    Vec3d H_centroid, M_centroid;
+    double H_radius, M_radius;
+    transformations.clear();
+    bsphere( *m, H_vertices, H_centroid, H_radius );
+    bsphere( *m, M_vertices, M_centroid, M_radius );
+    Mat4x4d tr_to_origin    = translation_Mat4x4d( -M_centroid ),
+            tr_to_centroid  = translation_Mat4x4d( M_centroid );
+    
+    for( VertexID H_pole : H_candidates.getCandidates() ){
+        // transformation to bring module nearby a free pole of H but outside bsphere
+        Vec3d   H_pole_pos  = m->pos( H_pole );
+        Vec3d   tr_dir      = H_pole_pos - M_centroid;
 
-
+        double  length = tr_dir.length() + H_radius - ( H_pole_pos - H_centroid ).length();
+        tr_dir.normalize();
+        tr_dir = tr_dir * length;
+        
+        Mat4x4d tr_to_pole = translation_Mat4x4d( tr_dir );
+        
+        for( int i = 0; i < no_M_poles; ++i ){
+            Mat4x4d rot;
+            buildRandomRotation( rot );
+            // build the complete transform
+            Mat4x4d T = tr_to_pole * tr_to_centroid * rot * tr_to_origin;
+            transformations.push_back( T );
+        }
+    }
+}
 
 
 
