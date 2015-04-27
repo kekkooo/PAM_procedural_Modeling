@@ -22,13 +22,26 @@ struct StructurePoleInfo{
     PoleInfo    pi;            // pos and normal should be modified here
     ModuleID    moduleID;      // id of the module inside the structure
 };
+    
+struct GluedModuleInfo{
+    Module          *module;
+    int             t_start;
+    CGLA::Vec3d     centroid;
+    double          radius;
+    int             connection_valence;
+};
 
 class MainStructure{
     
 public:
     MainStructure() {};
     
-    
+private:
+/************************************************
+ * ATTRIBUTES                                   *
+ ***********************************************/
+    std::vector< GluedModuleInfo >  modules;
+
 };
 
 }

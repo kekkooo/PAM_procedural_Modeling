@@ -33,13 +33,18 @@ enum PoleLabel {
 
 typedef unsigned int Moduletype;
     
-struct PoleInfo{
+struct PoleGeometryInfo{
     unsigned int    valence;
     CGLA::Vec3d     pos;
     CGLA::Vec3d     normal;
-    Moduletype      moduleType;    // an identifier for the module's type
-    PoleLabel       labels;         // a label atteched to a pole
-    int             age;            // pole's starting age
+};
+    
+struct PoleInfo{
+    PoleGeometryInfo    geometry;
+    Moduletype          moduleType  = 0;     // an identifier for the module's type
+    PoleLabel           labels      = AllP;  // a label atteched to a pole
+    int                 age;                 // pole's starting age
+    bool                isFree      = false;
 };
     
 typedef std::map<HMesh::VertexID, PoleInfo>             PoleInfoMap;
@@ -50,7 +55,11 @@ class Module{
     
 public:
     Module( std::string path, Moduletype mType ); // this will instantiate the internal manifold structure and pole info using obj_load
-    
+#warning those should be deleted from public
+    PoleInfoMap         poleInfoMap;
+    CGLA::Vec3d         bsphere_center;
+    double              bsphere_radius;
+
     
 private:
     void BuildPoleInfo();
@@ -61,10 +70,10 @@ private:
 ***********************************************/
 private:
     HMesh::Manifold     *m;
-    PoleInfoMap         poleInfoMap;
+    //PoleInfoMap         poleInfoMap;
     int                 no_of_glueings;
-    CGLA::Vec3d         bsphere_center;
-    double              bsphere_radius;
+//    CGLA::Vec3d         bsphere_center;
+//    double              bsphere_radius;
 
     
         

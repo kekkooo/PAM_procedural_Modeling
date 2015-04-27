@@ -42,6 +42,7 @@ StatefulEngine::StatefulEngine()
 {
     this->m         = NULL;
     this->tree      = NULL;
+    this->module    = NULL;
     unsigned seed   = chrono::system_clock::now().time_since_epoch().count();
     randomizer.seed( seed );
     treeIsValid     = false;
@@ -133,40 +134,50 @@ void StatefulEngine::transformModulePoles( CGLA::Mat4x4d &t, VertexPosMap &new_p
 bool IdDistPair_comparer( IdDistPair &l, IdDistPair &r ) { return ( l.second < r.second ); }
 
 
-void StatefulEngine::matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatchMap& M_pole_to_H_vertex ){
+void StatefulEngine::matchModuleToHost( Procedural::PoleInfoMap& poleInfoMap, VertexMatchMap& M_pole_to_H_vertex ){
 
     typedef vector<IdDistPair >                                Near_Pole_Vector;
-    typedef map< VertexID, Near_Pole_Vector >                   Candidate_Neighbors;
+    typedef map< VertexID, Near_Pole_Vector >                  Candidate_Neighbors;
     
-    VertexSet assigned_candidates, unassigned_poles;
+    VertexSet           assigned_candidates, unassigned_poles;
     Candidate_Neighbors candidateNeighbors;
     // from module's pole to host's candidate
-    VertexMatchMap internal_match;
+    VertexMatchMap      internal_match;
     
     // find the nearest host candidate for each module's pole
     // and, for each candidate matched, store its matched pole and distance
-    for( auto id_and_pos : module_poles_positions)
+    for( auto id_and_info : poleInfoMap)
     {
-        assert( is_pole( *this->m, id_and_pos.first ));
         double      distance    = numeric_limits<double>::max();
-        Vec3d       foundVec;
+        Vec3d       foundPos;
         VertexID    foundID = InvalidVertexID, second_choiceID = InvalidVertexID;
-    
-        bool        have_found  = (*tree).closest_point( id_and_pos.second , distance, foundVec, foundID );
+        bool        have_found  = (*tree).closest_point( id_and_info.second.geometry.pos , distance, foundPos, foundID );
         
-        cout << id_and_pos.first << " # " << id_and_pos.second << "# matched : " << foundID << " # dist : " << distance << endl;
         assert( have_found );
         assert( foundID != InvalidVertexID );
-
         assert( H_candidates.getCandidates().count(foundID) > 0 );
         
-        // instantiate vector if putting the first value
-        if( candidateNeighbors.count( foundID ) == 0 ){
-            candidateNeighbors[foundID] = Near_Pole_Vector();
+        if( have_found ){
+            Vec3d n_candidate = vertex_normal( *m, foundID );
+            n_candidate.normalize();
+            size_t valence = Geometry::valence( *m, foundID );
+            
+            // add only if match is valid
+            
+            cout << "M : " << id_and_info.first << ")" << id_and_info.second.geometry.pos << "  #  " << id_and_info.second.geometry.normal << endl;
+            cout << "H : " << foundID << ")" << foundPos << "  #  " << n_candidate << endl << endl;
+            if( opposite_directions( id_and_info.second.geometry.normal, n_candidate )
+             && valence  == id_and_info.second.geometry.valence ){
+                
+                // instantiate vector if putting the first value
+                if( candidateNeighbors.count( foundID ) == 0 ){
+                    candidateNeighbors[foundID] = Near_Pole_Vector();
+                }
+                candidateNeighbors[foundID].push_back( make_pair( id_and_info.first, distance ));
+                assigned_candidates.insert( foundID );
+                internal_match[id_and_info.first] = foundID;
+            }
         }
-        candidateNeighbors[foundID].push_back( make_pair( id_and_pos.first, distance ));
-        assigned_candidates.insert( foundID );
-        internal_match[id_and_pos.first] = foundID;
     }
     
     // here I should process all the candidateNeighbors for which the number of matched
@@ -196,8 +207,11 @@ void StatefulEngine::matchModuleToHost( VertexPosMap& module_poles_positions, Ve
     
     // for each unassigned pole try to find a secondary nearest match
     for( VertexID unassigned : unassigned_poles ){
+        assert(poleInfoMap.count(unassigned) > 0 );
+        PoleGeometryInfo pgi = poleInfoMap[unassigned].geometry;
+
         VertexID second_cloesest = InvalidVertexID;
-        if( findSecondClosest( unassigned, internal_match[unassigned], second_cloesest, assigned_candidates )){
+        if( findSecondClosest( unassigned, pgi, internal_match[unassigned], second_cloesest, assigned_candidates )){
             assert( H_candidates.getCandidates().count(second_cloesest) > 0 );
             M_pole_to_H_vertex[unassigned] = second_cloesest;
         }
@@ -214,13 +228,16 @@ void StatefulEngine::matchModuleToHost( VertexPosMap& module_poles_positions, Ve
         _poles[item.first] = _poles[item.first] + 1;
         _candidates[item.second] = _candidates[item.second] + 1;
         // each pole MUST be assigned to only one candidate and each candidate to only one pole
-        assert(_poles.count(item.first) <= 1);
-        assert(_candidates.count(item.second) <= 1);
+        assert( _poles.count( item.first ) <= 1);
+        assert( _candidates.count( item.second ) <= 1);
+        assert( is_pole( *m, item.first ));
+        assert( is_pole( *m, item.second ));
+        cout << item.first << " # " << item.second << endl;
     }
 }
 
 
-bool StatefulEngine::findSecondClosest( const VertexID &pole, const VertexID &closest, VertexID &second_closest, VertexSet &assigned ){
+bool StatefulEngine::findSecondClosest( const VertexID &pole, const PoleGeometryInfo &pgi, const VertexID &closest, VertexID &second_closest, VertexSet &assigned ){
     assert( assigned.count( closest ) > 0 );
     // consider closest
     Vec3d       closest_pos = m->pos( closest );
@@ -242,20 +259,24 @@ bool StatefulEngine::findSecondClosest( const VertexID &pole, const VertexID &cl
     (*tree).in_sphere( closest_pos, query_radius, in_sphere_points, in_sphere_ID );
     // take the nearest point
     assert( in_sphere_ID.size() == in_sphere_points.size());
-    for( int i = 0; i < in_sphere_points.size(); ++i)
-    {
+    
+    for( int i = 0; i < in_sphere_points.size(); ++i){
         ids_and_dists.push_back( make_pair( in_sphere_ID[i], (closest_pos - in_sphere_points[i] ).length( )));
     }
+    
     // sort in ascending order accordingly to the distance
     std::sort( ids_and_dists.begin(), ids_and_dists.end(), IdDistPair_comparer );
     IDsDistsVector::iterator it      = ids_and_dists.begin();
     bool                    done    = false;
     while ( !done && it != ids_and_dists.end( ) )
-    {
+    {        
         // check if normals are compatible
-        Vec3d n_pole = vertex_normal( *m, pole),
-              n_candidate = vertex_normal( *m, it->first );
-        done    = (( assigned.count( it->first ) == 0 ) && opposite_directions(n_pole, n_candidate ));
+        Vec3d n_candidate = vertex_normal( *m, it->first );
+        n_candidate.normalize();
+
+        done    = (( assigned.count( it->first ) == 0 )
+                  && opposite_directions( pgi.normal, n_candidate ))
+                  && Geometry::valence( *m, it->first ) == pgi.valence;
         if( !done ) { ++it; }
     }
     if( done ){
@@ -293,6 +314,7 @@ void StatefulEngine::applyOptimalAlignment(){
     //    save_intermediate_result(m, TEST_PATH , 1);
     svd_rigid_motion( *m, module_p, *m, host_v, R, T );
     Mat4x4d t = T * R;
+    cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
     for( auto mv : M_vertices ) { m->pos( mv ) = t.mul_3D_point( m->pos( mv )); }
 }
 
@@ -310,13 +332,22 @@ void StatefulEngine::alignModuleNormalsToHost(){
         module_vec  += mn;
         host_vec    -= hn;
     }
+    
+    cout << "module vector :" << endl << module_vec << endl;
+    cout << "host vector   :" << endl << module_vec << endl;
+    
     module_vec.normalize();
     host_vec.normalize();
     centroid /= best_match.getMatchInfo().matches.size();
+    
+    cout << "module vector normalized :" << endl << module_vec << endl;
+    cout << "host vector normalized   :" << endl << module_vec << endl;
+    cout << "centroid                 :" << endl << centroid << endl;
+
     // need to carefully choose which centroid I should use.
     //    bsphere( m, module_IDs, centroid, _ );
     Mat4x4d t = get_alignment_for_2_vectors( module_vec, host_vec, centroid );
-    cout << t;
+    cout << "Best Match Normal Alignment " << endl << t << endl;
     for( VertexID v : M_vertices )
     {
         m->pos(v) = t.mul_3D_point( m->pos( v ));
@@ -339,7 +370,7 @@ void StatefulEngine::alignUsingBestMatch( ){
 void StatefulEngine::actualGlueing(){
     if( best_match.IsValid( )){
 //        add_necessary_poles( *m, best_match.getMatchInfo().matches, H_vertices, M_vertices );
-        addNecessaryPoles();
+//        addNecessaryPoles();
         Helpers::ModuleAlignment::glue_matches( *m, best_match.getMatchInfo().matches );
         consolidate();
     }
@@ -434,9 +465,25 @@ void StatefulEngine::setModule( Manifold &module ){
     add_manifold( (*this->m), module, H_vertices, M_vertices );
     fillCandidateSet();
     buildHostKdTree();
+
+    // LOAD MODULE INFO
+    this->module = new Module( "", 0 );
+    Vec3d centroid;
+    double radius;
+    bsphere( *m, M_vertices, centroid, radius );
+    this->module->bsphere_center = centroid;
+    this->module->bsphere_radius = radius;
+    
     for( VertexID vid : M_vertices ){
         if( is_pole( *m, vid )){
-            M_poles.insert( vid );
+            PoleInfo pi;
+            pi.geometry.valence = valence( *m, vid );
+            pi.geometry.pos     = m->pos( vid );
+            Vec3d n = vertex_normal( *m, vid );
+            n.normalize();
+            pi.geometry.normal = n;
+            this->module->poleInfoMap[vid] = pi;
+            
         }
     }
 }
@@ -445,11 +492,12 @@ void StatefulEngine::consolidate(){
     assert( this->m != NULL );
     assert( this->H_vertices.size() > 0 );
     assert( this->M_vertices.size() > 0 );
-    assert( this->M_poles.size() > 0 );
+    assert( this->module->poleInfoMap.size() > 0 );
     // in this way you lose any reference to which vertices are from host and module
+    module = NULL;
+    
     H_vertices.clear();
     M_vertices.clear();
-    M_poles.clear();
     H_candidates.clear();
     treeIsValid = false;
     edge_info.Invalidate();
@@ -473,23 +521,29 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     vector< Mat4x4d >           Ts;
     
     buildTransformationList( Ts );
+    return;
     
-//    for( int i = 0; i < no_tests; ++i ){
-    for( Mat4x4d T : Ts ){
+    assert( module->poleInfoMap.size() > 0 );
+    
+    for( int i = 0; i < Ts.size(); ++i ){
+//    for( Mat4x4d T : Ts ){
 
-        VertexPosMap    transformed_M_poles;
         VertexMatchMap  M_to_H;
         vector<Match>   current_matches, best_matches;
         match_info       mi;
         
-        mi.random_transform = T;
-        cout << T;
+        mi.random_transform = Ts[i];
+        cout << " Using as Random Transform" << endl
+             << mi.random_transform;
         
-        for( VertexID M_pole : M_poles ){
-            transformed_M_poles[M_pole] = T.mul_3D_point( m->pos( M_pole ));
+        // can be removed when solved
+        cout << "poles with normals " << endl;
+        for( auto item : transformedModules[i].poleInfoMap )
+        {
+            cout << item.first << ")" << item.second.geometry.pos << "  #  " << item.second.geometry.normal << endl;
         }
         
-        matchModuleToHost( transformed_M_poles, M_to_H );
+        matchModuleToHost( transformedModules[i].poleInfoMap, M_to_H );
         
         // if the number of matches is lower than the target, just skip this configuration
         if( M_to_H.size() < no_glueings ) { continue; }
@@ -509,15 +563,15 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     }
     
     std::cout << "after filling " << endl;
+#warning this assert MUST be uncommented and this return deleted
+//    return;
     assert( proposed_matches.size() > 0 );
     
     // find the best solution between the proposed ones
     size_t      selected = 0;
     EdgeCost    min_cost = proposed_matches[0].cost;
-//    graph_print( cout, max_cost ) << endl;
     for( int i = 1; i < proposed_matches.size(); ++i )
     {
-//        graph_print( cout, proposed_matches[i].cost ) << endl;
         if( proposed_matches[i].cost < min_cost )
         {
             selected = i;
@@ -527,7 +581,20 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     
     best_match.setMatchInfo( proposed_matches[selected] );
     cout << "Best Match random transform: " << endl
-         << best_match.getMatchInfo().random_transform << endl;
+         << best_match.getMatchInfo().random_transform
+         << " Proposed Matches " << endl;
+    for( Match match :  best_match.getMatchInfo().matches ){
+        cout << match.first << " # " << match.second << endl;
+        Vec3d normal1 = vertex_normal( *m, match.first );
+        Vec3d normal2 = vertex_normal( *m, match.second );
+        normal1.normalize();
+        normal2.normalize();
+        cout << "1) " << normal1 << endl << "2) " << normal2 << endl;
+        double angle = get_angle(normal1, normal2);
+        cout << " angle : " << angle << " and opposite? :   " << opposite_directions( normal1, normal2 ) << endl;
+        
+    }
+    
     
     //    save_intermediate_result(host, TEST_PATH, 3);
     
@@ -557,34 +624,78 @@ void StatefulEngine::glueModuleToHost(){
 }
 
 void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations ){
-    size_t no_M_poles = M_poles.size();
+
+    cout << "Building transformations set " << endl;
+    
+    size_t no_M_poles = module->poleInfoMap.size();
     Vec3d H_centroid, M_centroid;
     double H_radius, M_radius;
     transformations.clear();
     bsphere( *m, H_vertices, H_centroid, H_radius );
     bsphere( *m, M_vertices, M_centroid, M_radius );
+    cout << "module centroid :" << M_centroid << endl;
     Mat4x4d tr_to_origin    = translation_Mat4x4d( -M_centroid ),
-            tr_to_centroid  = translation_Mat4x4d( M_centroid );
+            tr_to_centroid  = translation_Mat4x4d( M_centroid ),
+            tr_to_H_centroid = translation_Mat4x4d( H_centroid );
+    
+    cout << "Translate to origin " << endl << tr_to_origin << endl << " and back " << endl << tr_to_centroid;
     
     for( VertexID H_pole : H_candidates.getCandidates() ){
+        cout << "Moving to H pole :" << H_pole << endl;
         // transformation to bring module nearby a free pole of H but outside bsphere
         Vec3d   H_pole_pos  = m->pos( H_pole );
-        Vec3d   tr_dir      = H_pole_pos - M_centroid;
-
-        double  length = tr_dir.length() + H_radius - ( H_pole_pos - H_centroid ).length();
+//        Vec3d   tr_dir      = H_pole_pos - M_centroid;
+//
+//        double  length = tr_dir.length() + H_radius - ( H_pole_pos - H_centroid ).length();
+        Vec3d tr_dir = H_pole_pos - H_centroid;
+        double length = H_radius;// - tr_dir.length();
+        
         tr_dir.normalize();
         tr_dir = tr_dir * length;
         
         Mat4x4d tr_to_pole = translation_Mat4x4d( tr_dir );
         
+        cout << "Translate to pole " << endl << tr_to_pole << endl;
+        
         for( int i = 0; i < no_M_poles; ++i ){
             Mat4x4d rot;
             buildRandomRotation( rot );
             // build the complete transform
-            Mat4x4d T = tr_to_pole * tr_to_centroid * rot * tr_to_origin;
+//            Mat4x4d T = tr_to_pole * tr_to_centroid * rot * tr_to_origin;
+            // sposto all'origine
+            // ruoto
+            // sposto nel centroide di H
+            // traslo verso il polo ma fuori dalla bsphere
+            Mat4x4d T = tr_to_pole * tr_to_H_centroid * rot * tr_to_origin;
+            
+            cout << "random rotation " << endl << rot << endl << "resulting T : " << T << endl;
+            
             transformations.push_back( T );
+            
+            Module t_module( "", 0 );
+            
+            // SAVE THE MODULE TRANSFORMATION
+            for( auto item : module->poleInfoMap ){
+                PoleGeometryInfo pgi = item.second.geometry;
+                PoleInfo t_pi;
+                t_pi.geometry.valence = pgi.valence;
+                t_pi.geometry.pos     = T.mul_3D_point( pgi.pos );
+                Vec3d t_normal        = T.mul_3D_point( pgi.normal );
+                t_normal.normalize();
+                t_pi.geometry.normal  = t_normal;
+                t_module.poleInfoMap[ item.first ] = t_pi;                
+            }
+            assert( t_module.poleInfoMap.size() == module->poleInfoMap.size( ));
+            transformedModules.push_back( t_module );
         }
     }
+    assert( transformations.size() == transformedModules.size( ));
+    
+#warning JUST A TEST
+    for( auto mv : M_vertices ) {
+        m->pos( mv ) = transformations.front().mul_3D_point( m->pos( mv ));
+    }
+
 }
 
 

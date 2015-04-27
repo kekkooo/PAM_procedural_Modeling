@@ -7,3 +7,13 @@
 //
 
 #include "Module.h"
+
+namespace Procedural{
+
+Module::Module( std::string path, Moduletype mType ){
+    this->m = NULL;
+    
+}
+    
+
+}

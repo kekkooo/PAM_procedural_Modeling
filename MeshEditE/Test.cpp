@@ -176,6 +176,15 @@ CGLA::Mat4x4d   get_alignment_for_2_vectors     ( Vec3d v1, Vec3d v2, Vec3d cent
 {
     Vec3d   rotation_axis   = CGLA::cross( v1, v2 );
     double  rotation_angle  =   get_angle( v1, v2 );
+    
+    if( isnan(rotation_angle)){
+        // probably v1 and v2 are equal
+        cout << v1 << " is equal to " << v2 << "?" << endl;
+        cout << "rotation axis :" << endl << rotation_axis << endl;
+        cout << "angle :" << endl << rotation_angle << endl;
+    }
+    assert( !isnan(rotation_angle )); // fail!
+    
     Mat4x4d rot             = get_rotation_mat4d( rotation_axis, rotation_angle);
     // find center of the module mesh
     Mat4x4d tr_origin = translation_Mat4x4d( -centroid );

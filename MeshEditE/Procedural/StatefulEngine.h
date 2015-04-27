@@ -24,6 +24,7 @@
 
 #include "MeshEditE/Procedural/Helpers/module_alignment.h"
 #include "MeshEditE/Procedural/EngineHelpers/InfoContainers.h"
+#include "MesheditE/Procedural/Module.h"
 
 namespace GEL_Geometry = Geometry;
 
@@ -132,10 +133,9 @@ class StatefulEngine{
             void            buildHostKdTree();
             void            transformModulePoles( CGLA::Mat4x4d &t, VertexPosMap &new_pos );
 
-            /// this is to fix - look inside
-            void            matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatchMap& M_pole_to_H_vertex );
-            bool            findSecondClosest( const HMesh::VertexID &pole, const HMesh::VertexID &closest,
-                                               HMesh::VertexID &second_closest, VertexSet &assigned );
+            void            matchModuleToHost( Procedural::PoleInfoMap& poleInfoMap, VertexMatchMap& M_pole_to_H_vertex );
+            bool            findSecondClosest( const HMesh::VertexID &pole, const PoleGeometryInfo &pgi,
+                                               const HMesh::VertexID &closest, HMesh::VertexID &second_closest, VertexSet &assigned );
             void            fillCandidateSet();
             void            addNecessaryPoles();
     
@@ -152,11 +152,15 @@ private:
 
     HMesh::Manifold     *m;
     VertexSet           H_vertices,
-                        M_vertices,
-                        M_poles;
+                        M_vertices;
     DimensionalityConstraint dim_constraint;
+    
+    Procedural::Module* module;
+    
+    std::vector<Procedural::Module>
+                        transformedModules;
 
-    kD_Tree*             tree;
+    kD_Tree*            tree;
     bool                treeIsValid;
     
     CandidateSet        H_candidates;
