@@ -288,6 +288,9 @@ bool StatefulEngine::findSecondClosest( const VertexID &pole, const PoleGeometry
 
 
 void StatefulEngine::applyRandomTransform(){
+    
+    cout << "transforming using : " << endl << best_match.getMatchInfo().random_transform << endl;
+    
     for( auto mv : M_vertices ) {
         m->pos( mv ) = best_match.getMatchInfo().random_transform.mul_3D_point( m->pos( mv ));
     }
@@ -521,27 +524,44 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     vector< Mat4x4d >           Ts;
     
     buildTransformationList( Ts );
-    return;
+//    return;
     
     assert( module->poleInfoMap.size() > 0 );
     
-    for( int i = 0; i < Ts.size(); ++i ){
-//    for( Mat4x4d T : Ts ){
+//    for( int i = 0; i < Ts.size(); ++i ){
+    for( int i = 7; i < 10; ++i ){
 
         VertexMatchMap  M_to_H;
         vector<Match>   current_matches, best_matches;
         match_info       mi;
         
-        mi.random_transform = Ts[i];
-        cout << " Using as Random Transform" << endl
-             << mi.random_transform;
+        assert( !isnan( Ts[i][1][1] )); // Need to discover why putting this assert prevents to assign NaN to mi.random_transform
         
-        // can be removed when solved
-        cout << "poles with normals " << endl;
-        for( auto item : transformedModules[i].poleInfoMap )
-        {
-            cout << item.first << ")" << item.second.geometry.pos << "  #  " << item.second.geometry.normal << endl;
-        }
+        Vec4d r0( Ts[i][0][0], Ts[i][0][1], Ts[i][0][2], Ts[i][0][3] );
+        Vec4d r1( Ts[i][1][0], Ts[i][1][1], Ts[i][1][2], Ts[i][1][3] );
+        Vec4d r2( Ts[i][2][0], Ts[i][2][1], Ts[i][2][2], Ts[i][2][3] );
+        Vec4d r3( Ts[i][3][0], Ts[i][3][1], Ts[i][3][2], Ts[i][3][3] );
+        
+        cout << " New Vectors : " << r0 << endl <<
+                                     r1 << endl <<
+                                     r2 << endl <<
+                                     r2 << endl;
+
+        mi.random_transform = Mat4x4d( r0, r1, r2, r3 );
+        Mat4x4d aggg = Ts[i];
+
+//        cout << " Ts[i] " << Ts[i] << endl;
+//        cout << " Using as Random Transform" << endl
+//             << mi.random_transform
+//             << " test assignment : " << endl
+//             << aggg;
+//        
+//        // can be removed when solved
+//        cout << "poles with normals " << endl;
+//        for( auto item : transformedModules[i].poleInfoMap )
+//        {
+//            cout << item.first << ")" << item.second.geometry.pos << "  #  " << item.second.geometry.normal << endl;
+//        }
         
         matchModuleToHost( transformedModules[i].poleInfoMap, M_to_H );
         
@@ -554,15 +574,16 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
             current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
         }
         EdgeCost c = get_best_subset( *this->m, current_matches, best_matches, no_glueings );
-//        graph_print( cout, c ) << endl;;
+
         mi.cost     = c;
 #warning this should be done using std::move
         mi.matches  = best_matches;
         proposed_matches.push_back( mi );
-//        graph_print( cout, proposed_matches[i].cost ) << endl;;
+        
+        cout << "configuration " << i << " has cost : " << mi.cost.first << ", " << mi.cost.second << endl;
     }
     
-    std::cout << "after filling " << endl;
+
 #warning this assert MUST be uncommented and this return deleted
 //    return;
     assert( proposed_matches.size() > 0 );
@@ -633,72 +654,81 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
     transformations.clear();
     bsphere( *m, H_vertices, H_centroid, H_radius );
     bsphere( *m, M_vertices, M_centroid, M_radius );
-    cout << "module centroid :" << M_centroid << endl;
+//    cout << "module centroid :" << M_centroid << endl;
     Mat4x4d tr_to_origin    = translation_Mat4x4d( -M_centroid ),
-            tr_to_centroid  = translation_Mat4x4d( M_centroid ),
-            tr_to_H_centroid = translation_Mat4x4d( H_centroid );
+            tr_to_centroid  = translation_Mat4x4d( M_centroid );
     
-    cout << "Translate to origin " << endl << tr_to_origin << endl << " and back " << endl << tr_to_centroid;
+//    cout << "Translate to origin " << endl << tr_to_origin << endl << " and back " << endl << tr_to_centroid;
     
     for( VertexID H_pole : H_candidates.getCandidates() ){
-        cout << "Moving to H pole :" << H_pole << endl;
-        // transformation to bring module nearby a free pole of H but outside bsphere
-        Vec3d   H_pole_pos  = m->pos( H_pole );
-//        Vec3d   tr_dir      = H_pole_pos - M_centroid;
-//
-//        double  length = tr_dir.length() + H_radius - ( H_pole_pos - H_centroid ).length();
-        Vec3d tr_dir = H_pole_pos - H_centroid;
-        double length = H_radius;// - tr_dir.length();
         
-        tr_dir.normalize();
-        tr_dir = tr_dir * length;
+        Mat4x4d T;
+        Vec3d   H_pole_pos      = m->pos( H_pole );
+        Vec3d   H_pole_normal   = vertex_normal( *m, H_pole );
+        H_pole_normal.normalize();
         
-        Mat4x4d tr_to_pole = translation_Mat4x4d( tr_dir );
-        
-        cout << "Translate to pole " << endl << tr_to_pole << endl;
-        
-        for( int i = 0; i < no_M_poles; ++i ){
-            Mat4x4d rot;
-            buildRandomRotation( rot );
-            // build the complete transform
-//            Mat4x4d T = tr_to_pole * tr_to_centroid * rot * tr_to_origin;
-            // sposto all'origine
-            // ruoto
-            // sposto nel centroide di H
-            // traslo verso il polo ma fuori dalla bsphere
-            Mat4x4d T = tr_to_pole * tr_to_H_centroid * rot * tr_to_origin;
+        for( auto item : module->poleInfoMap ){
+
+            // align normals
+            Mat4x4d t_align = get_alignment_for_2_vectors( item.second.geometry.normal, H_pole_normal, M_centroid );
+//            cout << "alignment" << t_align << endl;
             
-            cout << "random rotation " << endl << rot << endl << "resulting T : " << T << endl;
             
-            transformations.push_back( T );
+            // bring the transformed M_pole to H_pole
+            Vec3d   to_H_pole = H_pole_pos - t_align.mul_3D_point( item.second.geometry.pos );
+            Mat4x4d tr_to_H_pole = translation_Mat4x4d( to_H_pole );
+//            cout << "Translate to pole " << endl << tr_to_H_pole << endl;
+
             
-            Module t_module( "", 0 );
-            
-            // SAVE THE MODULE TRANSFORMATION
-            for( auto item : module->poleInfoMap ){
-                PoleGeometryInfo pgi = item.second.geometry;
-                PoleInfo t_pi;
-                t_pi.geometry.valence = pgi.valence;
-                t_pi.geometry.pos     = T.mul_3D_point( pgi.pos );
-                Vec3d t_normal        = T.mul_3D_point( pgi.normal );
-                t_normal.normalize();
-                t_pi.geometry.normal  = t_normal;
-                t_module.poleInfoMap[ item.first ] = t_pi;                
+            // generate K rotations along the candidate normal
+            double step = M_PI_4 / 2.0;
+            double curr_angle = 0;
+            // build and save rotations
+            for ( int i = 0; i < 16; ++i, curr_angle +=step ) {
+                Mat4x4d rot = get_rotation_mat4d( H_pole_normal, curr_angle );
+                
+//                cout << "rotation with axis " << H_pole_normal << " and angle : " << curr_angle << rot << endl;
+                
+                Vec3d centroid = t_align.mul_3D_point( M_centroid );
+                Mat4x4d tr_to_origin    = translation_Mat4x4d( -H_pole_pos ),
+                        tr_to_centroid  = translation_Mat4x4d( H_pole_pos );
+
+
+                T = tr_to_H_pole * tr_to_origin * rot * tr_to_centroid * t_align;
+//                T = tr_to_H_pole * rot * t_align;
+                
+//                cout << "complete transformation" << T << endl;
+                
+                transformations.push_back( T );
+                
+                Module t_module( "", 0 );
+                
+                // SAVE THE MODULE TRANSFORMATION
+                for( auto item : module->poleInfoMap ){
+                    PoleGeometryInfo pgi = item.second.geometry;
+                    PoleInfo t_pi;
+                    t_pi.geometry.valence = pgi.valence;
+                    t_pi.geometry.pos     = T.mul_3D_point( pgi.pos );
+                    
+                    // TODO vector must be multiplied expanding to 4d vector with w=0!!!!!!
+                    Vec4d normal( pgi.normal[0], pgi.normal[1], pgi.normal[2], 0.0 );
+                    Vec4d t_normal4 = T * normal;
+//                    Vec3d t_normal        = T.mul_3D_point( pgi.normal );
+                    Vec3d t_normal( t_normal4[0], t_normal4[1], t_normal4[2] );
+                    t_normal.normalize();
+//                    cout << pgi.normal << " becomes : " << t_normal << endl;
+                    t_pi.geometry.normal  = t_normal;
+                    t_module.poleInfoMap[ item.first ] = t_pi;
+                }
+                assert( t_module.poleInfoMap.size() == module->poleInfoMap.size( ));
+                transformedModules.push_back( t_module );
             }
-            assert( t_module.poleInfoMap.size() == module->poleInfoMap.size( ));
-            transformedModules.push_back( t_module );
         }
     }
-    assert( transformations.size() == transformedModules.size( ));
     
-#warning JUST A TEST
-    for( auto mv : M_vertices ) {
-        m->pos( mv ) = transformations.front().mul_3D_point( m->pos( mv ));
-    }
-
+//    for( auto mv : M_vertices ) {
+//        m->pos( mv ) = transformations[8].mul_3D_point( m->pos( mv ));
+//    }
+    
+    assert( transformations.size() == transformedModules.size( ));
 }
-
-
-
-
-

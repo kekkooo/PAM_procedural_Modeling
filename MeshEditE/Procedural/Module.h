@@ -16,6 +16,7 @@
 
 #include <GEL/HMesh/Manifold.h>
 #include <GEL/CGLA/Vec3d.h>
+#include <GEL/CGLA/Mat4x4d.h>
 
 namespace Procedural{
     
@@ -54,7 +55,8 @@ typedef std::map<HMesh::VertexID, PoleInfo>             PoleInfoMap;
 class Module{
     
 public:
-    Module( std::string path, Moduletype mType ); // this will instantiate the internal manifold structure and pole info using obj_load
+         Module( std::string path, Moduletype mType ); // this will instantiate the internal manifold structure and pole info using obj_load
+    void applyTransformToPoleInfo( CGLA::Mat4x4d &T );
 #warning those should be deleted from public
     PoleInfoMap         poleInfoMap;
     CGLA::Vec3d         bsphere_center;

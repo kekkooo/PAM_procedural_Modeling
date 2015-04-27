@@ -17,7 +17,7 @@
 
 
 // Geometric Structure Utilities : structural_helpers.h
-
+#define GEO_EPS 0.000001
 
 
 // other stuff                      : other.h
@@ -39,6 +39,7 @@ void            save_intermediate_result        ( HMesh::Manifold &m, const std:
 int             get_starter_offset              ( HMesh::Manifold &m1, HMesh::VertexID p1,
                                                   HMesh::Manifold &m2, HMesh::VertexID p2 );
 void            bridge_pole_one_rings           ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
+void            buildReflectionMatrix           ( CGLA::Vec3d& planeNormal, CGLA::Mat4x4d &T );
 
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )

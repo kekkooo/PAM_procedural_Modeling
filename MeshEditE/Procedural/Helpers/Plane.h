@@ -23,7 +23,7 @@ class Plane
 {
     
 public:
-    Plane(Vec3d point, Vec3d normal)
+    Plane( Vec3d point, Vec3d normal )
     {
         normal.normalize();
         
@@ -36,7 +36,7 @@ public:
     }
     
     
-    Plane(Vec3d p0, Vec3d p1, Vec3d p2)
+    Plane( Vec3d p0, Vec3d p1, Vec3d p2 )
     {
         double dx1 = p1[0] - p0[0];
         double dx2 = p2[0] - p0[0];

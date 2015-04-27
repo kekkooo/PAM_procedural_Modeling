@@ -10,6 +10,7 @@
 #include <GEL/GLGraphics/MeshEditor.h>
 #include <GEL/CGLA/Vec3d.h>
 #include <GEL/HMesh/obj_save.h>
+#include <GEL/CGLA/Mat3x3d.h>
 
 #include <map>
 #include <queue>
@@ -174,15 +175,28 @@ CGLA::Mat4x4d get_rotation_mat4d ( CGLA::Vec3d axis, double angle )
 
 CGLA::Mat4x4d   get_alignment_for_2_vectors     ( Vec3d v1, Vec3d v2, Vec3d centroid )
 {
+    v1.normalize();
+    v2.normalize();
     Vec3d   rotation_axis   = CGLA::cross( v1, v2 );
     double  rotation_angle  =   get_angle( v1, v2 );
     
-    if( isnan(rotation_angle)){
+    if( isnan( rotation_angle ) || ( fabs( 1.0 - dot( v1, v2 )) < GEO_EPS ) ){
         // probably v1 and v2 are equal
         cout << v1 << " is equal to " << v2 << "?" << endl;
         cout << "rotation axis :" << endl << rotation_axis << endl;
         cout << "angle :" << endl << rotation_angle << endl;
+        cout << "build reflection" << endl;
+        Mat4x4d T;
+        v1.normalize();
+        buildReflectionMatrix(v1, T);
+        return T;        
     }
+    
+    if( rotation_axis[0] + rotation_axis[1] + rotation_axis[2] < GEO_EPS ){
+        return identity_Mat4x4d();
+    }
+
+    
     assert( !isnan(rotation_angle )); // fail!
     
     Mat4x4d rot             = get_rotation_mat4d( rotation_axis, rotation_angle);
@@ -438,7 +452,20 @@ void bridge_pole_one_rings(Manifold& mani, VertexID vid0, VertexID vid1)
     vector<HalfEdgeID> newhalfedges = mani.bridge_faces(f0, f1, connections);
 }
 
+void buildReflectionMatrix ( CGLA::Vec3d& planeNormal, CGLA::Mat4x4d &T ){
+    planeNormal.normalize();
+    
+    double  a = planeNormal[0],
+            b = planeNormal[1],
+            c = planeNormal[2];
 
+    Vec4d r0 = Vec4d( 1.0 - 2.0 * a * a , -2.0 * a * b      ,-2.0 * a * c       ,0.0 );
+    Vec4d r1 = Vec4d( -2.0 * a * b      , 1.0 - 2 * b * b   ,-2.0 * b * c       ,0.0 );
+    Vec4d r2 = Vec4d( -2.0 * a * c      , -2.0 * b * c      ,1.0 - 2.0 * c * c  ,0.0 );
+    Vec4d r3 = Vec4d( 0.0               ,0.0                ,0.0                ,1.0 );
+    
+    T = Mat4x4d( r0, r1, r2, r3 );
+}
 
 
 
