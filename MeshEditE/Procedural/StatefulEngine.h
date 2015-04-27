@@ -44,6 +44,26 @@ typedef std::pair< std::vector< Procedural::GraphMatch::Match>,
                                 Procedural::GraphMatch::EdgeCost >      matchesAndCost;
 typedef std::pair<HMesh::VertexID, double>                              IdDistPair;
 typedef std::vector<IdDistPair>                                         IDsDistsVector;
+typedef std::pair<double, GraphMatch::EdgeCost>                         ExtendedCost;
+        
+inline bool operator <( const ExtendedCost& l, const ExtendedCost& r)
+{
+    if( l.first < r.first && l.second < r.second )
+    {
+        return true;
+    }
+    else if( GraphMatch::is_equal( l.first, r.first ))
+    {
+        return ( l.second < r.second );
+    }
+    else if( l.second == r.second )
+    {
+        return ( l.first < r.first );
+    }
+    else { return false; }
+}
+        
+// MATCH è ( polo_modulo, polo_host )
 
         
 struct MatchInfoProxy{

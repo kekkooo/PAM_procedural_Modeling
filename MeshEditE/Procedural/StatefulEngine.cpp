@@ -521,6 +521,7 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     
     vector< matchesAndCost >    matches_vector;
     vector< match_info >        proposed_matches;
+    vector< ExtendedCost >      ExtendetCosts;
     vector< Mat4x4d >           Ts;
     
     buildTransformationList( Ts );
@@ -528,8 +529,8 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     
     assert( module->poleInfoMap.size() > 0 );
     
-//    for( int i = 0; i < Ts.size(); ++i ){
-    for( int i = 7; i < 10; ++i ){
+    for( int i = 0; i < Ts.size(); ++i ){
+//    for( int i = 0; i < 10; ++i ){
 
         VertexMatchMap  M_to_H;
         vector<Match>   current_matches, best_matches;
@@ -568,19 +569,28 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
         // if the number of matches is lower than the target, just skip this configuration
         if( M_to_H.size() < no_glueings ) { continue; }
         
+        double distance_sum = 0.0;
+        
         for( auto pole_and_vertex : M_to_H )
         {
             // cout << pole_and_vertex.first << ", " << pole_and_vertex.second << endl;
             current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
         }
         EdgeCost c = get_best_subset( *this->m, current_matches, best_matches, no_glueings );
+        
+        for( auto match : best_matches ){
+            distance_sum += ( transformedModules[i].poleInfoMap[match.first].geometry.pos - m->pos(match.second)).length();
+        }
 
         mi.cost     = c;
+        ExtendetCosts.push_back( make_pair( distance_sum, c ));
+
 #warning this should be done using std::move
         mi.matches  = best_matches;
         proposed_matches.push_back( mi );
         
-        cout << "configuration " << i << " has cost : " << mi.cost.first << ", " << mi.cost.second << endl;
+        cout << "configuration " << i << " has cost : "
+             << mi.cost.first << ", " << mi.cost.second << ", " << distance_sum << endl;
     }
     
 
@@ -590,18 +600,18 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     
     // find the best solution between the proposed ones
     size_t      selected = 0;
-    EdgeCost    min_cost = proposed_matches[0].cost;
+    ExtendedCost min_cost = ExtendetCosts[0];
     for( int i = 1; i < proposed_matches.size(); ++i )
     {
-        if( proposed_matches[i].cost < min_cost )
+        if( ExtendetCosts[i] < min_cost )
         {
             selected = i;
-            min_cost = proposed_matches[i].cost;
+            min_cost = ExtendetCosts[i];
         }
     }
     
     best_match.setMatchInfo( proposed_matches[selected] );
-    cout << "Best Match random transform: " << endl
+    cout << "Best Match random transform: " << selected << endl
          << best_match.getMatchInfo().random_transform
          << " Proposed Matches " << endl;
     for( Match match :  best_match.getMatchInfo().matches ){
