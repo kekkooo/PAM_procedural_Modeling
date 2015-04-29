@@ -173,14 +173,14 @@ CGLA::Mat4x4d get_rotation_mat4d ( CGLA::Vec3d axis, double angle )
     return t;
 }
 
-CGLA::Mat4x4d   get_alignment_for_2_vectors     ( Vec3d v1, Vec3d v2, Vec3d centroid )
+CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2, Vec3d centroid )
 {
     v1.normalize();
     v2.normalize();
     Vec3d   rotation_axis   = CGLA::cross( v1, v2 );
     double  rotation_angle  =   get_angle( v1, v2 );
     
-    if( isnan( rotation_angle ) || ( fabs( 1.0 - dot( v1, v2 )) < GEO_EPS ) ){
+    if( isnan( rotation_angle ) || ( fabs( dot( v1, v2 )) < GEO_EPS ) ){
         // probably v1 and v2 are equal
         cout << v1 << " is equal to " << v2 << "?" << endl;
         cout << "rotation axis :" << endl << rotation_axis << endl;
@@ -188,10 +188,42 @@ CGLA::Mat4x4d   get_alignment_for_2_vectors     ( Vec3d v1, Vec3d v2, Vec3d cent
         cout << "build reflection" << endl;
         Mat4x4d T;
         v1.normalize();
-        buildReflectionMatrix(v1, T);
-        return T;        
+//        buildReflectionMatrix(v1, T);
+        // instead of building a reflection matrix
+        // build a transformation that brings v1 be aligned with Y-axis and centroid to be placed at origin
+        // then build a rotation matrix of angle PI along X-axis
+        Vec3d   y_axis  = Vec3d(0.0, 1.0, 0.0);
+        Vec3d   _axis   = CGLA::cross( v1, y_axis );
+        double  _angle  = get_angle( v1, y_axis );
+        Mat4x4d rot_to_y, rot;
+        // normal could be aligned to y_axis
+        if( _axis[0] + _axis[1] + _axis[2] < GEO_EPS ){
+            rot_to_y = identity_Mat4x4d();
+        }
+        else{
+            rot_to_y = get_rotation_mat4d( _axis, _angle);
+        }
+        
+        
+        Mat4x4d rot_to_y_invert =  invert_ortho(rot_to_y);
+        
+        // What happens if V1 is the XAxis or the ZAxis??
+        rot = rotation_Mat4x4d( XAXIS, M_PI );
+        Mat4x4d tr_origin = translation_Mat4x4d( -centroid );
+        Mat4x4d tr_back   = translation_Mat4x4d( centroid );
+        T = rot_to_y_invert * tr_back * rot * tr_origin * rot_to_y;
+
+        cout << T << endl;
+        if( isnan(T[1][1])){
+            cout << tr_back << endl << rot << endl << tr_origin << endl << rot_to_y << endl;
+        }
+        
+        
+        assert( !isnan( T[1][1] ));
+        return T;
     }
     
+    // if angle is near 0 but normals are opposite just return identity
     if( rotation_axis[0] + rotation_axis[1] + rotation_axis[2] < GEO_EPS ){
         return identity_Mat4x4d();
     }
@@ -209,6 +241,7 @@ CGLA::Mat4x4d   get_alignment_for_2_vectors     ( Vec3d v1, Vec3d v2, Vec3d cent
 //    cout << tr_origin   << endl << endl;
 //    cout << tr_back     << endl << endl;
 //    cout << t           << endl << endl;
+    assert( !isnan( t[1][1] ));
     return t;
 }
 

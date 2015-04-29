@@ -498,6 +498,7 @@ void StatefulEngine::consolidate(){
     assert( this->module->poleInfoMap.size() > 0 );
     // in this way you lose any reference to which vertices are from host and module
     module = NULL;
+    transformedModules.clear();
     
     H_vertices.clear();
     M_vertices.clear();
@@ -710,6 +711,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 //                cout << "complete transformation" << T << endl;
                 
                 transformations.push_back( T );
+                assert( !isnan( T[1][1] ));
                 
                 Module t_module( "", 0 );
                 
