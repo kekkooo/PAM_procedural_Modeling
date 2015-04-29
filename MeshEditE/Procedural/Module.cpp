@@ -22,6 +22,7 @@ void Module::applyTransformToPoleInfo( CGLA::Mat4x4d &T )
     {
         VertexID key = it->first;
         poleInfoMap[key].geometry.pos       = T.mul_3D_point( poleInfoMap[key].geometry.pos );
+#warning this would not work
         poleInfoMap[key].geometry.normal    = T.mul_3D_point( poleInfoMap[key].geometry.normal );
     }
 }

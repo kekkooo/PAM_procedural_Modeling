@@ -43,26 +43,28 @@ struct PoleGeometryInfo{
 struct PoleInfo{
     PoleGeometryInfo    geometry;
     Moduletype          moduleType  = 0;     // an identifier for the module's type
-    PoleLabel           labels      = AllP;  // a label atteched to a pole
+    PoleLabel           labels      = AllP;  // a label attached to a pole
     int                 age;                 // pole's starting age
     bool                isFree      = false;
 };
     
 typedef std::map<HMesh::VertexID, PoleInfo>             PoleInfoMap;
-
-
+typedef std::vector< HMesh::VertexID>                   PoleList;
 
 class Module{
     
 public:
-         Module( std::string path, Moduletype mType ); // this will instantiate the internal manifold structure and pole info using obj_load
+         // this will instantiate the internal manifold structure and pole info using obj_load
+         Module( std::string path, Moduletype mType );
+    
     void applyTransformToPoleInfo( CGLA::Mat4x4d &T );
+
 #warning those should be deleted from public
+    PoleList            poleList;
     PoleInfoMap         poleInfoMap;
     CGLA::Vec3d         bsphere_center;
     double              bsphere_radius;
 
-    
 private:
     void BuildPoleInfo();
     
@@ -77,8 +79,6 @@ private:
 //    CGLA::Vec3d         bsphere_center;
 //    double              bsphere_radius;
 
-    
-        
     };
 }
 

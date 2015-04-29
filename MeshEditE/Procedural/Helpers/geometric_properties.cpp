@@ -144,7 +144,6 @@ Vec3d vertex_normal ( Manifold& m, VertexID v)
     }
     
     vn / w.no_steps();
-    //    vn.normalize();
     return vn;
 }
         

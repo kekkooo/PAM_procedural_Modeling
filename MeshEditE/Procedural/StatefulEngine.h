@@ -77,7 +77,7 @@ struct MatchInfoProxy{
         }
         void setMatchInfo( Procedural::Helpers::ModuleAlignment::match_info& mi )
         {
-            matchInfo = mi;
+            matchInfo = std::move( mi );
             isValid = true;
         }
 };
@@ -88,6 +88,11 @@ struct CandidateInfo{
 struct CandidateSet{
 public:
     const VertexSet& getCandidates(){ return candidates; }
+    const std::vector<HMesh::VertexID> getCandidateVector(){
+        std::vector<HMesh::VertexID> v;
+        for( VertexID c : candidates ){ v.push_back(c); }
+        return v;
+    }
     void insert( HMesh::VertexID id, CandidateInfo info ){
         candidates.insert( id );
         candidate_infos[id] = info;

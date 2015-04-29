@@ -78,12 +78,12 @@ void optimal_transform( MeshEditor *me, const std::vector< std::string > &args )
 
     if( args.size() > 0 ){
         istringstream a0( args[0] );
-        a0 >> no_tests;
+        a0 >> no_glueings;
     }
     
     if( args.size() > 1 ){
         istringstream a1( args[1] );
-        a1 >> no_glueings;
+        a1 >> no_tests;
     }
 
     if( no_tests < 1 ) { no_tests = BASE_NO_TESTS; }

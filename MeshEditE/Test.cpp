@@ -175,12 +175,27 @@ CGLA::Mat4x4d get_rotation_mat4d ( CGLA::Vec3d axis, double angle )
 
 CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2, Vec3d centroid )
 {
+    
+    assert( !(( v1[0] > GEO_EPS ) && ( v1[1] > GEO_EPS ) && ( v1[2] > GEO_EPS )));
+    assert( !(( v2[0] > GEO_EPS ) && ( v2[1] > GEO_EPS ) && ( v2[2] > GEO_EPS )));
+    
     v1.normalize();
     v2.normalize();
-    Vec3d   rotation_axis   = CGLA::cross( v1, v2 );
-    double  rotation_angle  =   get_angle( v1, v2 );
+    Vec3d   rotation_axis;
+    double  rotation_angle  = get_angle( v1, v2 );
     
-    if( isnan( rotation_angle ) || ( fabs( dot( v1, v2 )) < GEO_EPS ) ){
+    if( dot ( v1, v2 ) > 0.8 ){
+        rotation_axis = CGLA::cross( v1, v2 );
+    }
+    else{
+        rotation_axis = CGLA::cross( v1, -v2 );
+        rotation_angle = -rotation_angle;
+    }
+    
+    bool parallel = ( fabs(rotation_axis[0] + rotation_axis[1] + rotation_axis[2]) < GEO_EPS );
+    bool opposite = ( (( v1[0] + v2[0] ) < GEO_EPS ) && (( v1[1] + v2[1] ) < GEO_EPS ) && (( v1[2] + v2[2] ) < GEO_EPS ));
+    
+    if( parallel && opposite ){
         // probably v1 and v2 are equal
         cout << v1 << " is equal to " << v2 << "?" << endl;
         cout << "rotation axis :" << endl << rotation_axis << endl;
@@ -224,7 +239,7 @@ CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2, Vec3d centroid )
     }
     
     // if angle is near 0 but normals are opposite just return identity
-    if( rotation_axis[0] + rotation_axis[1] + rotation_axis[2] < GEO_EPS ){
+    if( parallel ){
         return identity_Mat4x4d();
     }
 
