@@ -11,6 +11,8 @@
 #include <GEL/CGLA/Vec3d.h>
 #include <GEL/HMesh/obj_save.h>
 #include <GEL/CGLA/Mat3x3d.h>
+#include <GEL/CGLA/Quaternion.h>
+#include <GEL/CGLA/ArithQuat.h>
 
 #include <map>
 #include <queue>
@@ -173,9 +175,24 @@ CGLA::Mat4x4d get_rotation_mat4d ( CGLA::Vec3d axis, double angle )
     return t;
 }
 
-CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2, Vec3d centroid )
-{
+CGLA::Mat4x4d alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 ){
+    Quaternion q;
     
+    Vec3f vi(v1[0], v1[1], v1[2]), vii( -v2[0], -v2[1], -v2[2] );
+    
+    q.make_rot( vi, vii );
+    Mat4x4f _m = q.get_Mat4x4f();
+    Vec4d r0( _m[0][0], _m[0][1], _m[0][2], _m[0][3] );
+    Vec4d r1( _m[1][0], _m[1][1], _m[1][2], _m[1][3] );
+    Vec4d r2( _m[2][0], _m[2][1], _m[2][2], _m[2][3] );
+    Vec4d r3( _m[3][0], _m[3][1], _m[3][2], _m[3][3] );
+    Mat4x4d m( r0, r1, r2, r3);
+    
+    return m;
+}
+
+CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2 )
+{
     assert( !(( v1[0] > GEO_EPS ) && ( v1[1] > GEO_EPS ) && ( v1[2] > GEO_EPS )));
     assert( !(( v2[0] > GEO_EPS ) && ( v2[1] > GEO_EPS ) && ( v2[2] > GEO_EPS )));
     
@@ -184,7 +201,7 @@ CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2, Vec3d centroid )
     Vec3d   rotation_axis;
     double  rotation_angle  = get_angle( v1, v2 );
     
-    if( dot ( v1, v2 ) > 0.8 ){
+    if(  fabs( 1.0 - dot ( v1, v2 )) < GEO_EPS ){
         rotation_axis = CGLA::cross( v1, v2 );
     }
     else{
@@ -224,13 +241,11 @@ CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2, Vec3d centroid )
         
         // What happens if V1 is the XAxis or the ZAxis??
         rot = rotation_Mat4x4d( XAXIS, M_PI );
-        Mat4x4d tr_origin = translation_Mat4x4d( -centroid );
-        Mat4x4d tr_back   = translation_Mat4x4d( centroid );
-        T = rot_to_y_invert * tr_back * rot * tr_origin * rot_to_y;
+        T = rot_to_y_invert * rot * rot_to_y;
 
         cout << T << endl;
         if( isnan(T[1][1])){
-            cout << tr_back << endl << rot << endl << tr_origin << endl << rot_to_y << endl;
+            cout <<  rot  << endl << rot_to_y << endl;
         }
         
         
@@ -246,11 +261,7 @@ CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2, Vec3d centroid )
     
     assert( !isnan(rotation_angle )); // fail!
     
-    Mat4x4d rot             = get_rotation_mat4d( rotation_axis, rotation_angle);
-    // find center of the module mesh
-    Mat4x4d tr_origin = translation_Mat4x4d( -centroid );
-    Mat4x4d tr_back   = translation_Mat4x4d( centroid );
-    Mat4x4d t =  tr_back * rot * tr_origin;
+    Mat4x4d t  = get_rotation_mat4d( rotation_axis, rotation_angle);
 
 //    cout << rot         << endl << endl;
 //    cout << tr_origin   << endl << endl;

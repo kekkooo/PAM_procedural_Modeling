@@ -29,7 +29,7 @@ CGLA::Vec3f     color_ramp2                     ( int value, int max );
 void            linspace                        ( double min, double max, int num,
                                                       std::vector<double> &values);
 CGLA::Mat4x4d   get_rotation_mat4d              ( CGLA::Vec3d axis, double cosine );
-CGLA::Mat4x4d   get_alignment_for_2_vectors     ( CGLA::Vec3d v1, CGLA::Vec3d v2, CGLA::Vec3d centroid );
+CGLA::Mat4x4d   get_alignment_for_2_vectors     ( CGLA::Vec3d v1, CGLA::Vec3d v2 );
 void            alt_glue_poles                  ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
 void            bezier                          ( CGLA::Vec3d p0, CGLA::Vec3d p1, CGLA::Vec3d p2, int n, std::vector< CGLA::Vec3d >& points );
 void            save_colored_obj                ( HMesh::Manifold &m, std::string &path );
@@ -40,6 +40,7 @@ int             get_starter_offset              ( HMesh::Manifold &m1, HMesh::Ve
                                                   HMesh::Manifold &m2, HMesh::VertexID p2 );
 void            bridge_pole_one_rings           ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
 void            buildReflectionMatrix           ( CGLA::Vec3d& planeNormal, CGLA::Mat4x4d &T );
+CGLA::Mat4x4d   alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 );
 
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )

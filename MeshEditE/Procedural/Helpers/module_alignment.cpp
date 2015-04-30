@@ -440,7 +440,7 @@ void align_module_normals_to_host( Manifold &m, set<VertexID> &module_IDs, vecto
     centroid /= matches.size();
     // need to carefully choose which centroid I should use.
 //    bsphere( m, module_IDs, centroid, _ );
-    Mat4x4d t = get_alignment_for_2_vectors( module_vec, host_vec, centroid );
+    Mat4x4d t = get_alignment_for_2_vectors( module_vec, host_vec );
     cout << t;
     for( VertexID v : module_IDs )
     {
