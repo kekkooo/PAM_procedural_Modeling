@@ -14,10 +14,12 @@
 #include <tuple>
 #include "polarize.h"
 #include <GEL/CGLA/Mat4x4d.h>
+#include <GEL/CGLA/Mat4x4f.h>
 
 
 // Geometric Structure Utilities : structural_helpers.h
-#define GEO_EPS 0.000001
+#define GEO_EPS     0.00000001
+#define ARITH_EPS   0.000001
 
 
 // other stuff                      : other.h
@@ -41,6 +43,7 @@ int             get_starter_offset              ( HMesh::Manifold &m1, HMesh::Ve
 void            bridge_pole_one_rings           ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
 void            buildReflectionMatrix           ( CGLA::Vec3d& planeNormal, CGLA::Mat4x4d &T );
 CGLA::Mat4x4d   alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 );
+CGLA::Mat4x4d   Mat4x4d_to_float                ( CGLA::Mat4x4f &m );
 
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )
