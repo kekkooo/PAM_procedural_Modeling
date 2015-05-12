@@ -599,6 +599,15 @@ CGLA::Mat4x4d Mat4x4d_to_float ( CGLA::Mat4x4f &m ){
     return _m;
 }
 
+CGLA::Vec3d mul_3D_dir ( const CGLA::Mat4x4d &t, const CGLA::Vec3d &dir ){
+    // TODO vector must be multiplied expanding to 4d vector with w=0!!!!!!
+    Vec4d v( dir[0], dir[1], dir[2], 0.0 );
+    Vec4d vt = t * v;
+    Vec3d v3d(vt[0], vt[1], vt[2]);
+    v3d.normalize();
+    return v3d;
+}
+
 
 
 

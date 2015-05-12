@@ -709,25 +709,8 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 transformations.push_back( T );
                 assert( !isnan( T[1][1] ));
                 
-                Module t_module( "", 0 );
+                Module t_module = this->module->getTransformedModule( T );
                 
-                // SAVE THE MODULE TRANSFORMATION
-                for( auto item : module->poleInfoMap ){
-                    PoleGeometryInfo pgi = item.second.geometry;
-                    PoleInfo t_pi;
-                    t_pi.geometry.valence = pgi.valence;
-                    t_pi.geometry.pos     = T.mul_3D_point( pgi.pos );
-                    
-                    // TODO vector must be multiplied expanding to 4d vector with w=0!!!!!!
-                    Vec4d normal( pgi.normal[0], pgi.normal[1], pgi.normal[2], 0.0 );
-                    Vec4d t_normal4 = T * normal;
-                    Vec3d t_normal( t_normal4[0], t_normal4[1], t_normal4[2] );
-                    t_normal.normalize();
-//                  cout << pgi.normal << " becomes : " << t_normal << endl;
-                    t_pi.geometry.normal  = t_normal;
-                    t_module.poleInfoMap[ item.first ] = t_pi;
-                }
-                assert( t_module.poleInfoMap.size() == module->poleInfoMap.size( ));
                 transformedModules.push_back( t_module );
             }
         }

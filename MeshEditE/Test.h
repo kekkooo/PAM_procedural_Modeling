@@ -44,6 +44,7 @@ void            bridge_pole_one_rings           ( HMesh::Manifold& mani, HMesh::
 void            buildReflectionMatrix           ( CGLA::Vec3d& planeNormal, CGLA::Mat4x4d &T );
 CGLA::Mat4x4d   alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 );
 CGLA::Mat4x4d   Mat4x4d_to_float                ( CGLA::Mat4x4f &m );
+CGLA::Vec3d     mul_3D_dir                      ( const CGLA::Mat4x4d &t, const CGLA::Vec3d &dir );
 
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )

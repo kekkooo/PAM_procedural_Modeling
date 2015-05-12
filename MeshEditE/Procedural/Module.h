@@ -57,7 +57,7 @@ public:
          // this will instantiate the internal manifold structure and pole info using obj_load
          Module( std::string path, Moduletype mType );
     
-    void applyTransformToPoleInfo( CGLA::Mat4x4d &T );
+    Module getTransformedModule( const CGLA::Mat4x4d &T );
 
 #warning those should be deleted from public
     PoleList            poleList;
@@ -66,7 +66,8 @@ public:
     double              bsphere_radius;
 
 private:
-    void BuildPoleInfo();
+    void    BuildPoleInfo();
+            Module(){ m = NULL; }
     
         
 /************************************************
