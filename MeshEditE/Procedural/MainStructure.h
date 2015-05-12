@@ -12,6 +12,7 @@
 #include <stdio.h>
 
 #include "Module.h"
+#include <MeshEditE/Procedural/Matches/graph_match.h>
 
 namespace Procedural {
     
@@ -25,22 +26,28 @@ struct StructurePoleInfo{
     
 struct GluedModuleInfo{
     Module          *module;
-    int             t_start;
-    CGLA::Vec3d     centroid;
-    double          radius;
+    size_t          t_start;
     int             connection_valence;
 };
 
 class MainStructure{
     
 public:
-    MainStructure() {};
+    MainStructure();
+    // those methods work only on a logical basis not on a geometrical one
+    void glueModule( Module &m, std::vector<Procedural::GraphMatch::Match> &matches  );
+    const Procedural::PoleList& getPoleList();
+    
+    
     
 private:
 /************************************************
  * ATTRIBUTES                                   *
  ***********************************************/
     std::vector< GluedModuleInfo >  modules;
+    Procedural::PoleList            freePoles;
+    Procedural::PoleList            gluedPoles;
+    size_t                          time;
 
 };
 
