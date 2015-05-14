@@ -22,10 +22,22 @@ namespace Procedural{
         time = 0;
     }
 
-    const PoleList& MainStructure::getPoleList(){
+    const PoleList& MainStructure::getPoles(){
+        return freePoles;
+    }
+
+    const PoleList& MainStructure::getFreePoles(){
         return freePoles;
     }
     
+    const PoleSet& MainStructure::getFreePoleSet(){
+        return freePolesSet;
+    }
+
+    const PoleList& MainStructure::getGluedPoles(){
+        return freePoles;
+    }
+
     bool _in_set( set<VertexID > &s, VertexID v ){
         return (s.count(v) > 0);
     }
@@ -51,16 +63,21 @@ namespace Procedural{
             }
             else{
                 freePoles.push_back( v );
+                freePolesSet.insert( v );
             }
         }
         // remove from freePoles the host poles involved  and put them into gluedPoles
         for( VertexID v : glued_h_poles ){
             freePoles.erase( remove(freePoles.begin(), freePoles.end(), v));
+            freePolesSet.erase( v );
             gluedPoles.push_back(v);
+
         }
-        
-        assert( old_glued_poles_size + glued_m_poles.size() == gluedPoles.size() );
-        assert( old_free_poles_size + ( m.poleList.size() - glued_m_poles.size( )) == freePoles.size());
+        assert( glued_h_poles.size() == glued_m_poles.size() );
+        assert( freePoles.size() == freePolesSet.size());
+        assert( old_glued_poles_size + glued_m_poles.size() + glued_h_poles.size() == gluedPoles.size() );
+        assert( old_free_poles_size + ( m.poleList.size() - glued_m_poles.size( ) - glued_h_poles.size())
+                == freePoles.size());
         assert( old_glued_poles_size + old_free_poles_size + m.poleList.size()
                 == freePoles.size() + gluedPoles.size());
         
@@ -70,5 +87,16 @@ namespace Procedural{
         gmi.connection_valence  = matches.size();
 
         modules.push_back( gmi );
+        ++time;
+        
+        /***** DEBUG AND SANITY CHECK ****/
+        cout << glued_m_poles.size() << "-valent glueing at time : " << time << endl;
+        cout << " num of free poles " << freePoles.size() << " # set : " << freePolesSet.size();
+        cout << " num of glued poles " << gluedPoles.size() << endl;
+        /*****          END         ****/
+
+
+        
+
     }
 }

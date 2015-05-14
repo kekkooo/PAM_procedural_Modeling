@@ -8,8 +8,11 @@
 
 #include "Module.h"
 #include "Test.h"
+#include "MeshEditE/Procedural/Helpers/geometric_properties.h"
 
 using namespace HMesh;
+using namespace CGLA;
+using namespace Procedural::Geometry;
 
 namespace Procedural{
 
@@ -17,27 +20,51 @@ Module::Module( std::string path, Moduletype mType ){
     this->m = NULL;
 }
     
-Module Module::getTransformedModule( const CGLA::Mat4x4d &T )
-{
-    Module M;// = new Module();
+Module::Module( Manifold &manifold, Moduletype mType ){
+    this->m = &manifold;
+    Vec3d centroid;
+    double radius;
+    bsphere( *this->m, centroid, radius );
+    this->bsphere_center = centroid;
+    this->bsphere_radius = radius;
     
-    M.no_of_glueings = this->no_of_glueings;
-    M.bsphere_center = T.mul_3D_point( bsphere_center );
-    M.bsphere_radius = bsphere_radius;
+    for( VertexID vid : m->vertices() ){
+        if( is_pole( *m, vid )){
+            PoleInfo pi;
+            pi.geometry.valence = valence( *m, vid );
+            pi.geometry.pos     = m->pos( vid );
+            Vec3d n = vertex_normal( *m, vid );
+            n.normalize();
+            pi.geometry.normal = n;
+            this->poleList.push_back( vid );
+            this->poleInfoMap[vid] = pi;
+        }
+    }
+}
+    
+Module& Module::getTransformedModule( const CGLA::Mat4x4d &T )
+{
+    Module *M = new Module();
+    M->poleList      = PoleList();
+    M->poleInfoMap   = PoleInfoMap();
+    
+    M->no_of_glueings = this->no_of_glueings;
+    M->bsphere_center = T.mul_3D_point( bsphere_center );
+    M->bsphere_radius = bsphere_radius;
     
     for( VertexID vid : this->poleList ){
-        M.poleList.push_back( vid );
-        M.poleInfoMap[vid].geometry.pos     = T.mul_3D_point( poleInfoMap[vid].geometry.pos );
-        M.poleInfoMap[vid].geometry.normal  = mul_3D_dir( T, poleInfoMap[vid].geometry.normal );
-        M.poleInfoMap[vid].geometry.valence = poleInfoMap[vid].geometry.valence;
-        M.poleInfoMap[vid].labels           = poleInfoMap[vid].labels;
-        M.poleInfoMap[vid].age              = poleInfoMap[vid].age;
-        M.poleInfoMap[vid].isFree           = poleInfoMap[vid].isFree;
+        M->poleList.push_back( vid );
+        M->poleInfoMap[vid].geometry.pos     = T.mul_3D_point( poleInfoMap[vid].geometry.pos );
+        M->poleInfoMap[vid].geometry.normal  = mul_3D_dir( T, poleInfoMap[vid].geometry.normal );
+        M->poleInfoMap[vid].geometry.valence = poleInfoMap[vid].geometry.valence;
+        M->poleInfoMap[vid].labels           = poleInfoMap[vid].labels;
+        M->poleInfoMap[vid].age              = poleInfoMap[vid].age;
+        M->poleInfoMap[vid].isFree           = poleInfoMap[vid].isFree;
     }
     
-    assert( M.poleInfoMap.size() == this->poleInfoMap.size( ));
+    assert( M->poleInfoMap.size() == this->poleInfoMap.size( ));
     
-    return M;
+    return *M;
 }
     
 

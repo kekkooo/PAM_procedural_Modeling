@@ -25,6 +25,7 @@
 #include "MeshEditE/Procedural/Helpers/module_alignment.h"
 #include "MeshEditE/Procedural/EngineHelpers/InfoContainers.h"
 #include "MesheditE/Procedural/Module.h"
+#include "MesheditE/Procedural/MainStructure.h"
 
 namespace GEL_Geometry = Geometry;
 
@@ -117,8 +118,6 @@ class StatefulEngine{
     
     /************************************************
      * METHODS                                      *
-     * devo aggiungere quelli relativi al branching *
-     * e alla gestione del quanto di ogni cosa      *
      ***********************************************/
     public :
     static  StatefulEngine& getCurrentEngine();
@@ -134,13 +133,6 @@ class StatefulEngine{
             void            alignModuleNormalsToHost( );
             void            alignUsingBestMatch( );
             void            actualGlueing();
-
-
-/* INLINE FUNCTIONS*/
-    inline  void            setConstraint1D( ){ dim_constraint = StatefulEngine::DimensionalityConstraint::Constrained_1D; }
-    inline  void            setConstraint2D( ){ dim_constraint = StatefulEngine::DimensionalityConstraint::Constrained_2D; }
-    inline  void            setConstraint3D( ){ dim_constraint = StatefulEngine::DimensionalityConstraint::Constrained_3D; }
-    inline  DimensionalityConstraint getConstraint() { return  dim_constraint; }
     
     private :
                             StatefulEngine();
@@ -161,7 +153,6 @@ class StatefulEngine{
             void            matchModuleToHost( Procedural::PoleInfoMap& poleInfoMap, VertexMatchMap& M_pole_to_H_vertex );
             bool            findSecondClosest( const HMesh::VertexID &pole, const PoleGeometryInfo &pgi,
                                                const HMesh::VertexID &closest, HMesh::VertexID &second_closest, VertexSet &assigned );
-            void            fillCandidateSet();
             void            addNecessaryPoles();
     
             void            buildTransformationList( std::vector< CGLA::Mat4x4d> &transformations );
@@ -176,11 +167,13 @@ class StatefulEngine{
 private:
 
     HMesh::Manifold     *m;
+
     VertexSet           H_vertices,
                         M_vertices;
-    DimensionalityConstraint dim_constraint;
+
     
-    Procedural::Module* module;
+    Procedural::MainStructure*  mainStructure;
+    Procedural::Module*         candidateModule;
     
     std::vector<Procedural::Module>
                         transformedModules;
@@ -188,7 +181,6 @@ private:
     kD_Tree*            tree;
     bool                treeIsValid;
     
-    CandidateSet        H_candidates;
     Procedural::EngineHelpers::EdgeInfoContainer edge_info;
     
     MatchInfoProxy      best_match;

@@ -9,15 +9,18 @@
 #ifndef __MeshEditE__MainStructure__
 #define __MeshEditE__MainStructure__
 
-#include <stdio.h>
-
 #include "Module.h"
+
+#include <stdio.h>
+#include <set>
+
 #include <MeshEditE/Procedural/Matches/graph_match.h>
 
 namespace Procedural {
     
 typedef int ModuleID;
-typedef std::map< HMesh::VertexID, ModuleID> VertexModuleMap;
+typedef std::map< HMesh::VertexID, ModuleID>    VertexModuleMap;
+typedef std::set< HMesh::VertexID >             PoleSet;
 
 struct StructurePoleInfo{
     PoleInfo    pi;            // pos and normal should be modified here
@@ -36,7 +39,10 @@ public:
     MainStructure();
     // those methods work only on a logical basis not on a geometrical one
     void glueModule( Module &m, std::vector<Procedural::GraphMatch::Match> &matches  );
-    const Procedural::PoleList& getPoleList();
+    const Procedural::PoleList& getPoles();
+    const Procedural::PoleList& getFreePoles();
+    const Procedural::PoleList& getGluedPoles();
+    const PoleSet&              getFreePoleSet();
     
     
     
@@ -47,6 +53,7 @@ private:
     std::vector< GluedModuleInfo >  modules;
     Procedural::PoleList            freePoles;
     Procedural::PoleList            gluedPoles;
+    PoleSet                         freePolesSet;
     size_t                          time;
 
 };

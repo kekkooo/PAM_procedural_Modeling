@@ -111,35 +111,6 @@ void glue_current( MeshEditor *me, const std::vector< std::string > &args ){
     
 }
 
-void set_constraint_dimensionality( MeshEditor *me, const std::vector< std::string > &args ){
-    
-    stringstream oss;
-    int dim_constraint = 3;
-    
-    if( args.size() > 0 ){
-        istringstream a0( args[0] );
-        a0 >> dim_constraint;
-    }
-    
-    StatefulEngine &s = StatefulEngine::getCurrentEngine();
-    
-    switch (dim_constraint) {
-        case 1:
-            s.setConstraint1D();
-            break;
-        case 2:
-            s.setConstraint2D();
-            break;
-        case 3:
-            s.setConstraint3D();
-            break;
-            
-        default:
-            me->printf("option not available. only 1( 1D ), 2( 2D ), 3 ( 3D )");
-            break;
-    }
-}
-
 /************************************************
  * DEBUG CALLS                                  *
  ***********************************************/
@@ -172,8 +143,7 @@ void register_engine_console_funcs( GLGraphics::MeshEditor* me )
     me->register_console_function( "engine.optimal_transform", optimal_transform, "engine.optimal_transform" );
     me->register_console_function( "engine.align", align_module, "engine.align" );
     me->register_console_function( "engine.glue_current", glue_current, "engine.glue_current" );
-    
-    me->register_console_function( "engine.set_constraint_dimensionality", set_constraint_dimensionality, "engine.set_constraint_dimensionality" );
+
     
     // experimental - debug purposes
     me->register_console_function( "engine.debug.apply_random_transform", art, "engine.debug.apply_random_transform" );
