@@ -19,21 +19,15 @@ namespace Procedural{
     namespace Helpers{
         
 
-
-
-
-/// adds other to m, and gives in output the set of the IDs of the two original meshes inside the resulting mesh m
-/// order is preserved
-void add_manifold( Manifold &m, Manifold &other, set<VertexID> &m_IDs_in_result, set<VertexID> & other_IDs_in_result )
-{
+void add_manifold( Manifold &m, Manifold &other, set<VertexID> &m_IDs_in_result,
+                  set<VertexID> & other_IDs_in_result, IDRemap &remap ){
     // save the set of the original vertices IDs of destination
     set<VertexID>                   m_IDs_set;
     map< FaceID, vector<FaceID> >   face_steps_map;
     map<FaceID, FaceID>             old_to_new_faces;
-    IDRemap                         remap;
     m_IDs_in_result.clear();
     other_IDs_in_result.clear();
-
+    
     for( VertexID v : m.vertices( )) { m_IDs_set.insert(v); }
     // for each face of source save the connnectivity and add it to destination
     for( auto f : other.faces( ))
@@ -50,7 +44,7 @@ void add_manifold( Manifold &m, Manifold &other, set<VertexID> &m_IDs_in_result,
         }
         FaceID  new_f               = m.add_face( vs );
         assert(new_f != InvalidFaceID );
-                old_to_new_faces[f] = new_f;
+        old_to_new_faces[f] = new_f;
     }
     // for each face of source - merge the faces using as reference the number of steps
     // needed to the walker to get the right edge
@@ -69,7 +63,7 @@ void add_manifold( Manifold &m, Manifold &other, set<VertexID> &m_IDs_in_result,
             int i = 0;
             for(  ; i < neighbors.size() && face_steps_map[old_f_neighbor][i] != f; ++i ); // loops without doing anything
             assert( face_steps_map[old_f_neighbor][i] == f );
-
+            
             Walker neighbor_w = m.walker(new_neighbor);
             for( int j = 0; j < i; ++j ) { neighbor_w = neighbor_w.next(); }
             m.stitch_boundary_edges( neighbor_w.opp().halfedge(), fw.opp().halfedge( ));
@@ -83,6 +77,17 @@ void add_manifold( Manifold &m, Manifold &other, set<VertexID> &m_IDs_in_result,
         if( m_IDs_set.count( p.first )) { m_IDs_in_result.insert( p.second );   }
         else                            { other_IDs_in_result.insert(p.second); }
     }
+    
+}
+
+
+
+/// adds other to m, and gives in output the set of the IDs of the two original meshes inside the resulting mesh m
+/// order is preserved
+void add_manifold( Manifold &m, Manifold &other, set<VertexID> &m_IDs_in_result, set<VertexID> & other_IDs_in_result )
+{
+    IDRemap _;
+    add_manifold(m, other, m_IDs_in_result, other_IDs_in_result, _ );
 }
         
 void test_delete ( Manifold &m, set<VertexID> &to_delete )

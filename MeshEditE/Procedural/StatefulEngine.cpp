@@ -110,7 +110,7 @@ void StatefulEngine::buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t ){
 }
 
 
-void StatefulEngine::buildHostKdTree(){
+void StatefulEngine::buildMainStructureKdTree(){
     assert( this->m != NULL );
     assert( this->H_vertices.size() > 0 );
     assert( this->tree == NULL );
@@ -498,8 +498,10 @@ void StatefulEngine::setModule( Manifold &module ){
     assert( this->m != NULL );
     assert( this->H_vertices.size() == 0 );
     assert( this->M_vertices.size() == 0 );
-    add_manifold( (*this->m), module, H_vertices, M_vertices );
-    buildHostKdTree();
+    IDRemap remapper;
+    add_manifold( (*this->m), module, H_vertices, M_vertices, remapper );
+    mainStructure->reAlignIDs( remapper );
+    buildMainStructureKdTree();
 
     // LOAD MODULE INFO
     this->candidateModule = new Module( "", 0 );

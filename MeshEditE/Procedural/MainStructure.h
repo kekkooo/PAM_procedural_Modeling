@@ -15,6 +15,7 @@
 #include <set>
 
 #include <MeshEditE/Procedural/Matches/graph_match.h>
+#include <GEL/HMesh/Manifold.h>
 
 namespace Procedural {
     
@@ -39,10 +40,12 @@ public:
     MainStructure();
     // those methods work only on a logical basis not on a geometrical one
     void glueModule( Module &m, std::vector<Procedural::GraphMatch::Match> &matches  );
+    void reAlignIDs( HMesh::IDRemap &remapper );
     const Procedural::PoleList& getPoles();
     const Procedural::PoleList& getFreePoles();
     const Procedural::PoleList& getGluedPoles();
     const PoleSet&              getFreePoleSet();
+
     
     
     

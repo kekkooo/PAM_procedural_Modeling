@@ -42,13 +42,26 @@ namespace Procedural{
         return (s.count(v) > 0);
     }
     
+    void MainStructure::reAlignIDs(HMesh::IDRemap &remapper){
+        
+        freePolesSet.clear();
+        for( int i = 0; i < freePoles.size(); ++i ){
+            VertexID newID = remapper.vmap[freePoles[i]];
+            freePoles[i] = newID;
+            freePolesSet.insert( newID );
+        }
+        for( int i = 0; i < gluedPoles.size(); ++i ){
+            gluedPoles[i] = remapper.vmap[gluedPoles[i]];
+        }
+    }
+    
     void MainStructure::glueModule( Module &m, vector<Match> &matches ){
         set<VertexID> glued_m_poles;
         set<VertexID> glued_h_poles;
         
         // for assert purposes
-        int old_free_poles_size = freePoles.size(),
-            old_glued_poles_size = gluedPoles.size();
+        size_t  old_free_poles_size = freePoles.size(),
+                old_glued_poles_size = gluedPoles.size();
         
         for( Match match : matches){
             assert( find( m.poleList.begin(), m.poleList.end(), match.first ) != m.poleList.end( ));

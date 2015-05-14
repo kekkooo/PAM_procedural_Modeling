@@ -147,7 +147,7 @@ class StatefulEngine{
             void            buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t );
 
             /*  INHERITED FROM module_alignment */
-            void            buildHostKdTree();
+            void            buildMainStructureKdTree();
             void            transformModulePoles( CGLA::Mat4x4d &t, VertexPosMap &new_pos );
 
             void            matchModuleToHost( Procedural::PoleInfoMap& poleInfoMap, VertexMatchMap& M_pole_to_H_vertex );
