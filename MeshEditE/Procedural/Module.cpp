@@ -20,7 +20,7 @@ Module::Module( std::string path, Moduletype mType ){
     this->m = NULL;
 }
     
-Module::Module( Manifold &manifold, Moduletype mType ){
+Module::Module( Manifold &manifold, Moduletype mType, size_t no_glueings ){
     this->m = &manifold;
     Vec3d centroid;
     double radius;
@@ -40,6 +40,7 @@ Module::Module( Manifold &manifold, Moduletype mType ){
             this->poleInfoMap[vid] = pi;
         }
     }
+    this->no_of_glueings = no_glueings;
 }
     
 Module& Module::getTransformedModule( const CGLA::Mat4x4d &T )

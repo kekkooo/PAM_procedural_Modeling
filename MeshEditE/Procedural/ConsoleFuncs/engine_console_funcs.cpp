@@ -9,28 +9,15 @@
 #include "engine_console_funcs.h"
 
 #include <sstream>
-//#include <random>
 
 #include <GEL/GLGraphics/MeshEditor.h>
 #include <GEL/HMesh/obj_save.h>
 #include <GEL/HMesh/obj_load.h>
 
 #include <MeshEditE/Procedural/StatefulEngine.h>
+#include <MeshEditE/Procedural/Toolbox.h>
 
-//#include <MeshEditE/Procedural/Operations/basic_shapes.h>
-//#include <MeshEditE/Procedural/Operations/Algorithms.h>
-//#include <MeshEditE/Procedural/Operations/structural_operations.h>
-//#include <MeshEditE/Procedural/Helpers/structural_helpers.h>
-//#include <MeshEditE/Procedural/Helpers/geometric_properties.h>
-//#include <MeshEditE/Procedural/PMEngine.h>
-//#include <MeshEditE/Procedural/Matches/Matches.h>
-//#include <MeshEditE/Procedural/Helpers/manifold_copy.h>
 
-//#include <MeshEditE/Test.h>
-//#include <MeshEditE/Tests/test_random_rotation.h>
-
-//#include "patch_mapping.h"
-//#include "polarize.h"
 
 using namespace std;
 
@@ -38,8 +25,6 @@ using namespace HMesh;
 using namespace GLGraphics;
 
 using namespace Procedural::Engines;
-//using namespace Procedural::Operations;
-//using namespace Procedural::Operations::Algorithms;
 
 #define BASE_NO_TESTS 10
 #define BASE_NO_GLUEINGS 1
@@ -111,6 +96,26 @@ void glue_current( MeshEditor *me, const std::vector< std::string > &args ){
     
 }
 
+
+void load_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
+    stringstream oss;
+    string folder   = "/Users/francescousai/Documents/Dottorato/Conferenze/CGI_PG2015/Shapes/Toolbox/";
+    string filename = "toolbox1.json";
+    if( args.size() > 0 ){
+        istringstream a0( args[0] );
+        a0 >> filename;
+    }
+    
+    string full_path = folder + filename;
+    std::cout << "path : "  << full_path;
+    
+    Procedural::Toolbox& t = Procedural::Toolbox::getToolboxInstance();
+    t.clear();
+    t.fromJson( full_path );
+}
+
+
+
 /************************************************
  * DEBUG CALLS                                  *
  ***********************************************/
@@ -143,6 +148,7 @@ void register_engine_console_funcs( GLGraphics::MeshEditor* me )
     me->register_console_function( "engine.optimal_transform", optimal_transform, "engine.optimal_transform" );
     me->register_console_function( "engine.align", align_module, "engine.align" );
     me->register_console_function( "engine.glue_current", glue_current, "engine.glue_current" );
+    me->register_console_function( "engine.load_toolbox", load_toolbox, "engine.load_toolbox" );
 
     
     // experimental - debug purposes

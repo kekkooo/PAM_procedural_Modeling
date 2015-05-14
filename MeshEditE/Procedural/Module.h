@@ -56,7 +56,7 @@ class Module{
 public:
          // this will instantiate the internal manifold structure and pole info using obj_load
          Module( std::string path, Moduletype mType );
-         Module( HMesh::Manifold &manifold, Moduletype mType );
+         Module( HMesh::Manifold &manifold, Moduletype mType, size_t no_glueings = 1 );
     
     Module& getTransformedModule( const CGLA::Mat4x4d &T );
 

@@ -718,7 +718,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             double step = M_PI_4 / 2.0;
             double curr_angle = 0;
             // build and save rotations
-            for ( int i = 0; i < 1; ++i, curr_angle +=step ) {
+            for ( int i = 0; i < 16; ++i, curr_angle +=step ) {
                 Mat4x4d rot = get_rotation_mat4d( H_pole_normal, curr_angle );
                 Vec3d m_pole_step2 = rot.mul_3D_point( m_pole_step1 );
                 
