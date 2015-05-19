@@ -55,31 +55,27 @@ class Module{
     
 public:
          // this will instantiate the internal manifold structure and pole info using obj_load
+         Module () { m = NULL; }
          Module( std::string path, Moduletype mType );
          Module( HMesh::Manifold &manifold, Moduletype mType, size_t no_glueings = 1 );
     
     Module& getTransformedModule( const CGLA::Mat4x4d &T );
 
+
+private:
+    void    BuildPoleInfo();            
+    
+/************************************************
+* ATTRIBUTES                                   *
+***********************************************/
+public:
 #warning those should be deleted from public
+    HMesh::Manifold     *m;
+    int                 no_of_glueings;
     PoleList            poleList;
     PoleInfoMap         poleInfoMap;
     CGLA::Vec3d         bsphere_center;
     double              bsphere_radius;
-
-private:
-    void    BuildPoleInfo();
-            Module(){ m = NULL; }
-    
-        
-/************************************************
-* ATTRIBUTES                                   *
-***********************************************/
-private:
-    HMesh::Manifold     *m;
-    //PoleInfoMap         poleInfoMap;
-    int                 no_of_glueings;
-//    CGLA::Vec3d         bsphere_center;
-//    double              bsphere_radius;
 
     };
 }

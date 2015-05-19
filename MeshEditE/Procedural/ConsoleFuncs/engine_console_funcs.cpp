@@ -25,6 +25,7 @@ using namespace HMesh;
 using namespace GLGraphics;
 
 using namespace Procedural::Engines;
+using namespace Procedural;
 
 #define BASE_NO_TESTS 10
 #define BASE_NO_GLUEINGS 1
@@ -114,6 +115,30 @@ void load_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     t.fromJson( full_path );
 }
 
+void empty_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
+    
+    Procedural::Toolbox& t = Procedural::Toolbox::getToolboxInstance();
+    StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    
+    while( t.hasNext() ){
+//    if( t.hasNext()){
+        cout << " adding a piece " << endl;
+        Module m = t.getNext();
+        s.setModule( *(m.m) );
+        s.testMultipleTransformations(10, m.no_of_glueings);
+        s.applyRandomTransform();
+        s.applyOptimalAlignment();
+        s.alignModuleNormalsToHost();
+        s.actualGlueing();
+    }
+//    else{
+        cout << " no more pieces " << endl;
+//    }
+    
+    
+
+}
+
 
 
 /************************************************
@@ -148,7 +173,9 @@ void register_engine_console_funcs( GLGraphics::MeshEditor* me )
     me->register_console_function( "engine.optimal_transform", optimal_transform, "engine.optimal_transform" );
     me->register_console_function( "engine.align", align_module, "engine.align" );
     me->register_console_function( "engine.glue_current", glue_current, "engine.glue_current" );
-    me->register_console_function( "engine.load_toolbox", load_toolbox, "engine.load_toolbox" );
+
+    me->register_console_function( "engine.toolbox.load", load_toolbox, "engine.toolbox.load" );
+    me->register_console_function( "engine.toolbox.empty", empty_toolbox, "engine.toolbox.empty" );
 
     
     // experimental - debug purposes

@@ -25,8 +25,11 @@ class Toolbox{
     
     public :
         static  Toolbox& getToolboxInstance();
+    
+        bool hasNext()      const;
+        Module& getNext();
+
         void addModule( std::string path, size_t no_pieces );
-        const Module& getNext();
         void fromJson( std::string path );
         void clear();
 
@@ -38,7 +41,7 @@ private :
     
 private :
 
-    std::vector<ModuleInfo> modules;
+    std::vector<ModuleInfo*> modules;
     int                     total_pieces;
 
 };

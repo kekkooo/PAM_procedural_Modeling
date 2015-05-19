@@ -9,24 +9,30 @@
 #include "Module.h"
 #include "Test.h"
 #include "MeshEditE/Procedural/Helpers/geometric_properties.h"
+#include <GEL/HMesh/obj_load.h>
+#include <fstream>
 
 using namespace HMesh;
 using namespace CGLA;
 using namespace Procedural::Geometry;
+using namespace std;
 
 namespace Procedural{
 
 Module::Module( std::string path, Moduletype mType ){
-    this->m = NULL;
+    cout << "trying to load file : " << path << endl;
+    ifstream f( path );
+    assert( f.good() );
+    
+    this->m = new Manifold();
+    
+    obj_load( path, *this->m );
+    BuildPoleInfo();
 }
     
-Module::Module( Manifold &manifold, Moduletype mType, size_t no_glueings ){
-    this->m = &manifold;
-    Vec3d centroid;
-    double radius;
-    bsphere( *this->m, centroid, radius );
-    this->bsphere_center = centroid;
-    this->bsphere_radius = radius;
+void Module::BuildPoleInfo(){
+    
+    assert( m != NULL );
     
     for( VertexID vid : m->vertices() ){
         if( is_pole( *m, vid )){
@@ -40,7 +46,19 @@ Module::Module( Manifold &manifold, Moduletype mType, size_t no_glueings ){
             this->poleInfoMap[vid] = pi;
         }
     }
+}
+    
+    
+Module::Module( Manifold &manifold, Moduletype mType, size_t no_glueings ){
+    this->m = &manifold;
+    Vec3d centroid;
+    double radius;
+    bsphere( *this->m, centroid, radius );
+    this->bsphere_center = centroid;
+    this->bsphere_radius = radius;
     this->no_of_glueings = no_glueings;
+    
+    BuildPoleInfo();
 }
     
 Module& Module::getTransformedModule( const CGLA::Mat4x4d &T )

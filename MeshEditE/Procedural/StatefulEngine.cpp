@@ -494,6 +494,7 @@ void StatefulEngine::setHost( Manifold &host ){
     edge_info.Update( m );
 }
 
+
 void StatefulEngine::setModule( Manifold &module ){
     assert( this->m != NULL );
     assert( this->H_vertices.size() == 0 );
@@ -504,7 +505,7 @@ void StatefulEngine::setModule( Manifold &module ){
     buildMainStructureKdTree();
 
     // LOAD MODULE INFO
-    this->candidateModule = new Module( "", 0 );
+    this->candidateModule = new Module();
     Vec3d centroid;
     double radius;
     bsphere( *m, M_vertices, centroid, radius );
