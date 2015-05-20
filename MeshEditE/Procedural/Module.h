@@ -59,7 +59,8 @@ public:
          Module( std::string path, Moduletype mType );
          Module( HMesh::Manifold &manifold, Moduletype mType, size_t no_glueings = 1 );
     
-    Module& getTransformedModule( const CGLA::Mat4x4d &T );
+        Module& getTransformedModule( const CGLA::Mat4x4d &T, bool transform_module = false );
+        void reAlignIDs( HMesh::VertexIDRemap &remapper );
 
 
 private:

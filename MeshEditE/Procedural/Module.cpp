@@ -27,6 +27,7 @@ Module::Module( std::string path, Moduletype mType ){
     this->m = new Manifold();
     
     obj_load( path, *this->m );
+    bsphere( *m, bsphere_center, bsphere_radius );
     BuildPoleInfo();
 }
     
@@ -61,9 +62,10 @@ Module::Module( Manifold &manifold, Moduletype mType, size_t no_glueings ){
     BuildPoleInfo();
 }
     
-Module& Module::getTransformedModule( const CGLA::Mat4x4d &T )
+Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_module )
 {
     Module *M = new Module();
+    M->m             = this->m;
     M->poleList      = PoleList();
     M->poleInfoMap   = PoleInfoMap();
     
@@ -81,10 +83,28 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T )
         M->poleInfoMap[vid].isFree           = poleInfoMap[vid].isFree;
     }
     
+    if( transform_module ){
+        for( VertexID v : m->vertices()){
+            m->pos( v ) = T.mul_3D_point( m->pos( v ));
+        }
+    }
+    
     assert( M->poleInfoMap.size() == this->poleInfoMap.size( ));
     
     return *M;
 }
+    
+    void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
+        // realign poleList
+        PoleInfoMap p;
+        for( int i = 0; i < poleList.size(); ++i ){
+            VertexID newID = remapper[poleList[i]];
+            p[newID] = poleInfoMap[poleList[i]];
+            poleList[i] = newID;
+        }
+        poleInfoMap = std::move( p );
+        
+    }
     
 
 }

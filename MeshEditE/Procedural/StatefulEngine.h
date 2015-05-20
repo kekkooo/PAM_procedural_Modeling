@@ -141,20 +141,13 @@ class StatefulEngine{
             void operator   = (StatefulEngine const&)               = delete;
 
             void            buildRandomRotation( CGLA::Mat4x4d &t );
-            // you can assume that the module's poles are vertices of its convex hull
-            void            buildCollisionAvoidingTranslation(
-                                const CGLA::Mat4x4d &rot, CGLA::Mat4x4d &tr );
-
-            void            buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t );
 
             /*  INHERITED FROM module_alignment */
             void            buildMainStructureKdTree();
-            void            transformModulePoles( CGLA::Mat4x4d &t, VertexPosMap &new_pos );
 
             void            matchModuleToHost( Procedural::PoleInfoMap& poleInfoMap, VertexMatchMap& M_pole_to_H_vertex );
             bool            findSecondClosest( const HMesh::VertexID &pole, const PoleGeometryInfo &pgi,
                                                const HMesh::VertexID &closest, HMesh::VertexID &second_closest, VertexSet &assigned );
-            void            addNecessaryPoles();
     
             void            buildTransformationList( std::vector< CGLA::Mat4x4d> &transformations );
 
@@ -169,8 +162,7 @@ private:
 
     HMesh::Manifold     *m;
 
-    VertexSet           H_vertices,
-                        M_vertices;
+    VertexSet           M_vertices;
 
     
     Procedural::MainStructure*  mainStructure;

@@ -40,7 +40,7 @@ public:
     MainStructure();
     // those methods work only on a logical basis not on a geometrical one
     void glueModule( Module &m, std::vector<Procedural::GraphMatch::Match> &matches  );
-    void reAlignIDs( HMesh::IDRemap &remapper );
+    void reAlignIDs( HMesh::VertexIDRemap &remapper );
     const Procedural::PoleList& getPoles();
     const Procedural::PoleList& getFreePoles();
     const Procedural::PoleList& getGluedPoles();

@@ -67,52 +67,9 @@ void StatefulEngine::buildRandomRotation( CGLA::Mat4x4d &t ){
 }
 
 
-void StatefulEngine::buildCollisionAvoidingTranslation( const CGLA::Mat4x4d &rot, CGLA::Mat4x4d &tr )
-{
-    vector< Vec3d > transformed_points;
-    Vec3d  H_centroid, M_centroid;
-    double H_radius, M_radius;
-    // save transformed module vertices
-    for( VertexID vid : M_vertices ){
-        transformed_points.push_back( rot.mul_3D_point( this->m->pos( vid )));
-    }
-    // find its bsphere and centroid
-    bsphere( transformed_points, M_centroid, M_radius );
-    bsphere( *(this->m), H_vertices, H_centroid, H_radius );
-    // build the collision avoiding translation
-    Vec3d   dir     = M_centroid - H_centroid;
-    double  dir_len = dir.length();
-    double  length  = H_radius + M_radius - dir.length();
-    
-//    cout << "Dir : " << dir << " # with length : " << dir_len << endl;
-    
-    if( fabs( dir_len ) < 0.0000000001 ){
-        dir = Vec3d( last_x1, last_x2, last_x3 );
-    }
-    
-    dir.normalize();
-    dir *= length;
-    
-    tr = CGLA::translation_Mat4x4d( dir );
-}
-
-
-void StatefulEngine::buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t ){
-    Mat4x4d rot, tr;
-    // build random transform
-    buildRandomRotation( rot );
-//    cout << "Random Rotation" << endl << rot ;
-    // build collision avoiding translation
-    buildCollisionAvoidingTranslation( rot, tr );
-//    cout << "Random Translation" << endl << tr ;
-    // return composition
-    t = tr * rot;
-}
-
 
 void StatefulEngine::buildMainStructureKdTree(){
     assert( this->m != NULL );
-    assert( this->H_vertices.size() > 0 );
     assert( this->tree == NULL );
     
 //    ModuleAlignment::build_manifold_kdtree( (*this->m), this->H_vertices, this->tree );
@@ -122,18 +79,6 @@ void StatefulEngine::buildMainStructureKdTree(){
         assert( is_pole(*m, vid));
     }
     treeIsValid = true;
-}
-
-
-void StatefulEngine::transformModulePoles( CGLA::Mat4x4d &t, VertexPosMap &new_pos ){
-    assert( this->m != NULL );
-    assert( this->H_vertices.size() > 0 );
-    assert( this->M_vertices.size() > 0 );
-    
-    for( VertexID vid : M_vertices ){
-        if( !is_pole( (*this->m), vid )) continue;
-        new_pos[vid] = t.mul_3D_point( m->pos( vid ));
-    }
 }
 
 
@@ -228,8 +173,8 @@ void StatefulEngine::matchModuleToHost( Procedural::PoleInfoMap& poleInfoMap, Ve
     // sanity check
     map<VertexID, int> _candidates, _poles;
     for( auto item : M_pole_to_H_vertex ){
-        _poles[item.first] = 0;
-        _candidates[item.second] = 0;
+        _poles[item.first]          = 0;
+        _candidates[item.second]    = 0;
     }
     
     for( auto item : M_pole_to_H_vertex ){
@@ -238,7 +183,7 @@ void StatefulEngine::matchModuleToHost( Procedural::PoleInfoMap& poleInfoMap, Ve
         // each pole MUST be assigned to only one candidate and each candidate to only one pole
         assert( _poles.count( item.first ) <= 1);
         assert( _candidates.count( item.second ) <= 1);
-        assert( is_pole( *m, item.first ));
+        assert( is_pole( *(candidateModule->m), item.first ));
         assert( is_pole( *m, item.second ));
         cout << item.first << " # " << item.second << endl;
     }
@@ -301,11 +246,7 @@ bool StatefulEngine::findSecondClosest( const VertexID &pole, const PoleGeometry
 
 void StatefulEngine::applyRandomTransform(){
 //    cout << "transforming using : " << endl << best_match.getMatchInfo().random_transform << endl;
-    
-    for( auto mv : M_vertices ) {
-        m->pos( mv ) = best_match.getMatchInfo().random_transform.mul_3D_point( m->pos( mv ));
-    }
-    Module &tm = candidateModule->getTransformedModule( best_match.getMatchInfo().random_transform);
+    Module &tm = candidateModule->getTransformedModule( best_match.getMatchInfo().random_transform, true);
     candidateModule = &tm;
     assert( candidateModule->poleList.size() > 0 );
 }
@@ -332,9 +273,8 @@ void StatefulEngine::applyOptimalAlignment(){
     svd_rigid_motion( *m, module_p, *m, host_v, R, T );
     Mat4x4d t = T * R;
 //    cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
-    for( auto mv : M_vertices ) { m->pos( mv ) = t.mul_3D_point( m->pos( mv )); }
     
-    Module &tm = candidateModule->getTransformedModule( t);
+    Module &tm = candidateModule->getTransformedModule( t, true );
     candidateModule = &tm;
     assert( candidateModule->poleList.size() > 0 );
 }
@@ -372,12 +312,8 @@ void StatefulEngine::alignModuleNormalsToHost(){
     Mat4x4d t_align = alt_get_alignment_for_2_vectors( module_vec, host_vec );
     Mat4x4d t = tr_back * t_align * tr_origin;
 //    cout << "Best Match Normal Alignment " << endl << t << endl;
-    for( VertexID v : M_vertices )
-    {
-        m->pos(v) = t.mul_3D_point( m->pos( v ));
-    }
     
-    Module& tm = candidateModule->getTransformedModule( t);
+    Module& tm = candidateModule->getTransformedModule( t, true );
     candidateModule = &tm;
     assert( candidateModule->poleList.size() > 0 );
 }
@@ -397,10 +333,26 @@ void StatefulEngine::alignUsingBestMatch( ){
 
 void StatefulEngine::actualGlueing(){
     if( best_match.IsValid( )){
-        Helpers::ModuleAlignment::glue_matches( *m, best_match.getMatchInfo().matches );
-        match_info &minfo = best_match.getMatchInfo();
         
-        mainStructure->glueModule( *candidateModule, minfo.matches );
+        // add manifold module to host
+        set<VertexID> _h;
+        IDRemap remap;
+        VertexIDRemap host_remap, module_remap;
+        vector<GraphMatch::Match> remapped_matches;
+        add_manifold(*m, *candidateModule->m, host_remap, module_remap, M_vertices );
+//        return;
+        mainStructure->reAlignIDs( host_remap );
+        candidateModule->reAlignIDs( module_remap );
+        // remap matches ids
+        for( Match match : best_match.getMatchInfo().matches){
+            remapped_matches.push_back( make_pair( module_remap[match.first], host_remap[match.second]) );
+            cout << "old match : ( " << match.first << ", " << match.second << " )" << endl;
+            cout << "new match : ( " << module_remap[match.first] << ", " << host_remap[match.second] << " )" << endl;
+        }
+        // glue_matches
+        Helpers::ModuleAlignment::glue_matches( *m, remapped_matches );
+        // mainStructure->glueModule
+        mainStructure->glueModule( *candidateModule, remapped_matches );
         
         for( VertexID v : (*candidateModule).poleList ){
             if( mainStructure->getFreePoleSet().count(v) > 0 ){
@@ -421,56 +373,6 @@ void StatefulEngine::actualGlueing(){
 }
 
 /// If some of the selected vertices from the host are not poles, then they must be converted into poles.
-/// Since doing this changes the structure of the mesh, we need to clean up the Manifold
-/// and update the sets of vertices' IDs of the host and the module
-void StatefulEngine::addNecessaryPoles( )
-{
-    vector<VertexID>                    host_poles_to_remap, host_poles_remapped;
-    set<VertexID>                       module_vs_remapped,  host_vs_remapped;
-    HMesh::VertexAttributeVector<int>   vertex_selection;
-    IDRemap                             remap;
-    vector<Match>& matches = best_match.getMatchInfo().matches;
-    // aggiungo i poli e salvo il loro id
-    for( int i = 0; i < matches.size(); ++i )
-    {
-        // get the valence of the poles
-        
-        if( !is_pole( *m, matches[i].second ))
-        {
-            // clean the selection
-            for( auto v : m->vertices( )) { vertex_selection[v] = 0; }
-            // calculate the right size accordingly to the valence of the corresponding pole
-
-            int size = current_glueing_target / 4 ;
-            assert(( current_glueing_target % 4 ) == 0 );
-            //            int size = -1;
-            //            assert( size != -1 );
-            VertexID poleID = add_branch( *m, matches[i].second, size, vertex_selection );
-            assert( poleID != InvalidVertexID );
-            matches[i].second = poleID;
-
-        }
-    }
-    m->cleanup( remap );
-    // re-align the saved IDs
-    for( auto p : remap.vmap )
-    {
-        if( p.second == InvalidVertexID ) { continue; }
-        if( M_vertices.count( p.first ) > 0 )    { module_vs_remapped.insert( p.second ); }
-        else                                     { host_vs_remapped.insert( p.second );   }
-    }
-    
-    // change
-    for( int i = 0; i < matches.size(); ++i )
-    {
-        matches[i].first  = remap.vmap[matches[i].first];
-        matches[i].second = remap.vmap[matches[i].second];
-    }
-    //    selected    = std::move( host_poles_remapped );
-    M_vertices   = std::move( module_vs_remapped );
-    H_vertices   = std::move( host_vs_remapped );
-    
-}
 
 /*=========================================================================*
  *                     PUBLIC FUNCTIONS                                    *
@@ -495,40 +397,44 @@ void StatefulEngine::setHost( Manifold &host ){
 }
 
 
-void StatefulEngine::setModule( Manifold &module ){
-    assert( this->m != NULL );
-    assert( this->H_vertices.size() == 0 );
-    assert( this->M_vertices.size() == 0 );
-    IDRemap remapper;
-    add_manifold( (*this->m), module, H_vertices, M_vertices, remapper );
-    mainStructure->reAlignIDs( remapper );
+void StatefulEngine::setModule(Procedural::Module &module){
+    assert( module.m != NULL );
+    this->candidateModule = &module;
     buildMainStructureKdTree();
+}
 
-    // LOAD MODULE INFO
-    this->candidateModule = new Module();
-    Vec3d centroid;
-    double radius;
-    bsphere( *m, M_vertices, centroid, radius );
-    this->candidateModule->bsphere_center = centroid;
-    this->candidateModule->bsphere_radius = radius;
-    
-    for( VertexID vid : M_vertices ){
-        if( is_pole( *m, vid )){
-            PoleInfo pi;
-            pi.geometry.valence = valence( *m, vid );
-            pi.geometry.pos     = m->pos( vid );
-            Vec3d n             = vertex_normal( *m, vid );
-            n.normalize();
-            pi.geometry.normal  = n;
-            this->candidateModule->poleList.push_back( vid );
-            this->candidateModule->poleInfoMap[vid] = pi;
-        }
-    }
+void StatefulEngine::setModule( Manifold &module ){
+//    assert( this->m != NULL );
+//    assert( this->M_vertices.size() == 0 );
+//    IDRemap remapper;
+//    add_manifold( (*this->m), module, H_vertices, M_vertices, remapper );
+//    mainStructure->reAlignIDs( remapper );
+//    buildMainStructureKdTree();
+//
+//    // LOAD MODULE INFO
+//    this->candidateModule = new Module();
+//    Vec3d centroid;
+//    double radius;
+//    bsphere( *m, M_vertices, centroid, radius );
+//    this->candidateModule->bsphere_center = centroid;
+//    this->candidateModule->bsphere_radius = radius;
+//    
+//    for( VertexID vid : M_vertices ){
+//        if( is_pole( *m, vid )){
+//            PoleInfo pi;
+//            pi.geometry.valence = valence( *m, vid );
+//            pi.geometry.pos     = m->pos( vid );
+//            Vec3d n             = vertex_normal( *m, vid );
+//            n.normalize();
+//            pi.geometry.normal  = n;
+//            this->candidateModule->poleList.push_back( vid );
+//            this->candidateModule->poleInfoMap[vid] = pi;
+//        }
+//    }
 }
 
 void StatefulEngine::consolidate(){
     assert( this->m != NULL );
-    assert( this->H_vertices.size() > 0 );
     assert( this->M_vertices.size() > 0 );
     assert( this->candidateModule->poleInfoMap.size() > 0 );
     // in this way you lose any reference to which vertices are from host and module
@@ -537,7 +443,6 @@ void StatefulEngine::consolidate(){
     candidateModule = NULL;
     transformedModules.clear();
     
-    H_vertices.clear();
     M_vertices.clear();
     treeIsValid = false;
     edge_info.Invalidate();
@@ -551,8 +456,6 @@ void StatefulEngine::consolidate(){
 
 void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_glueings ){
         assert( this->m != NULL );
-        assert( this->H_vertices.size() > 0 );
-        assert( this->M_vertices.size() > 0 );
         assert( no_tests > 0 );
     
     current_glueing_target = no_glueings;
@@ -663,11 +566,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 //    cout << "Building transformations set " << endl;
     
     size_t no_M_poles = candidateModule->poleInfoMap.size();
-    Vec3d   M_centroid;
-    double  M_radius;
     transformations.clear();
-
-    bsphere( *m, M_vertices, M_centroid, M_radius );
     
 //    cout << "module centroid :" << M_centroid << endl;
     
@@ -678,7 +577,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
     size_t no_candidates = _candidates.size();
     size_t no_m_poles    = candidateModule->poleList.size();
     size_t H_starter = randomizer() % no_candidates;
-    Mat4x4d t_origin = translation_Mat4x4d( -M_centroid );
+    Mat4x4d t_origin = translation_Mat4x4d( - candidateModule->bsphere_center );
     
 //    for( VertexID H_pole : H_candidates.getCandidates() ){
     for( int i = 0; i < no_candidates; ++i ){

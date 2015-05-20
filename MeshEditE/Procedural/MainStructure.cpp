@@ -42,16 +42,16 @@ namespace Procedural{
         return (s.count(v) > 0);
     }
     
-    void MainStructure::reAlignIDs(HMesh::IDRemap &remapper){
+    void MainStructure::reAlignIDs( HMesh::VertexIDRemap &remapper ){
         
         freePolesSet.clear();
         for( int i = 0; i < freePoles.size(); ++i ){
-            VertexID newID = remapper.vmap[freePoles[i]];
+            VertexID newID = remapper[freePoles[i]];
             freePoles[i] = newID;
             freePolesSet.insert( newID );
         }
         for( int i = 0; i < gluedPoles.size(); ++i ){
-            gluedPoles[i] = remapper.vmap[gluedPoles[i]];
+            gluedPoles[i] = remapper[gluedPoles[i]];
         }
     }
     
