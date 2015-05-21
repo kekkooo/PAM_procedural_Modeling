@@ -106,5 +106,10 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_mod
         
     }
     
+    const PoleInfo& Module::getPoleInfo( HMesh::VertexID p ){
+        assert(poleInfoMap.count(p) > 0);
+        return poleInfoMap[p];
+    }
+    
 
 }

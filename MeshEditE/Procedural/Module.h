@@ -61,8 +61,10 @@ public:
     
         Module& getTransformedModule( const CGLA::Mat4x4d &T, bool transform_module = false );
         void reAlignIDs( HMesh::VertexIDRemap &remapper );
+    
+        const PoleInfo&    getPoleInfo( HMesh::VertexID p );
 
-
+        inline const PoleInfoMap& getPoleInfoMap(){ return poleInfoMap;}
 private:
     void    BuildPoleInfo();            
     
@@ -74,9 +76,12 @@ public:
     HMesh::Manifold     *m;
     int                 no_of_glueings;
     PoleList            poleList;
-    PoleInfoMap         poleInfoMap;
+
     CGLA::Vec3d         bsphere_center;
     double              bsphere_radius;
+    
+private :
+    PoleInfoMap         poleInfoMap;
 
     };
 }

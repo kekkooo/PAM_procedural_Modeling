@@ -144,9 +144,10 @@ void step_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
         Module &m = t.getNext();
         s.setModule( m );
         s.testMultipleTransformations(10, m.no_of_glueings);
-        s.applyRandomTransform();
-        s.applyOptimalAlignment();
-        s.alignModuleNormalsToHost();
+        s.glueCurrent();
+//        s.applyRandomTransform();
+//        s.applyOptimalAlignment();
+//        s.alignModuleNormalsToHost();
 //        s.actualGlueing();
     }
     else{
