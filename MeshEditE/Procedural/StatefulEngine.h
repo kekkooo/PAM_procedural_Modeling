@@ -147,7 +147,7 @@ class StatefulEngine{
             /*  INHERITED FROM module_alignment */
             void            buildMainStructureKdTree();
 
-            void            matchModuleToHost( const Procedural::PoleInfoMap& poleInfoMap, VertexMatchMap& M_pole_to_H_vertex );
+            void            matchModuleToHost( Module &candidate, VertexMatchMap& M_pole_to_H_vertex );
             bool            findSecondClosest( const HMesh::VertexID &pole, const PoleGeometryInfo &pgi,
                                                const HMesh::VertexID &closest, HMesh::VertexID &second_closest, VertexSet &assigned );
     

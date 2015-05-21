@@ -35,7 +35,7 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
     
     for( VertexID v : m.vertices( )) {
         m_IDs_set.insert(v);
-        if( is_pole(m, v)) {  m_poles.insert( v ); }
+        if( is_pole( m, v )) {  m_poles.insert( v ); }
     }
     // for each face of source save the connnectivity and add it to destination
     for( auto f : other.faces( ))

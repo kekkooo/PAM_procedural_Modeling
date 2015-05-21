@@ -141,7 +141,7 @@ void step_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     
     if( t.hasNext()){
         cout << " adding a piece " << endl;
-        Module &m = t.getNext();
+        Module m = t.getNext();
         s.setModule( m );
         s.testMultipleTransformations(10, m.no_of_glueings);
         s.glueCurrent();

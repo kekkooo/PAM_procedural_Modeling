@@ -63,6 +63,7 @@ public:
         void reAlignIDs( HMesh::VertexIDRemap &remapper );
     
         const PoleInfo&    getPoleInfo( HMesh::VertexID p );
+        bool isPole( HMesh::VertexID v );
 
         inline const PoleInfoMap& getPoleInfoMap(){ return poleInfoMap;}
 private:

@@ -18,6 +18,9 @@ namespace Procedural {
     namespace Geometry {
 
         double Det( LinAlg::CMatrix m );
+        
+        void svd_rigid_motion( std::vector<CGLA::Vec3d> &P, std::vector<CGLA::Vec3d> &Q,
+                               CGLA::Mat4x4d &rot, CGLA::Mat4x4d &translation );
 
         /// calculate the rigid transformation that aligns P w.r.t Q
         void svd_rigid_motion( HMesh::Manifold& m1, std::vector< HMesh::VertexID > &P,

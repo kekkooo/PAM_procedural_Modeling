@@ -61,6 +61,7 @@ Module::Module( Manifold &manifold, Moduletype mType, size_t no_glueings ){
     
     BuildPoleInfo();
 }
+
     
 Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_module )
 {
@@ -81,6 +82,19 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_mod
         M->poleInfoMap[vid].labels           = poleInfoMap[vid].labels;
         M->poleInfoMap[vid].age              = poleInfoMap[vid].age;
         M->poleInfoMap[vid].isFree           = poleInfoMap[vid].isFree;
+        
+        bool assert_pos =
+            isnan( M->poleInfoMap[vid].geometry.pos[0] ) ||
+            isnan( M->poleInfoMap[vid].geometry.pos[1] ) ||
+            isnan( M->poleInfoMap[vid].geometry.pos[2] );
+        
+        bool assert_normal =
+            isnan( M->poleInfoMap[vid].geometry.normal[0] ) ||
+            isnan( M->poleInfoMap[vid].geometry.normal[1] ) ||
+            isnan( M->poleInfoMap[vid].geometry.normal[2] );
+        assert( !assert_pos );
+        assert( !assert_normal );
+
     }
     
     if( transform_module ){
@@ -94,22 +108,26 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_mod
     return *M;
 }
     
-    void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
-        // realign poleList
-        PoleInfoMap p;
-        for( int i = 0; i < poleList.size(); ++i ){
-            VertexID newID = remapper[poleList[i]];
-            p[newID] = poleInfoMap[poleList[i]];
-            poleList[i] = newID;
-        }
-        poleInfoMap = std::move( p );
-        
+void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
+    // realign poleList
+    PoleInfoMap p;
+    for( int i = 0; i < poleList.size(); ++i ){
+        VertexID newID = remapper[poleList[i]];
+        p[newID] = poleInfoMap[poleList[i]];
+        poleList[i] = newID;
     }
+    poleInfoMap = std::move( p );
     
-    const PoleInfo& Module::getPoleInfo( HMesh::VertexID p ){
-        assert(poleInfoMap.count(p) > 0);
-        return poleInfoMap[p];
-    }
+}
+
+const PoleInfo& Module::getPoleInfo( HMesh::VertexID p ){
+    assert(poleInfoMap.count(p) > 0);
+    return poleInfoMap[p];
+}
+    
+bool Module::isPole( HMesh::VertexID v ){
+    return (( find( poleList.begin(), poleList.end(), v ) != poleList.end()) && ( poleInfoMap.count(v) > 0 ) );
+}
     
 
 }
