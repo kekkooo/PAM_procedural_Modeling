@@ -1,4 +1,4 @@
-//
+    //
 //  StatefulEngine.cpp
 //  MeshEditE
 //
@@ -255,22 +255,15 @@ void StatefulEngine::applyRandomTransform(){
 void StatefulEngine::applyOptimalAlignment(){
     Mat4x4d R, T;
     vector< VertexID > host_v, module_p;
-    for( auto m : best_match.getMatchInfo().matches )
-    {
+    for( auto m : best_match.getMatchInfo().matches ){
         module_p.push_back(m.first);
         host_v.push_back(m.second);
-        Vec3f red( 1, 0, 0 ), blue(0, 1, 0);
-        
-        // use debug colors to exploit the matched vertices
-        GLGraphics::DebugRenderer::vertex_colors[m.first] = red;
-        GLGraphics::DebugRenderer::vertex_colors[m.second] = blue;
-        
     }
     //#warning there is an active return here!
     //    return;
     
     //    save_intermediate_result(m, TEST_PATH , 1);
-    svd_rigid_motion( *m, module_p, *m, host_v, R, T );
+    svd_rigid_motion( *m, module_p, *(candidateModule->m), host_v, R, T );
     Mat4x4d t = T * R;
 //    cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
     
@@ -285,8 +278,8 @@ void StatefulEngine::alignModuleNormalsToHost(){
     double      _;
     for( Match match : best_match.getMatchInfo().matches )
     {
-        centroid += m->pos( match.first );
-        Vec3d mn = vertex_normal( *m, match.first );
+        centroid += candidateModule->m->pos( match.first );
+        Vec3d mn = vertex_normal( *(candidateModule->m), match.first );
         Vec3d hn = vertex_normal( *m, match.second );
         mn.normalize();
         hn.normalize();
@@ -353,6 +346,11 @@ void StatefulEngine::actualGlueing(){
         Helpers::ModuleAlignment::glue_matches( *m, remapped_matches );
         // mainStructure->glueModule
         mainStructure->glueModule( *candidateModule, remapped_matches );
+        
+        IDRemap glue_remap;
+        
+        m->cleanup( glue_remap );
+        mainStructure->reAlignIDs( glue_remap.vmap );
         
         for( VertexID v : (*candidateModule).poleList ){
             if( mainStructure->getFreePoleSet().count(v) > 0 ){
@@ -579,12 +577,11 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
     size_t H_starter = randomizer() % no_candidates;
     Mat4x4d t_origin = translation_Mat4x4d( - candidateModule->bsphere_center );
     
-//    for( VertexID H_pole : H_candidates.getCandidates() ){
     for( int i = 0; i < no_candidates; ++i ){
         
         size_t actual_i = ( i + H_starter ) % no_candidates;
-        VertexID H_pole = _candidates[ actual_i ];
-//        VertexID H_pole = _candidates[ 5 ];
+//        VertexID H_pole = _candidates[ actual_i ];
+        VertexID H_pole = _candidates[ 0 ];
 
         Vec3d   H_pole_pos      = m->pos( H_pole );
         Vec3d   H_pole_normal   = vertex_normal( *m, H_pole );
@@ -596,8 +593,8 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             
             Mat4x4d T;
             size_t actual_j = ( j + M_starter ) % no_m_poles;
-            VertexID M_pole = candidateModule->poleList[ actual_j ];
-//              VertexID M_pole = module->poleList[ 0 ];
+//            VertexID M_pole = candidateModule->poleList[ actual_j ];
+              VertexID M_pole = candidateModule->poleList[ 0 ];
             
 //            cout << " polo : " << M_pole << endl;
 

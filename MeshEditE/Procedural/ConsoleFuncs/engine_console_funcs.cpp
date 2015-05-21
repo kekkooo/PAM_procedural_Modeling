@@ -147,7 +147,7 @@ void step_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
         s.applyRandomTransform();
         s.applyOptimalAlignment();
         s.alignModuleNormalsToHost();
-        s.actualGlueing();
+//        s.actualGlueing();
     }
     else{
         cout << " no more pieces " << endl;
