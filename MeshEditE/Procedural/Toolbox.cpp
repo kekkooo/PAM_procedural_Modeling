@@ -25,7 +25,11 @@ using namespace HMesh;
 
 namespace Procedural {
     
-    Toolbox::Toolbox(){}
+    Toolbox::Toolbox(){
+        unsigned seed   = chrono::system_clock::now().time_since_epoch().count();
+        randomizer.seed( seed );
+        rand_max =  static_cast<float>( randomizer.max( ));
+    }
     
     Toolbox& Toolbox::getToolboxInstance(){
         static Toolbox instance;
@@ -104,6 +108,11 @@ namespace Procedural {
     Module& Toolbox::getNext(){
         
         assert( this->hasNext() );
+        
+        float value = static_cast<float>( randomizer( )) / rand_max;
+        
+        // how do I choose which will be the next module?
+
 #warning a lot of things to do here!
         int selected = 0;
         

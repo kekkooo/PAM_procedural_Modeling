@@ -125,10 +125,11 @@ void empty_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
         Module m = t.getNext();
         s.setModule( m );
         s.testMultipleTransformations(10, m.no_of_glueings);
-        s.applyRandomTransform();
-        s.applyOptimalAlignment();
-        s.alignModuleNormalsToHost();
-        s.actualGlueing();
+        s.glueCurrent();
+//        s.applyRandomTransform();
+//        s.applyOptimalAlignment();
+//        s.alignModuleNormalsToHost();
+//        s.actualGlueing();
     }
     cout << " no more pieces " << endl;
 }
@@ -145,10 +146,6 @@ void step_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
         s.setModule( m );
         s.testMultipleTransformations(10, m.no_of_glueings);
         s.glueCurrent();
-//        s.applyRandomTransform();
-//        s.applyOptimalAlignment();
-//        s.alignModuleNormalsToHost();
-//        s.actualGlueing();
     }
     else{
         cout << " no more pieces " << endl;

@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include "Module.h"
+#include <random>
 
 namespace Procedural{
     
@@ -39,10 +40,15 @@ private :
     void operator   = (Toolbox const&)               = delete;
     void updateProbabilities();
     
+    
 private :
 
     std::vector<ModuleInfo*> modules;
     int                     total_pieces;
+    std::mt19937_64         randomizer;
+    float                   rand_max;
+
+//      std::function<int(float)> random_to_module;
 
 };
 }
