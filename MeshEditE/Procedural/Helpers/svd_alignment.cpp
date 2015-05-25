@@ -57,8 +57,8 @@ namespace Procedural {
             
             // 2) compute the centered vectors
             vector< Vec3d > xs, ys;
-            for( Vec3d Pi : P ) { xs.push_back( Pi - p ); }
-            for( Vec3d Qi : Q ) { ys.push_back( Qi - q ); }
+            for( Vec3d& Pi : P ) { xs.push_back( Pi - p ); }
+            for( Vec3d& Qi : Q ) { ys.push_back( Qi - q ); }
             
             // 3) compute D * D covariance matrix S = XWY_t
             // X and Y are 3 * n matrices that have x_i and y_i as their columns
@@ -131,8 +131,8 @@ namespace Procedural {
             
             // 2) compute the centered vectors
             vector< Vec3d > xs, ys;
-            for( VertexID vid : P ) { xs.push_back( m1.pos(vid) - p ); }
-            for( VertexID vid : Q ) { ys.push_back( m2.pos(vid) - q ); }
+            for( VertexID& vid : P ) { xs.push_back( m1.pos(vid) - p ); }
+            for( VertexID& vid : Q ) { ys.push_back( m2.pos(vid) - q ); }
             
             // 3) compute D * D covariance matrix S = XWY_t
             // X and Y are 3 * n matrices that have x_i and y_i as their columns

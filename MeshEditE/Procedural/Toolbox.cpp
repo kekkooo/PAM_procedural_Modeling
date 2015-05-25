@@ -73,6 +73,7 @@ namespace Procedural {
             mInfo->no_pieces            = mNoPieces;
             mInfo->probability          = mProbability;
             this->modules.push_back( mInfo );
+            total_pieces += mNoPieces;
         }
     }
     
@@ -94,6 +95,8 @@ namespace Procedural {
         mi.m = module;
         mi.no_pieces = no_pieces;
         mi.no_glueings = no_glueings;
+
+        total_pieces += no_pieces;
     }
     
     void Toolbox::updateProbabilities(){
@@ -109,21 +112,43 @@ namespace Procedural {
         
         assert( this->hasNext() );
         
-        float value = static_cast<float>( randomizer( )) / rand_max;
+        size_t index;
+        bool done = false;
         
         // how do I choose which will be the next module?
-
 #warning a lot of things to do here!
-        int selected = 0;
+
+        while( !done ){
         
-        modules[0]->no_pieces -= 1;
-        total_pieces -= 1;
-        return *(modules[0]->m);
+            // choose the index
+            do{
+                index = randomizer( ) % modules.size();
+            }while( modules[index]->no_pieces <= 0 );
+            
+            size_t attempt = randomizer() % total_pieces;
+            done = ( attempt <= modules[index]->no_pieces );
+        }
+        
+        modules[index]->no_pieces   -= 1;
+        total_pieces                -= 1;
+        last_used_module            = index;
+        used_module                 = true;
+        
+        return *(modules[index]->m);
     }
     
     bool Toolbox::hasNext() const {
 #warning a lot of things to do here!
-        return ( modules[0]->no_pieces > 0 );
+        return ( total_pieces > 0 );
+    }
+    
+    void Toolbox::undoLast(){
+        assert( used_module );
+        assert(modules.size() > last_used_module );
+        
+        modules[last_used_module]->no_pieces += 1;
+        total_pieces                         += 1;
+        used_module                          = false;
     }
     
     

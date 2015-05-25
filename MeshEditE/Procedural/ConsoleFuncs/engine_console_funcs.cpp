@@ -119,19 +119,41 @@ void empty_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     
     Procedural::Toolbox& t = Procedural::Toolbox::getToolboxInstance();
     StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    bool can_glue           = true;
+    bool enough_free_poles  = true;
     
-    while( t.hasNext() ){
-        cout << " adding a piece " << endl;
+    while( t.hasNext() && can_glue && enough_free_poles ){
         Module m = t.getNext();
+        
+        cout << " adding a piece with "  << m.no_of_glueings << "-valent connection" << endl;
+        
         s.setModule( m );
-        s.testMultipleTransformations(10, m.no_of_glueings);
-        s.glueCurrent();
+        
+        enough_free_poles   = s.noFreePoles() >= m.no_of_glueings;
+        if( enough_free_poles){
+            can_glue            = s.testMultipleTransformations( 10, m.no_of_glueings );
+        }
+        
+        if( can_glue && enough_free_poles ){
+            s.glueCurrent();
+        }
+        else{
+            t.undoLast();
+        }
 //        s.applyRandomTransform();
 //        s.applyOptimalAlignment();
 //        s.alignModuleNormalsToHost();
 //        s.actualGlueing();
     }
-    cout << " no more pieces " << endl;
+    if( !t.hasNext() ){
+        cout << "no more pieces " << endl;
+    }
+    if( !can_glue ){
+        cout << "cannot find a feasible solution. remaining pieces : " << t.noRemainingPieces() << endl;
+    }
+    if( !enough_free_poles ){ 
+        cout << "there aren't enough free poles. remaining pieces :" << t.noRemainingPieces() << endl;
+    }
 }
 
 

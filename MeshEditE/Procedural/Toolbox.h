@@ -33,6 +33,8 @@ class Toolbox{
         void addModule( std::string path, size_t no_pieces );
         void fromJson( std::string path );
         void clear();
+        void undoLast();
+        inline size_t noRemainingPieces() { return total_pieces; }
 
 private :
     Toolbox();
@@ -44,9 +46,11 @@ private :
 private :
 
     std::vector<ModuleInfo*> modules;
-    int                     total_pieces;
+    size_t                  total_pieces;
     std::mt19937_64         randomizer;
     float                   rand_max;
+    size_t                  last_used_module;
+    bool                    used_module = false;
 
 //      std::function<int(float)> random_to_module;
 

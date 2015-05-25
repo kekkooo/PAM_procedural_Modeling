@@ -1,4 +1,4 @@
-    //
+//#define TRACE
 //  StatefulEngine.cpp
 //  MeshEditE
 //
@@ -72,10 +72,9 @@ void StatefulEngine::buildMainStructureKdTree(){
     assert( this->m != NULL );
     assert( this->tree == NULL );
     
-//    ModuleAlignment::build_manifold_kdtree( (*this->m), this->H_vertices, this->tree );
     this->tree = new kD_Tree();
     ModuleAlignment::build_manifold_kdtree( (*this->m), mainStructure->getFreePoleSet(), *this->tree );
-    for( auto vid : mainStructure->getFreePoleSet( )){
+    for( auto& vid : mainStructure->getFreePoleSet( )){
         assert( is_pole( *m, vid ));
     }
     treeIsValid = true;
@@ -96,7 +95,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
     
     // find the nearest host candidate for each module's pole
     // and, for each candidate matched, store its matched pole and distance
-    for( auto id_and_info : candidate.getPoleInfoMap())
+    for( auto& id_and_info : candidate.getPoleInfoMap())
     {
         double      distance    = numeric_limits<double>::max();
         Vec3d       foundPos;
@@ -108,17 +107,20 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
         assert( mainStructure->getFreePoleSet().count(foundID) > 0 );
         
         if( have_found ){
+#ifdef TRACE
             cout << " HAVE FOUND "<< endl;
+#endif
             Vec3d n_candidate = vertex_normal( *m, foundID );
             n_candidate.normalize();
             size_t valence = Geometry::valence( *m, foundID );
             
             // add only if match is valid
-            
+#ifdef TRACE
             cout << "M : " << id_and_info.first << ")" << id_and_info.second.geometry.pos << "  #  " << id_and_info.second.geometry.normal << endl;
             cout << "H : " << foundID << ")" << foundPos << "  #  " << n_candidate << endl << endl;
             bool opposite_debug = opposite_directions( id_and_info.second.geometry.normal, n_candidate );
             cout << " opposite? " <<opposite_debug << "valence H : " << valence << " # M : " << id_and_info.second.geometry.valence<<endl;
+#endif
             if( opposite_directions( id_and_info.second.geometry.normal, n_candidate )
              && valence  == id_and_info.second.geometry.valence ){
                 
@@ -135,7 +137,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
     
     // here I should process all the candidateNeighbors for which the number of matched
     // poles > 1 and try to assign them to not assigned candidates
-    for( auto item : candidateNeighbors ){
+    for( auto& item : candidateNeighbors ){
         assert( item.second.size() > 0 );
         if( item.second.size() == 1 ) {
             M_pole_to_H_vertex[item.second.front().first] = item.first;
@@ -143,7 +145,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
         else{
             // get the nearest matched pole
             IdDistPair nearest = item.second.front();
-            for( IdDistPair id_dist : item.second ){
+            for( IdDistPair& id_dist : item.second ){
                 if( IdDistPair_comparer( id_dist, nearest )){
                     nearest = id_dist;
                 }
@@ -152,7 +154,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
             M_pole_to_H_vertex[nearest.first] = item.first;
             assigned_candidates.insert( item.first );
             // put all the other poles into the unassigned set
-            for( IdDistPair id_dist : item.second ){
+            for( IdDistPair& id_dist : item.second ){
                 if( id_dist.first != nearest.first ){ unassigned_poles.insert( id_dist.first ); }
             }
         }
@@ -172,12 +174,12 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
     
     // sanity check
     map<VertexID, int> _candidates, _poles;
-    for( auto item : M_pole_to_H_vertex ){
+    for( auto& item : M_pole_to_H_vertex ){
         _poles[item.first]          = 0;
         _candidates[item.second]    = 0;
     }
     
-    for( auto item : M_pole_to_H_vertex ){
+    for( auto& item : M_pole_to_H_vertex ){
         _poles[item.first] = _poles[item.first] + 1;
         _candidates[item.second] = _candidates[item.second] + 1;
         // each pole MUST be assigned to only one candidate and each candidate to only one pole
@@ -186,10 +188,14 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
 //        assert( is_pole( *(candidateModule->m), item.first ));
         assert( candidateModule->isPole( item.first ));
         assert( is_pole( *m, item.second ));
+#ifdef TRACE
         cout << item.first << " # " << item.second << endl;
+#endif
     }
     
+#ifdef TRACE
     cout << "candidates size " <<  _candidates.size() << endl;
+#endif
 }
 
 
@@ -262,7 +268,7 @@ void StatefulEngine::applyOptimalAlignment(){
     Mat4x4d R, T;
     vector< VertexID > host_v, module_p;
     vector< Vec3d>     host_pos, module_pos;
-    for( auto match : best_match.getMatchInfo().matches ){
+    for( auto& match : best_match.getMatchInfo().matches ){
         module_p.push_back( match.first );
         host_v.push_back( match.second );
         
@@ -271,11 +277,13 @@ void StatefulEngine::applyOptimalAlignment(){
     }
 
     svd_rigid_motion( module_pos, host_pos, R, T );
-//    svd_rigid_motion( *m, module_p, *m, host_v, R, T );
     
     Mat4x4d t = T * R;
-//    cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
-    
+
+#ifdef TRACE
+    cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
+#endif
+
     Module &tm = candidateModule->getTransformedModule( t );
     candidateModule = &tm;
     for( VertexID v : M_vertices ){
@@ -288,35 +296,45 @@ void StatefulEngine::applyOptimalAlignment(){
 void StatefulEngine::alignModuleNormalsToHost(){
     CGLA::Vec3d host_vec( 0 ), module_vec( 0 ), centroid( 0 );
     double      _;
-    for( Match match : best_match.getMatchInfo().matches )
+    for( Match& match : best_match.getMatchInfo().matches )
     {
         centroid += candidateModule->getPoleInfo(match.first).geometry.pos;
         Vec3d mn = candidateModule->getPoleInfo(match.first).geometry.normal;
         Vec3d hn = vertex_normal( *m, match.second );
+        
+        assert( !( isnan( mn[0] ) || isnan( mn[1] ) || isnan( mn[2] )));
+        assert( !( isnan( hn[0] ) || isnan( hn[1] ) || isnan( hn[2] )));
+        
         mn.normalize();
         hn.normalize();
         module_vec  += mn;
         host_vec    += hn;
     }
-    
-//    cout << "module vector :" << endl << module_vec << endl;
-//    cout << "host vector   :" << endl << module_vec << endl;
-//    
+
+#ifdef TRACE
+    cout << "module vector :" << endl << module_vec << endl;
+    cout << "host vector   :" << endl << module_vec << endl;
+#endif
+
     module_vec.normalize();
     host_vec.normalize();
     centroid /= best_match.getMatchInfo().matches.size();
-    
-//    cout << "module vector normalized :" << endl << module_vec << endl;
-//    cout << "host vector normalized   :" << endl << module_vec << endl;
-//    cout << "centroid                 :" << endl << centroid << endl;
 
+#ifdef TRACE
+    cout << "module vector normalized :" << endl << module_vec << endl;
+    cout << "host vector normalized   :" << endl << module_vec << endl;
+    cout << "centroid                 :" << endl << centroid << endl;
+#endif
     // need to carefully choose which centroid I should use.
-    //    bsphere( m, module_IDs, centroid, _ );
+
     Mat4x4d tr_origin = translation_Mat4x4d( -centroid ),
             tr_back   = translation_Mat4x4d( centroid );
     Mat4x4d t_align = alt_get_alignment_for_2_vectors( module_vec, host_vec );
     Mat4x4d t = tr_back * t_align * tr_origin;
-//    cout << "Best Match Normal Alignment " << endl << t << endl;
+
+#ifdef TRACE
+    cout << "Best Match Normal Alignment " << endl << t << endl;
+#endif
     
     Module& tm = candidateModule->getTransformedModule( t );
     candidateModule = &tm;
@@ -351,19 +369,28 @@ void StatefulEngine::glueCurrent(){
     mainStructure->reAlignIDs( host_remap );
     candidateModule->reAlignIDs( module_remap );
     // remap matches ids
-    for( Match match : best_match.getMatchInfo().matches){
+    for( Match& match : best_match.getMatchInfo().matches){
+
+#ifdef TRACE
         cout << "old match : ( " << match.first << ", " << match.second << " )" << endl;
+#endif
+
         assert( module_remap[match.first]  != InvalidVertexID );
         assert( host_remap[match.second]   != InvalidVertexID );
+
+#ifdef TRACE
         cout << "new match : ( " << module_remap[match.first] << ", " << host_remap[match.second] << " )" << endl;
+#endif
         remapped_matches.push_back( make_pair( module_remap[match.first], host_remap[match.second]) );
     }
     
     best_match.getMatchInfo().matches = std::move( remapped_matches );
 
-    for( Match match : best_match.getMatchInfo().matches){
+#ifdef TRACE
+    for( Match& match : best_match.getMatchInfo().matches){
         cout << "match : ( " << match.first << ", " << match.second << " )" << endl;
     }
+#endif
     
     applyRandomTransform();
     applyOptimalAlignment();
@@ -379,7 +406,8 @@ void StatefulEngine::glueCurrent(){
     
     m->cleanup( glue_remap );
     mainStructure->reAlignIDs( glue_remap.vmap );
-    
+
+#ifdef TRACE
     for( VertexID v : (*candidateModule).poleList ){
         if( mainStructure->getFreePoleSet().count(v) > 0 ){
             cout << "on module" << endl;
@@ -394,6 +422,7 @@ void StatefulEngine::glueCurrent(){
             
         }
     }
+#endif
     consolidate();
 }
 
@@ -410,10 +439,13 @@ void StatefulEngine::actualGlueing(){
         mainStructure->reAlignIDs( host_remap );
         candidateModule->reAlignIDs( module_remap );
         // remap matches ids
-        for( Match match : best_match.getMatchInfo().matches){
+        for( Match& match : best_match.getMatchInfo().matches){
             remapped_matches.push_back( make_pair( module_remap[match.first], host_remap[match.second]) );
+            
+#ifdef TRACE
             cout << "old match : ( " << match.first << ", " << match.second << " )" << endl;
             cout << "new match : ( " << module_remap[match.first] << ", " << host_remap[match.second] << " )" << endl;
+#endif
         }
         // glue_matches
         Helpers::ModuleAlignment::glue_matches( *m, remapped_matches );
@@ -461,6 +493,7 @@ void StatefulEngine::setModule(Procedural::Module &module){
 }
 
 void StatefulEngine::setModule( Manifold &module ){
+    assert( false );
 //    assert( this->m != NULL );
 //    assert( this->M_vertices.size() == 0 );
 //    IDRemap remapper;
@@ -492,11 +525,11 @@ void StatefulEngine::setModule( Manifold &module ){
 
 void StatefulEngine::consolidate(){
     assert( this->m != NULL );
-    assert( this->M_vertices.size() > 0 );
+//    assert( this->M_vertices.size() > 0 );
     assert( this->candidateModule->getPoleInfoMap().size() > 0 );
     // in this way you lose any reference to which vertices are from host and module
 
-    Module* tmp_module = candidateModule;
+//    Module* tmp_module = candidateModule;
     candidateModule = NULL;
     transformedModules.clear();
     
@@ -504,14 +537,14 @@ void StatefulEngine::consolidate(){
     treeIsValid = false;
     edge_info.Invalidate();
 
-    kD_Tree* temp = tree;
+//    kD_Tree* temp = tree;
     tree = NULL;
-    delete temp;
-    delete tmp_module;
+//    delete temp;
+//    delete tmp_module;
 }
 
 
-void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_glueings ){
+bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_glueings ){
         assert( this->m != NULL );
         assert( no_tests > 0 );
     
@@ -538,14 +571,19 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
         mi.random_transform = Ts[i];
         assert( !isnan( mi.random_transform[1][1] ));
 
+#ifdef TRACE
         cout << " Ts[i] " << Ts[i] << endl;
+#endif
 
         // can be removed when solved
+
+#ifdef TRACE
         cout << "poles with normals " << endl;
-        for( auto item : transformedModules[i].getPoleInfoMap() )
+        for( auto& item : transformedModules[i].getPoleInfoMap() )
         {
             cout << item.first << ")" << item.second.geometry.pos << "  #  " << item.second.geometry.normal << endl;
         }
+#endif
         
         matchModuleToHost( transformedModules[i], M_to_H );
         
@@ -554,24 +592,26 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
         
         double distance_sum = 0.0;
         
-        for( auto pole_and_vertex : M_to_H )
+        for( auto& pole_and_vertex : M_to_H )
         {
+#ifdef TRACE
             cout << pole_and_vertex.first << ", " << pole_and_vertex.second << endl;
+#endif
             current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
         }
 
         EdgeCost c = get_best_subset( *this->m, current_matches, best_matches, no_glueings );
         
-        for( auto match : best_matches ){
+        for( auto& match : best_matches ){
             distance_sum += ( transformedModules[i].getPoleInfo(match.first).geometry.pos - m->pos(match.second)).length();
         }
 
         mi.cost     = c;
         ExtendetCosts.push_back( make_pair( distance_sum, c ));
-
-//        cout << "configuration " << i << " has cost : "
-//        << mi.cost.first << ", " << mi.cost.second << ", " << distance_sum << endl;
-
+#ifdef TRACE
+        cout << "configuration " << i << " has cost : "
+        << mi.cost.first << ", " << mi.cost.second << ", " << distance_sum << endl;
+#endif
         mi.matches  = std::move( best_matches );
         proposed_matches.push_back( std::move( mi ));
 }
@@ -579,7 +619,12 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
 
 #warning this assert MUST be uncommented and this return deleted
 //    return;
-    assert( proposed_matches.size() > 0 );
+//    assert( proposed_matches.size() > 0 );
+    if( proposed_matches.size() <= 0 ){
+        cout << "unable to find a feasible solution" << endl;
+        consolidate();
+        return false;
+    }
     
     // find the best solution between the proposed ones
     size_t      selected = 0;
@@ -595,22 +640,25 @@ void StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     
     best_match.setMatchInfo( proposed_matches[selected] );
 
-//    cout << "Best Match random transform: " << selected << endl
-//         << best_match.getMatchInfo().random_transform
-//         << " Proposed Matches " << endl;
-//    for( Match match :  best_match.getMatchInfo().matches ){
-//        cout << match.first << " # " << match.second << endl;
-//        Vec3d normal1 = vertex_normal( *m, match.first );
-//        Vec3d normal2 = vertex_normal( *m, match.second );
-//        normal1.normalize();
-//        normal2.normalize();
-//        cout << "1) " << normal1 << endl << "2) " << normal2 << endl;
-//        double angle = get_angle(normal1, normal2);
-//        cout << " angle : " << angle << " and opposite? :   " << opposite_directions( normal1, normal2 ) << endl;
-//
-//}
-    
+#ifdef TRACE
+    cout << "Best Match random transform: " << selected << endl
+         << best_match.getMatchInfo().random_transform
+         << " Proposed Matches " << endl;
+    for( Match& match :  best_match.getMatchInfo().matches ){
+        cout << match.first << " # " << match.second << endl;
+        Vec3d normal1 = vertex_normal( *m, match.first );
+        Vec3d normal2 = vertex_normal( *m, match.second );
+        normal1.normalize();
+        normal2.normalize();
+        cout << "1) " << normal1 << endl << "2) " << normal2 << endl;
+        double angle = get_angle(normal1, normal2);
+        cout << " angle : " << angle << " and opposite? :   " << opposite_directions( normal1, normal2 ) << endl;
+
     }
+#endif
+
+    return true;
+}
 
 
 void StatefulEngine::glueModuleToHost(){
@@ -620,14 +668,12 @@ void StatefulEngine::glueModuleToHost(){
 
 void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations ){
 
-//    cout << "Building transformations set " << endl;
+#ifdef TRACE
+    cout << "Building transformations set " << endl;
+#endif
     
     size_t no_M_poles = candidateModule->getPoleInfoMap().size();
     transformations.clear();
-    
-//    cout << "module centroid :" << M_centroid << endl;
-    
-//    cout << "Translate to origin " << endl << tr_to_origin << endl << " and back " << endl << tr_to_centroid;
     
     const vector<VertexID> &_candidates = mainStructure->getFreePoles();
     
@@ -655,7 +701,9 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             VertexID M_pole = candidateModule->poleList[ actual_j ];
 //            VertexID M_pole = candidateModule->poleList[ 0 ];
             
-//            cout << " polo : " << M_pole << endl;
+#ifdef TRACE
+            cout << " polo : " << M_pole << endl;
+#endif
 
             assert( candidateModule->getPoleInfoMap().count(M_pole) > 0 );
             PoleInfo pinfo  = candidateModule->getPoleInfo(M_pole);
@@ -676,15 +724,18 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 
                 Vec3d   to_H_pole = H_pole_pos - m_pole_step2;
                 Mat4x4d tr_to_H_pole = translation_Mat4x4d( to_H_pole );
-
-//                cout << "rotation with axis " << H_pole_normal << " and angle : " << curr_angle << rot << endl;
-//                cout << "Translate to pole " << endl << tr_to_H_pole << endl;
-//                cout << "pole translated aligned rotated : " << m_pole_step2 << endl;
-//                cout << "to_h_pole " << to_H_pole << endl
-//                << "translation mat4 " << endl << tr_to_H_pole;
-
+#ifdef TRACE
+                cout << "rotation with axis " << H_pole_normal << " and angle : " << curr_angle << rot << endl;
+                cout << "Translate to pole " << endl << tr_to_H_pole << endl;
+                cout << "pole translated aligned rotated : " << m_pole_step2 << endl;
+                cout << "to_h_pole " << to_H_pole << endl
+                << "translation mat4 " << endl << tr_to_H_pole;
+#endif
                 T = tr_to_H_pole * rot * t_align * t_origin;
-//                cout << "complete transform" << endl <<  T;
+
+#ifdef TRACE
+                cout << "complete transform" << endl <<  T;
+#endif
                 
                 transformations.push_back( T );
                 assert( !isnan( T[1][1] ));
@@ -696,10 +747,9 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
         }
     }
     
-//    for( auto mv : M_vertices ) {
-//        m->pos( mv ) = transformations[8].mul_3D_point( m->pos( mv ));
-//        if( is_pole(*m, mv)){ cout << mv << ") " << m->pos(mv) << endl; }
-//    }
-    
     assert( transformations.size() == transformedModules.size( ));
+}
+
+size_t StatefulEngine::noFreePoles(){
+    return this->mainStructure->getFreePoles().size();
 }

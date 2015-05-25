@@ -124,7 +124,7 @@ class StatefulEngine{
             void            setHost( HMesh::Manifold &host );
             void            setModule( HMesh::Manifold &module );
             void            setModule( Procedural::Module &module );
-            void            testMultipleTransformations( int no_tests, size_t no_glueings );
+            bool            testMultipleTransformations( int no_tests, size_t no_glueings );
             void            glueModuleToHost();
             void            consolidate();
     
@@ -136,6 +136,7 @@ class StatefulEngine{
             void            actualGlueing();
     
             void            glueCurrent();
+            size_t          noFreePoles();
     
     private :
                             StatefulEngine();

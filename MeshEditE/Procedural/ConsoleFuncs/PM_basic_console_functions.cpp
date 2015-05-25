@@ -223,7 +223,7 @@ void console_test_save_to_results_folder( MeshEditor *me, const std::vector< std
         if(file_name.substr(file_name.length()-4,file_name.length())==".obj")
         {
             stringstream oss;
-            oss << "/Users/francescousai/Documents/Dottorato/Visiting/Results" << file_name;
+            oss << "/Users/francescousai/Documents/Dottorato/Conferenze/CGI_PG2015/Results/May/" << file_name;
             obj_save(oss.str(), me->active_mesh());
         }
     }
