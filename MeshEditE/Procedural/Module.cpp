@@ -25,10 +25,12 @@ Module::Module( std::string path, Moduletype mType ){
     assert( f.good() );
     
     this->m = new Manifold();
+    this->skeleton = new Skeleton();
     
     obj_load( path, *this->m );
     bsphere( *m, bsphere_center, bsphere_radius );
     BuildPoleInfo();
+    this->skeleton->build( *m, this->poleSet );
 }
     
 void Module::BuildPoleInfo(){
@@ -44,6 +46,7 @@ void Module::BuildPoleInfo(){
             n.normalize();
             pi.geometry.normal = n;
             this->poleList.push_back( vid );
+            this->poleSet.insert( vid );
             this->poleInfoMap[vid] = pi;
         }
     }

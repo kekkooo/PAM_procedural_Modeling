@@ -608,6 +608,19 @@ CGLA::Vec3d mul_3D_dir ( const CGLA::Mat4x4d &t, const CGLA::Vec3d &dir ){
     return v3d;
 }
 
+// if positive it intersects
+double sphere_intersects ( const Vec3d &c1, double r1, const Vec3d &c2, double r2 ){
+    
+    assert( r1 > 0 && r2 > 0);
+    
+    Vec3d cc = c1- c2;
+    double length = cc.length();
+    assert( length > 0 );
+    double intersection = ( r1 + r2 ) - length;
+    cout << "( " << r1 << ", " << r2 << " ) # " << length << endl;
+    return intersection;
+}
+
 
 
 

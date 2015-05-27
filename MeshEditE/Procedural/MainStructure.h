@@ -21,7 +21,6 @@ namespace Procedural {
     
 typedef int ModuleID;
 typedef std::map< HMesh::VertexID, ModuleID>    VertexModuleMap;
-typedef std::set< HMesh::VertexID >             PoleSet;
 
 struct StructurePoleInfo{
     PoleInfo    pi;            // pos and normal should be modified here
@@ -41,10 +40,13 @@ public:
     // those methods work only on a logical basis not on a geometrical one
     void glueModule( Module &m, std::vector<Procedural::GraphMatch::Match> &matches  );
     void reAlignIDs( HMesh::VertexIDRemap &remapper );
+    bool isColliding( const Module& m ) const;
+    
     const Procedural::PoleList& getPoles();
     const Procedural::PoleList& getFreePoles();
     const Procedural::PoleList& getGluedPoles();
-    const PoleSet&              getFreePoleSet();
+    const Procedural::PoleSet&  getFreePoleSet();
+
 
     
     

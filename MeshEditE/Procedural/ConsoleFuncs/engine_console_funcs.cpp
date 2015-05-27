@@ -38,24 +38,6 @@ void set_host( MeshEditor *me, const std::vector< std::string > &args ){
     s.setHost( me->active_mesh( ));
 }
 
-
-void set_module( MeshEditor *me, const std::vector< std::string > &args ){
-
-    Manifold module;
-    stringstream oss;
-    string filename = "1.obj";
-    if( args.size() > 0 ){
-        istringstream a0( args[0] );
-        a0 >> filename;
-    }
-    
-    oss << MODULES_FOLDER << filename;
-    obj_load( oss.str(), module );
-    
-    StatefulEngine &s = StatefulEngine::getCurrentEngine();
-    s.setModule( module );
-}
-
 void optimal_transform( MeshEditor *me, const std::vector< std::string > &args ){
     
     stringstream oss;
@@ -208,7 +190,6 @@ namespace Procedural{
 void register_engine_console_funcs( GLGraphics::MeshEditor* me )
 {
     me->register_console_function( "engine.set_host",   set_host, "engine.set_host_and_module" );
-    me->register_console_function( "engine.set_module",   set_module, "engine.set_host_and_module" );
     me->register_console_function( "engine.optimal_transform", optimal_transform, "engine.optimal_transform" );
     me->register_console_function( "engine.align", align_module, "engine.align" );
     me->register_console_function( "engine.glue_current", glue_current, "engine.glue_current" );

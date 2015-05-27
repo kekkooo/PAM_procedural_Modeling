@@ -144,7 +144,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
         }
         else{
             // get the nearest matched pole
-            IdDistPair nearest = item.second.front();
+            IdDistPair& nearest = item.second.front();
             for( IdDistPair& id_dist : item.second ){
                 if( IdDistPair_comparer( id_dist, nearest )){
                     nearest = id_dist;
@@ -163,7 +163,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
     // for each unassigned pole try to find a secondary nearest match
     for( VertexID unassigned : unassigned_poles ){
         assert( candidate.getPoleInfoMap().count(unassigned) > 0 );
-        PoleGeometryInfo pgi = candidate.getPoleInfo(unassigned).geometry;
+        const PoleGeometryInfo& pgi = candidate.getPoleInfo(unassigned).geometry;
 
         VertexID second_cloesest = InvalidVertexID;
         if( findSecondClosest( unassigned, pgi, internal_match[unassigned], second_cloesest, assigned_candidates )){
@@ -492,36 +492,6 @@ void StatefulEngine::setModule(Procedural::Module &module){
     buildMainStructureKdTree();
 }
 
-void StatefulEngine::setModule( Manifold &module ){
-    assert( false );
-//    assert( this->m != NULL );
-//    assert( this->M_vertices.size() == 0 );
-//    IDRemap remapper;
-//    add_manifold( (*this->m), module, H_vertices, M_vertices, remapper );
-//    mainStructure->reAlignIDs( remapper );
-//    buildMainStructureKdTree();
-//
-//    // LOAD MODULE INFO
-//    this->candidateModule = new Module();
-//    Vec3d centroid;
-//    double radius;
-//    bsphere( *m, M_vertices, centroid, radius );
-//    this->candidateModule->bsphere_center = centroid;
-//    this->candidateModule->bsphere_radius = radius;
-//    
-//    for( VertexID vid : M_vertices ){
-//        if( is_pole( *m, vid )){
-//            PoleInfo pi;
-//            pi.geometry.valence = valence( *m, vid );
-//            pi.geometry.pos     = m->pos( vid );
-//            Vec3d n             = vertex_normal( *m, vid );
-//            n.normalize();
-//            pi.geometry.normal  = n;
-//            this->candidateModule->poleList.push_back( vid );
-//            this->candidateModule->poleInfoMap[vid] = pi;
-//        }
-//    }
-}
 
 void StatefulEngine::consolidate(){
     assert( this->m != NULL );
@@ -621,7 +591,7 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
 //    return;
 //    assert( proposed_matches.size() > 0 );
     if( proposed_matches.size() <= 0 ){
-        cout << "unable to find a feasible solution" << endl;
+        cout << "unable to find a feasible solution of " << transformedModules.size() << " transformed modules " << endl;
         consolidate();
         return false;
     }
@@ -717,6 +687,8 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             // generate K rotations along the candidate normal
             double step = M_PI_4 / 2.0;
             double curr_angle = 0;
+//            double curr_angle = ( randomizer() % 16 ) * step;
+
             // build and save rotations
             for ( int i = 0; i < 16; ++i, curr_angle +=step ) {
                 Mat4x4d rot = get_rotation_mat4d( H_pole_normal, curr_angle );
@@ -737,11 +709,16 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 cout << "complete transform" << endl <<  T;
 #endif
                 
-                transformations.push_back( T );
+
                 assert( !isnan( T[1][1] ));
                 
                 Module t_module = this->candidateModule->getTransformedModule( T );
                 
+                // skip if there is a collision.
+                // need to improve it
+                if( mainStructure->isColliding(t_module)) continue;
+
+                transformations.push_back( T );
                 transformedModules.push_back( t_module );
             }
         }
