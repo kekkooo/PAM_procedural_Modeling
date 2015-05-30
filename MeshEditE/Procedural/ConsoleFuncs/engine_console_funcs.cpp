@@ -13,6 +13,7 @@
 #include <GEL/GLGraphics/MeshEditor.h>
 #include <GEL/HMesh/obj_save.h>
 #include <GEL/HMesh/obj_load.h>
+#include <GEL/Util/Timer.h>
 
 #include <MeshEditE/Procedural/StatefulEngine.h>
 #include <MeshEditE/Procedural/Toolbox.h>
@@ -23,6 +24,7 @@ using namespace std;
 
 using namespace HMesh;
 using namespace GLGraphics;
+using namespace Util;
 
 using namespace Procedural::Engines;
 using namespace Procedural;
@@ -104,20 +106,35 @@ void empty_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     bool can_glue           = true;
     bool enough_free_poles  = true;
     
+    Timer timer;
+    
     while( t.hasNext() && can_glue && enough_free_poles ){
+        cout << endl << "########################################" << endl << endl;
+        timer.start();
         Module m = t.getNext();
-        
-        cout << " adding a piece with "  << m.no_of_glueings << "-valent connection" << endl;
+        float t0 = timer.get_secs();
+        cout << " adding a piece with "  << m.no_of_glueings << "-valent connection in " << t0 << "s" << endl;
         
         s.setModule( m );
         
+        float t1 = timer.get_secs();
+        
+        cout << "module set in : " << (t1-t0) << endl;
+        
         enough_free_poles   = s.noFreePoles() >= m.no_of_glueings;
         if( enough_free_poles){
+            float t1_1 = timer.get_secs();
             can_glue            = s.testMultipleTransformations( 10, m.no_of_glueings );
+            float t2 = timer.get_secs();
+            cout << "configurations tested in in : " << (t2-t1_1) << "s" << endl;
+            
         }
         
         if( can_glue && enough_free_poles ){
+            float t2_1 = timer.get_secs();
             s.glueCurrent();
+            float t3 = timer.get_secs();
+            cout << "glueing done in : " << (t3-t2_1) << "s" << endl;
         }
         else{
             t.undoLast();

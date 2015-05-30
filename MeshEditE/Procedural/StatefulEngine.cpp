@@ -586,10 +586,6 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
         proposed_matches.push_back( std::move( mi ));
 }
     
-
-#warning this assert MUST be uncommented and this return deleted
-//    return;
-//    assert( proposed_matches.size() > 0 );
     if( proposed_matches.size() <= 0 ){
         cout << "unable to find a feasible solution of " << transformedModules.size() << " transformed modules " << endl;
         consolidate();
@@ -638,6 +634,8 @@ void StatefulEngine::glueModuleToHost(){
 
 void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations ){
 
+    size_t skipped = 0;
+    
 #ifdef TRACE
     cout << "Building transformations set " << endl;
 #endif
@@ -657,10 +655,14 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
         size_t actual_i = ( i + H_starter ) % no_candidates;
         VertexID H_pole = _candidates[ actual_i ];
 //        VertexID H_pole = _candidates[ 0 ];
-
-        Vec3d   H_pole_pos      = m->pos( H_pole );
-        Vec3d   H_pole_normal   = vertex_normal( *m, H_pole );
-        H_pole_normal.normalize();
+        
+        const Vec3d H_pole_pos      = mainStructure->getPoleInfo(H_pole).geometry.pos;
+        const Vec3d H_pole_normal   = mainStructure->getPoleInfo(H_pole).geometry.normal;
+        size_t H_pole_valence       = mainStructure->getPoleInfo(H_pole).geometry.valence;
+// this is not const because I normalize, but if I refer to the main structure there will be no need to normalize
+//        const Vec3d   H_pole_pos      = m->pos( H_pole );
+//        Vec3d   H_pole_normal   = vertex_normal( *m, H_pole );
+//        H_pole_normal.normalize();
         
         size_t M_starter = randomizer() % no_M_poles;
         // MODULE POLES LOOP
@@ -676,14 +678,18 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 #endif
 
             assert( candidateModule->getPoleInfoMap().count(M_pole) > 0 );
-            PoleInfo pinfo  = candidateModule->getPoleInfo(M_pole);
+            const PoleInfo& pinfo  = candidateModule->getPoleInfo(M_pole);
+            
+            if( pinfo.geometry.valence != H_pole_valence ){
+                skipped += 16;
+                continue;
+            }
             
             // align normals
             Mat4x4d t_align = alt_get_alignment_for_2_vectors( pinfo.geometry.normal, H_pole_normal );
             
             Vec3d m_pole_step1 = ( t_align * t_origin ).mul_3D_point( pinfo.geometry.pos );
 
-#warning randomize this. also the step
             // generate K rotations along the candidate normal
             double step = M_PI_4 / 2.0;
             double curr_angle = 0;
@@ -716,7 +722,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 
                 // skip if there is a collision.
                 // need to improve it
-                if( mainStructure->isColliding(t_module)) continue;
+//                if( mainStructure->isColliding(t_module)) continue;
 
                 transformations.push_back( T );
                 transformedModules.push_back( t_module );
@@ -725,6 +731,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
     }
     
     assert( transformations.size() == transformedModules.size( ));
+    cout << endl << transformations.size() << " configurations generated and " << skipped << " skipped" << endl;
 }
 
 size_t StatefulEngine::noFreePoles(){

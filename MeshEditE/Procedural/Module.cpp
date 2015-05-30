@@ -31,6 +31,7 @@ Module::Module( std::string path, Moduletype mType ){
     bsphere( *m, bsphere_center, bsphere_radius );
     BuildPoleInfo();
     this->skeleton->build( *m, this->poleSet );
+    this->skeleton->saveToFile("//Users//francescousai//Desktop//example.skel");
 }
     
 void Module::BuildPoleInfo(){

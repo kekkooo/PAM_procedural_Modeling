@@ -40,22 +40,31 @@ namespace Procedural{
     const PoleList& MainStructure::getGluedPoles(){
         return freePoles;
     }
+    
+    const PoleInfo& MainStructure::getPoleInfo( HMesh::VertexID p ){
+        assert(freePoleInfoMap.count(p) > 0);
+        return freePoleInfoMap[p];
+    }
 
     bool _in_set( set<VertexID > &s, VertexID v ){
-        return (s.count(v) > 0);
+        return ( s.count(v) > 0 );
     }
     
     void MainStructure::reAlignIDs( HMesh::VertexIDRemap &remapper ){
         
+        PoleInfoMap p;
         freePolesSet.clear();
+        
         for( int i = 0; i < freePoles.size(); ++i ){
             VertexID newID = remapper[freePoles[i]];
+            p[newID] = freePoleInfoMap[freePoles[i]];
             freePoles[i] = newID;
             freePolesSet.insert( newID );
         }
         for( int i = 0; i < gluedPoles.size(); ++i ){
             gluedPoles[i] = remapper[gluedPoles[i]];
         }
+        freePoleInfoMap = std::move( p );
     }
     
     void MainStructure::glueModule( Module &m, vector<Match> &matches ){
@@ -80,14 +89,16 @@ namespace Procedural{
             else{
                 freePoles.push_back( v );
                 freePolesSet.insert( v );
+                freePoleInfoMap[v] = m.getPoleInfo( v );
             }
         }
         // remove from freePoles the host poles involved  and put them into gluedPoles
         for( VertexID v : glued_h_poles ){
             freePoles.erase( remove(freePoles.begin(), freePoles.end(), v));
             freePolesSet.erase( v );
-            gluedPoles.push_back(v);
-
+            gluedPoles.push_back( v );
+            assert( freePoleInfoMap.count(v) > 0 );
+            freePoleInfoMap.erase( v );
         }
         assert( glued_h_poles.size() == glued_m_poles.size() );
         assert( freePoles.size() == freePolesSet.size());
@@ -113,7 +124,6 @@ namespace Procedural{
     }
     
     bool MainStructure::isColliding(const Module &m) const{
-#warning da migliorare
         bool collision_found = false;
         
 #ifdef TRACE

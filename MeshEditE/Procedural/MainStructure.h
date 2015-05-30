@@ -30,7 +30,7 @@ struct StructurePoleInfo{
 struct GluedModuleInfo{
     Module          *module;
     size_t          t_start;
-    int             connection_valence;
+    size_t          connection_valence;
 };
 
 class MainStructure{
@@ -46,10 +46,8 @@ public:
     const Procedural::PoleList& getFreePoles();
     const Procedural::PoleList& getGluedPoles();
     const Procedural::PoleSet&  getFreePoleSet();
-
-
-    
-    
+    const PoleInfo&             getPoleInfo( HMesh::VertexID p );
+    inline const PoleInfoMap&   getPoleInfoMap(){ return freePoleInfoMap;}
     
 private:
 /************************************************
@@ -60,6 +58,7 @@ private:
     Procedural::PoleList            gluedPoles;
     PoleSet                         freePolesSet;
     size_t                          time;
+    PoleInfoMap                     freePoleInfoMap;
 
 };
 

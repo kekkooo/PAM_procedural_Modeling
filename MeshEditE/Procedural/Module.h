@@ -15,6 +15,8 @@
 #include <vector>
 #include <queue>
 #include <set>
+#include <fstream>
+#include <iostream>
 
 #include <GEL/HMesh/Manifold.h>
 #include <GEL/CGLA/Vec3d.h>
@@ -62,19 +64,84 @@ typedef size_t BoneID;
 enum SkelNodeType{ SNT_Pole, SNT_Rib, SNT_Junction };
     
 struct SkelNode{
-    NodeID          ID;
-    SkelNodeType    type    = SNT_Rib;
-    CGLA::Vec3d     pos;
-    double          radius  = 0.0;
+    NodeID                  ID;
+    SkelNodeType            type    = SNT_Rib;
+    CGLA::Vec3d             pos;
+    double                  radius  = 0.0;
+    std::set<NodeID>        neighbors;
 };
 
 struct SkelBone{
     BoneID                  ID;
-    std::vector<SkelNode>   nodes;
+    std::vector<NodeID>   nodes;
 };
     
 struct Skeleton{
+private:
     
+    std::map< NodeID, std::set< NodeID > > boneEndPoints;
+    
+    void openBone( NodeID id ){
+        assert( id >= 0 && id < nodes.size() );
+        assert( nodes[id].type == SNT_Pole || nodes[id].type == SNT_Junction );
+        SkelBone b;
+        b.ID = bones.size();
+        b.nodes.push_back( id );
+        bones.push_back( b );
+    }
+    
+    void closeBone( NodeID id ){
+        assert( bones.back().nodes.size() > 0 );
+        SkelNodeType t_front = nodes[bones.back().nodes.front()].type;
+        assert( t_front == SNT_Pole || t_front == SNT_Junction );
+        assert( id >= 0 && id < nodes.size() );
+        assert( nodes[id].type == SNT_Pole || nodes[id].type == SNT_Junction );
+        NodeID curr_last = bones.back().nodes.back();
+        nodes[id].neighbors.insert( curr_last );
+        nodes[curr_last].neighbors.insert( id );
+
+        bones.back().nodes.push_back( id );
+        const NodeID start = bones.back().nodes.front();
+        if( boneEndPoints[start].count(id) > 0 ){ // il bone esisteva già
+            bones.pop_back();
+        }else{
+            if( boneEndPoints.count( start ) ==  0 )    { boneEndPoints[start] = std::set< NodeID >(); };
+            if( boneEndPoints.count( id ) ==  0 )       { boneEndPoints[id]    = std::set< NodeID >(); };
+            boneEndPoints[start].insert(id);
+            boneEndPoints[id].insert( start );
+        }
+
+    }
+    
+    void addToCurrentBone( NodeID id ){
+        assert( id >= 0 && id < nodes.size() );
+        assert( nodes[id].type != SNT_Pole );
+        assert( nodes[id].type != SNT_Junction );
+        
+        NodeID curr_last = bones.back().nodes.back();
+        nodes[id].neighbors.insert( curr_last );
+        nodes[curr_last].neighbors.insert( id );
+
+        bones.back().nodes.push_back( id );
+    }
+    
+    void removeCurrentBone(){
+        assert(bones.back().nodes.size() > 0 );
+        bones.pop_back();
+    }
+    
+    bool sanityCheck(){
+        
+        bool ok = true;
+        
+        for( int i = 0; i < bones.size() && ok; ++i){
+            ok = ok && ( nodes[bones[i].nodes.front()].type == SNT_Pole || nodes[bones[i].nodes.front()].type == SNT_Junction );
+            ok = ok && ( nodes[bones[i].nodes.back()].type == SNT_Pole || nodes[bones[i].nodes.back()].type == SNT_Junction );
+        }
+        return ok;
+    }
+    
+public :
     std::vector< SkelNode > nodes;
     std::vector< SkelBone > bones;
     std::map< HMesh::VertexID,   NodeID> poleToNode;
@@ -84,7 +151,6 @@ struct Skeleton{
         std::map< HMesh::HalfEdgeID, NodeID> edgeToNode;
         
         NodeID nodeID = 0;
-        BoneID boneID = 0;
         
         // build edge_info structure
         HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges(m);
@@ -97,109 +163,131 @@ struct Skeleton{
         for( HMesh::VertexID v : poleSet ){
             // save pole
             SkelNode n;
-            n.ID        = nodeID++;
+            n.ID        = nodeID;
             n.type      = SNT_Pole;
             n.pos       = m.pos( v );
-
+            
             poleToNode[v] = n.ID;
             nodes.push_back( n );
+            ++nodeID;
+        }
+        
+        for( HMesh::VertexID v : poleSet ){
+
+            NodeID poleId = poleToNode[v];
             
             std::queue< HMesh::HalfEdgeID > starters;
 
             // save each outgoing edge from the pole
             for( HMesh::Walker w = m.walker(v); !w.full_circle(); w = w.circulate_vertex_ccw()){
                 starters.push( w.halfedge( ));
+                assert( edge_info[w.halfedge()].is_spine( ));
             }
+            assert( starters.size() == valency( m, v ));
             
             // for each outgoing pole of the edge
             while( !starters.empty( )){
+                bool connectedToPole    = true;
+                bool closeCurrentBone   = true;
                 
-                SkelBone bone;
-                bone.ID = boneID;
-                bone.nodes.push_back(n);
-                
+                openBone( poleId );
                 HMesh::Walker pole_to_pole = m.walker( starters.front() );
-
-                bool connectedToPole = true;
                 // need to iterate until it arrives to a pole
                 while( poleSet.count( pole_to_pole.vertex()) == 0){
+                    
+                    
+                    assert(edge_info[pole_to_pole.halfedge()].is_spine());
                     
                     std::vector<CGLA::Vec3d>        loop_v_pos;
                     std::vector<HMesh::HalfEdgeID>  loop_he;
                     HMesh::HalfEdgeID rib = pole_to_pole.next().halfedge();
-                    
-                    // I can skip it because I've already calculated that loop centroid + radius
-                    if( edgeToNode.count( rib ) > 0 ) continue;
-                    
                     assert( edge_info[rib].is_rib() );
-                    
-                    // calculate centroid and radius
-                    HMesh::Walker w = m.walker( rib );
-                    double radius   = 0.0;
-                    CGLA::Vec3d centroid( 0 );
                     bool rib_is_junction = edge_info[rib].is_junction();
                     
-                    while ( !w.full_circle( )){
-                        // here nodeID is the one I will use for the node I'm creating
-                        if( !rib_is_junction ){ // save correspondance halfedge->nodeId
-                            edgeToNode[w.halfedge()]        = nodeID;
-                            edgeToNode[w.opp().halfedge()]  = nodeID;
-                        }
+                    // I can skip it because I've already calculated that loop' centroid + radius
+                    if( edgeToNode.count( rib ) == 0 ){
+                    
+                        // calculate centroid and radius
+                        HMesh::Walker w = m.walker( rib );
+                        double radius   = 0.0;
+                        CGLA::Vec3d centroid( 0 );
                         
-                        CGLA::Vec3d pos = m.pos( w.vertex() );
-                        loop_v_pos.push_back( pos );
-                        centroid += pos;
-                        w = w.next().opp().next();
+                        while ( !w.full_circle( )){
+                            // here nodeID is the one I will use for the node I'm creating
+                            if( !rib_is_junction ){ // save correspondance halfedge->nodeId
+                                edgeToNode[w.halfedge()]        = nodeID;
+                                edgeToNode[w.opp().halfedge()]  = nodeID;
+                            }
+                            
+                            CGLA::Vec3d pos = m.pos( w.vertex() );
+                            loop_v_pos.push_back( pos );
+                            centroid += pos;
+                            w = w.next().opp().next();
+                        }
+                        centroid /= loop_v_pos.size();
+                        
+                        // calculate ball radius // use max radius
+                        for( CGLA::Vec3d& v_pos : loop_v_pos ){
+                            double length = ( centroid - v_pos ).length();
+                            if( length > radius ){ radius = length; }
+                        }
+                        assert( radius > 0.0 );
+                        
+                        SkelNode nl;
+                        nl.ID       = nodeID;
+                        nl.type     = rib_is_junction ? SNT_Junction : SNT_Rib;
+                        nl.pos      = centroid;
+                        nl.radius   = connectedToPole ? ( centroid - nodes[poleId].pos ).length() : radius;
+                        nodes.push_back( nl );
+                        ++nodeID;
+                        if( rib_is_junction ){ closeBone( nl.ID ); openBone( nl.ID ); }
+                        else                 { addToCurrentBone( nl.ID ); }
                     }
-                    centroid /= loop_v_pos.size();
-                    
-                    // calculate ball radius // use max radius
-                    for( CGLA::Vec3d& v_pos : loop_v_pos ){
-                        double length = ( centroid - v_pos ).length();
-                        if( length > radius ){ radius = length; }
-                    }
-                    assert( radius > 0.0 );
-                    
-                    SkelNode nl;
-                    nl.ID       = ++nodeID;
-                    nl.type     = rib_is_junction ? SNT_Junction : SNT_Rib;
-                    nl.pos      = centroid;
-                    nl.radius   = connectedToPole ? ( centroid - n.pos ).length() : radius;
-                    nodes.push_back( nl );
-                    
-                    bone.nodes.push_back( nl );
-                    
-                    // if type is JUNCTION I need to close a bone a build a new one
-                    if( rib_is_junction ){
-                        assert( bone.nodes.size() > 1);
-                        bones.push_back( bone );
-                        boneID++;
-                        bone = SkelBone();
-                        bone.ID = boneID;
-                        bone.nodes.push_back( nl );
+                    // devo solo aggiungerlo al bone corrente
+                    else{
+                        addToCurrentBone( edgeToNode[rib] );
+//                        removeCurrentBone();
+//                        closeCurrentBone = false;
+//                        break;
                     }
                     
                     connectedToPole = false;
                     pole_to_pole = pole_to_pole.next().opp().next();
                 }
                 
-                HMesh::VertexID end_pole = pole_to_pole.vertex();
-                assert( poleSet.count( end_pole ) > 0 );
-                assert( is_pole( m, end_pole ));
-                
-                SkelNode n_end;
-                n_end.ID        = nodeID++;
-                n_end.type      = SNT_Pole;
-                n_end.pos       = m.pos( end_pole );
-                nodes.push_back( n_end );
-                bone.nodes.push_back( n_end );
-                
-                assert(bone.nodes.size() > 1 );
-                
-                bones.push_back( bone );
+//                if( closeCurrentBone ){
+                    HMesh::VertexID end_pole = pole_to_pole.vertex();
+                    assert( poleSet.count( end_pole ) > 0 );
+                    assert( is_pole( m, end_pole ));
+                    assert( poleToNode.count(end_pole) > 0 );
+                    
+                    closeBone( poleToNode[end_pole] );
+//                }
                 
                 starters.pop();
             }
+        }
+        assert(sanityCheck());
+        
+    }
+    
+    void saveToFile( std::string path ){
+        
+        std::cout << " there are " << nodes.size() << " nodes  and " << bones.size() << " bones " << std::endl;
+        
+        std::ofstream t( path, std::ofstream::trunc );
+        if( t.is_open()){
+            t << "ID Cx Cy Cz RADIUS #NEIGHBORS NEIGHBORS_LIST" << std::endl << nodes.size() << std::endl;
+            
+            for( SkelNode& n : nodes ){
+                t << n.ID << " " << n.pos[0] << " " << n.pos[1] << " " << n.pos[2] << " " << n.radius << " "
+                  << n.neighbors.size();
+                for(NodeID neighbor : n.neighbors ){
+                    t << " " << neighbor;
+                }
+                t << std::endl;
+            }
+            t.close();
         }
     }
     

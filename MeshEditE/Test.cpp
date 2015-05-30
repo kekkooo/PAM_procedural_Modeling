@@ -180,7 +180,7 @@ CGLA::Mat4x4d alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 )
     v1.normalize();
     v2.normalize();
     
-    cout << v1 << " ### " << v2 << "?" << endl;
+//    cout << v1 << " ### " << v2 << "?" << endl;
     assert( (( fabs( v1[0] ) > GEO_EPS ) || ( fabs( v1[1] ) > GEO_EPS ) || ( fabs(  v1[2] ) > GEO_EPS )));
     assert( (( fabs( v2[0] ) > GEO_EPS ) || ( fabs( v2[1] ) > GEO_EPS ) || ( fabs(  v2[2] ) > GEO_EPS )));
 
@@ -209,7 +209,7 @@ CGLA::Mat4x4d alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 )
     // if parallel but not opposite build rotation that replaces reflection
     if( parallel && !opposite ){
         // probably v1 and v2 are equal
-        cout << v1 << " is equal to " << v2 << "?" << endl;
+//        cout << v1 << " is equal to " << v2 << "?" << endl;
         Mat4x4d T;
 
         // I should reflect v1 with respect to the plane whose normal is v2
