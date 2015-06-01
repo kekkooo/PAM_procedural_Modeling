@@ -104,28 +104,23 @@ private:
         const NodeID start = bones.back().nodes.front(),
                      end   = bones.back().nodes.back();
         
-        if(( boneEndPoints[start].count(id) > 0 ) || ( boneEndPoints[end].count(id) > 0 ) ){ // bone already exists
-            bones.pop_back();
-        }else{
-            if( boneEndPoints.count( start ) ==  0 )    { boneEndPoints[start] = std::set< NodeID >(); };
-            if( boneEndPoints.count( id ) ==  0 )       { boneEndPoints[id]    = std::set< NodeID >(); };
-            boneEndPoints[start].insert(id);
-            boneEndPoints[id].insert( start );
-            
-            SkelBone& b = bones.back();
+        if( boneEndPoints.count( start ) ==  0 )    { boneEndPoints[start] = std::set< NodeID >(); };
+        if( boneEndPoints.count( id ) ==  0 )       { boneEndPoints[id]    = std::set< NodeID >(); };
+        boneEndPoints[start].insert(id);
+        boneEndPoints[id].insert( start );
+        
+        SkelBone& b = bones.back();
 
-            for( int i = 1; i < b.nodes.size() - 1; ++i ){
-                NodeID prev = b.nodes[i-1],
-                       curr = b.nodes[i],
-                       next = b.nodes[i+1];
+        for( int i = 1; i < b.nodes.size() - 1; ++i ){
+            NodeID prev = b.nodes[i-1],
+                   curr = b.nodes[i],
+                   next = b.nodes[i+1];
 
-                nodes[curr].neighbors.insert( prev );
-                nodes[curr].neighbors.insert( next );
-                nodes[prev].neighbors.insert( curr );
-                nodes[next].neighbors.insert( curr );
-            }
+            nodes[curr].neighbors.insert( prev );
+            nodes[curr].neighbors.insert( next );
+            nodes[prev].neighbors.insert( curr );
+            nodes[next].neighbors.insert( curr );
         }
-
     }
     
     void addToCurrentBone( NodeID id ){
@@ -134,6 +129,11 @@ private:
         assert( nodes[id].type != SNT_Junction );
         
         bones.back().nodes.push_back( id );
+    }
+    
+    void killCurrentBone( ){
+        assert( bones.back().nodes.size() == 1 );
+        bones.pop_back();
     }
     
     bool sanityCheck(){
@@ -168,7 +168,7 @@ public :
         
         // Find all Skel Leafs ( Poles )
         for( HMesh::VertexID v : poleSet ){
-            skelStarters.insert( v);
+            skelStarters.insert( v );
             // save pole
             SkelNode n;
             n.ID        = nodeID;
@@ -199,25 +199,30 @@ public :
                 startHE.pop();
                 
                 HMesh::Walker w = m.walker( starter );
-                
                 do{
-                    visited[w.halfedge()]               = true;
-                    visited[w.opp().halfedge()]         = true;
-                    junctionToNode[w.halfedge()]        = nodeID;
-                    junctionToNode[w.opp().halfedge()]  = nodeID;
+                    assert(edge_info[w.halfedge()].is_junction());
+                    assert(edge_info[w.opp().halfedge()].is_junction());
+                    HMesh::HalfEdgeID curr      = w.halfedge(),
+                                      opp       = w.opp().halfedge();
+                    HMesh::VertexID   curr_v    = w.vertex();
                     
-                    if( vertices.count( w.vertex()) == 0        ){
-                        centroid += m.pos( w.vertex( ));
-                        vertices.insert( w.vertex( ));
+                    visited[curr]        = true;
+                    visited[opp]         = true;
+                    junctionToNode[curr] = nodeID;
+                    junctionToNode[opp]  = nodeID;
+                    
+                    if( vertices.count( curr_v )  == 0        ){
+                        centroid += m.pos( curr_v );
+                        vertices.insert( curr_v );
                     }
                     
-                    if( valency( m, w.vertex( )) != 4 ){
-                        junctionSingularityToNode[w.vertex()] = nodeID;
-                        skelStarters.insert( w.vertex() );
-                        HMesh::Walker sing = m.walker(w.vertex());
+                    if( valency( m, curr_v ) != 4 ){
+                        junctionSingularityToNode[curr_v] = nodeID;
+                        skelStarters.insert( curr_v );
+                        HMesh::Walker sing = m.walker(curr_v);
                         for( ; !sing.full_circle(); sing = sing.circulate_vertex_ccw( )){
-                            if( !visited[w.halfedge()] ){
-                                startHE.push( w.halfedge( ));
+                            if( !visited[sing.halfedge()] && edge_info[sing.halfedge()].is_junction() ){
+                                startHE.push( sing.halfedge( ));
                             }
                         }
                     }
@@ -243,18 +248,19 @@ public :
         
         // this should iterate through skelStarters and work differently if vertex is a pole or a junction
 //        for( HMesh::VertexID pole : poleSet ){
+        std::map< HMesh::HalfEdgeID, NodeID >   ribToNode;
         for( HMesh::VertexID v : skelStarters ){
             
             std::queue< HMesh::HalfEdgeID > hes;
             NodeID startingNode;
             bool starter_is_pole = false;
-            if( poleSet.count(v) > 0 ){ // it is a pole
+            if( poleSet.count( v ) > 0 ){ // it is a pole
                 hes.push( m.walker(v).halfedge() );
                 assert( edge_info[hes.front()].is_spine( ));
                 startingNode    = poleToNode[v];
                 starter_is_pole = true;
 
-            }else{
+            }else{ // it is a singularity of the junction complex loop
                 assert( junctionSingularityToNode.count(v) > 0 );
                 startingNode = junctionSingularityToNode[v];
                 for( auto ws = m.walker( v ); !ws.full_circle(); ws = ws.circulate_vertex_cw() ){
@@ -282,37 +288,52 @@ public :
                     CGLA::Vec3d centroid(0);
                     std::vector<HMesh::VertexID> loop_vertices;
                     HMesh::Walker loop_walker = m.walker( rib );
-                    for( ; !loop_walker.full_circle(); loop_walker = loop_walker.next().opp().next()){
-                        centroid += m.pos( loop_walker.vertex( ));
-                        loop_vertices.push_back( loop_walker.vertex( ));
-                    }
-                    centroid /= loop_vertices.size();
                     
-                    for( HMesh::VertexID v : loop_vertices ){
-                        double length = ( centroid - m.pos(v) ).length();
-                        if( length > radius ){ radius = length; }
+                    if( ribToNode.count(rib) == 0){
+                        for( ; !loop_walker.full_circle(); loop_walker = loop_walker.next().opp().next()){
+                            
+                            ribToNode[loop_walker.halfedge()]       = nodeID;
+                            ribToNode[loop_walker.opp().halfedge()] = nodeID;
+
+                            centroid += m.pos( loop_walker.vertex( ));
+                            loop_vertices.push_back( loop_walker.vertex( ));
+                        }
+                        centroid /= loop_vertices.size();
+                        
+                        for( HMesh::VertexID v : loop_vertices ){
+                            double length = ( centroid - m.pos(v) ).length();
+                            if( length > radius ){ radius = length; }
+                        }
+                        assert( radius > 0.0 );
+                        SkelNode nl;
+                        nl.ID       = nodeID;
+                        nl.type     = SNT_Rib;
+                        nl.pos      = centroid;
+                        nl.radius   = connectedToPole ? ( centroid - nodes[startingNode].pos ).length() : radius;
+                        nodes.push_back( nl );
+                        addToCurrentBone( nl.ID );
+                        ++nodeID;
                     }
-                    assert( radius > 0.0 );
-                    SkelNode nl;
-                    nl.ID       = nodeID;
-                    nl.type     = SNT_Rib;
-                    nl.pos      = centroid;
-                    nl.radius   = connectedToPole ? ( centroid - nodes[startingNode].pos ).length() : radius;
-                    nodes.push_back( nl );
-                    addToCurrentBone( nl.ID );
-                    ++nodeID;
+                    else{ // the rib loop was already encountered. actually this situation should kill the current branch
+                          // currently I'm deferring it to bone closure, but it should be killed here, performance gain!
+//                        addToCurrentBone( ribToNode[rib] );
+                        killCurrentBone();
+                        goto bone_killed;
+                    }
 
                     w   = w.next().opp().next();
                     rib = w.next().halfedge();
                     connectedToPole = false;
                 }
                 if( edge_info[rib].is_junction()){
+                    assert(junctionToNode.count(rib) > 0 );
                     closeBone( junctionToNode[rib] );
                 }
                 else{
                     assert( poleSet.count(w.vertex()) > 0);
                     closeBone( poleToNode[w.vertex()] );
                 }
+                bone_killed : ;
             }
         }
     }
@@ -326,12 +347,17 @@ public :
             t << "ID Cx Cy Cz RADIUS #NEIGHBORS NEIGHBORS_LIST" << std::endl << nodes.size() << std::endl;
             
             for( SkelNode& n : nodes ){
+//                if( n.neighbors.size() == 0 ) { continue; }
                 t << n.ID << " " << n.pos[0] << " " << n.pos[1] << " " << n.pos[2] << " " << n.radius << " "
                   << n.neighbors.size();
                 for(NodeID neighbor : n.neighbors ){
                     t << " " << neighbor;
                 }
                 t << std::endl;
+                
+                // debug
+                std::string msg = ( n.type == SNT_Pole ? "Pole" : ( n.type == SNT_Junction ? "Junction" : "Rib") );
+                std::cout << n.ID << " ) is : " << msg << " # " << n.type <<  std::endl;
             }
             t.close();
         }
