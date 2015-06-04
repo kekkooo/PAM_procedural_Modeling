@@ -99,58 +99,69 @@ void load_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     t.fromJson( full_path );
 }
 
+struct toolbox_step_result{
+    bool has_next           = true;
+    bool can_glue           = true;
+    bool enough_free_poles  = true;
+    inline bool ok() { return has_next && can_glue && enough_free_poles ; }
+};
+
+toolbox_step_result toolbox_step( Procedural::Toolbox &t, StatefulEngine &s ){
+    toolbox_step_result result;
+    result.has_next = t.hasNext();
+    if( !result.ok() ){ return result; }
+
+    Timer timer;
+    cout << endl << "########################################" << endl << endl;
+    timer.start();
+    Module m = t.getNext();
+    float t0 = timer.get_secs();
+    cout << " adding a piece with "  << m.no_of_glueings << "-valent connection in " << t0 << "s" << endl;
+    
+    s.setModule( m );
+    
+    float t1 = timer.get_secs();
+    
+    cout << "module set in : " << (t1-t0) << endl;
+    
+    result.enough_free_poles   = s.noFreePoles() >= m.no_of_glueings;
+    if( result.enough_free_poles){
+        float t1_1 = timer.get_secs();
+        result.can_glue  = s.testMultipleTransformations( 10, m.no_of_glueings );
+        float t2 = timer.get_secs();
+        cout << "configurations tested in in : " << (t2-t1_1) << "s" << endl;
+        
+    }
+    
+    if( result.can_glue && result.enough_free_poles ){
+        float t2_1 = timer.get_secs();
+        s.glueCurrent();
+        float t3 = timer.get_secs();
+        cout << "glueing done in : " << (t3-t2_1) << "s" << endl;
+    }
+    else{
+        t.undoLast();
+    }
+    return result;
+}
+
 void empty_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     
     Procedural::Toolbox& t = Procedural::Toolbox::getToolboxInstance();
     StatefulEngine &s = StatefulEngine::getCurrentEngine();
-    bool can_glue           = true;
-    bool enough_free_poles  = true;
+
+    toolbox_step_result result;
     
-    Timer timer;
-    
-    while( t.hasNext() && can_glue && enough_free_poles ){
-        cout << endl << "########################################" << endl << endl;
-        timer.start();
-        Module m = t.getNext();
-        float t0 = timer.get_secs();
-        cout << " adding a piece with "  << m.no_of_glueings << "-valent connection in " << t0 << "s" << endl;
-        
-        s.setModule( m );
-        
-        float t1 = timer.get_secs();
-        
-        cout << "module set in : " << (t1-t0) << endl;
-        
-        enough_free_poles   = s.noFreePoles() >= m.no_of_glueings;
-        if( enough_free_poles){
-            float t1_1 = timer.get_secs();
-            can_glue            = s.testMultipleTransformations( 10, m.no_of_glueings );
-            float t2 = timer.get_secs();
-            cout << "configurations tested in in : " << (t2-t1_1) << "s" << endl;
-            
-        }
-        
-        if( can_glue && enough_free_poles ){
-            float t2_1 = timer.get_secs();
-            s.glueCurrent();
-            float t3 = timer.get_secs();
-            cout << "glueing done in : " << (t3-t2_1) << "s" << endl;
-        }
-        else{
-            t.undoLast();
-        }
-//        s.applyRandomTransform();
-//        s.applyOptimalAlignment();
-//        s.alignModuleNormalsToHost();
-//        s.actualGlueing();
+    while( result.ok() ){
+        result = toolbox_step( t, s );
     }
-    if( !t.hasNext() ){
+    if( !result.has_next ){
         cout << "no more pieces " << endl;
     }
-    if( !can_glue ){
+    if( !result.can_glue ){
         cout << "cannot find a feasible solution. remaining pieces : " << t.noRemainingPieces() << endl;
     }
-    if( !enough_free_poles ){ 
+    if( !result.enough_free_poles ){
         cout << "there aren't enough free poles. remaining pieces :" << t.noRemainingPieces() << endl;
     }
 }
@@ -161,19 +172,16 @@ void step_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     Procedural::Toolbox& t = Procedural::Toolbox::getToolboxInstance();
     StatefulEngine &s = StatefulEngine::getCurrentEngine();
     
-    if( t.hasNext()){
-        cout << " adding a piece " << endl;
-        Module m = t.getNext();
-        s.setModule( m );
-        s.testMultipleTransformations(10, m.no_of_glueings);
-        s.glueCurrent();
+    toolbox_step_result result = toolbox_step( t, s );
+    if( !result.has_next ){
+        cout << "no more pieces " << endl;
     }
-    else{
-        cout << " no more pieces " << endl;
+    if( !result.can_glue ){
+        cout << "cannot find a feasible solution. remaining pieces : " << t.noRemainingPieces() << endl;
     }
-    
-    
-    
+    if( !result.enough_free_poles ){
+        cout << "there aren't enough free poles. remaining pieces :" << t.noRemainingPieces() << endl;
+    }
 }
 
 

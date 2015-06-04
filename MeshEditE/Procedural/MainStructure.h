@@ -59,6 +59,7 @@ private:
     PoleSet                         freePolesSet;
     size_t                          time;
     PoleInfoMap                     freePoleInfoMap;
+    Skeleton                        *skel;
 
 };
 

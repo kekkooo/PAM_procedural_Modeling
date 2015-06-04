@@ -124,13 +124,17 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
     
 }
 
-const PoleInfo& Module::getPoleInfo( HMesh::VertexID p ){
+const PoleInfo& Module::getPoleInfo( HMesh::VertexID p ) const{
     assert(poleInfoMap.count(p) > 0);
-    return poleInfoMap[p];
+    return poleInfoMap.at(p);
 }
     
 bool Module::isPole( HMesh::VertexID v ){
     return (( find( poleList.begin(), poleList.end(), v ) != poleList.end()) && ( poleInfoMap.count(v) > 0 ) );
+}
+    
+const Skeleton& Module::getSkeleton() const{
+    return *( this->skeleton );
 }
     
 

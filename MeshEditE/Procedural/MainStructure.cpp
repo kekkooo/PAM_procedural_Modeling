@@ -23,6 +23,7 @@ namespace Procedural{
     
     MainStructure::MainStructure(){
         time = 0;
+        skel = new Skeleton();
     }
 
     const PoleList& MainStructure::getPoles(){
@@ -65,6 +66,7 @@ namespace Procedural{
             gluedPoles[i] = remapper[gluedPoles[i]];
         }
         freePoleInfoMap = std::move( p );
+        skel->reAlignIDs( remapper );
     }
     
     void MainStructure::glueModule( Module &m, vector<Match> &matches ){
@@ -121,6 +123,8 @@ namespace Procedural{
         cout << " num of free poles " << freePoles.size() << " # set : " << freePolesSet.size();
         cout << " num of glued poles " << gluedPoles.size() << endl;
         /*****          END         ****/
+        
+        skel->merge( m.getSkeleton(), matches );
     }
     
     bool MainStructure::isColliding(const Module &m) const{
