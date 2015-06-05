@@ -124,8 +124,13 @@ namespace Procedural{
         cout << " num of glued poles " << gluedPoles.size() << endl;
         /*****          END         ****/
         
+        matches.clear();
         skel->merge( m.getSkeleton(), matches );
+        skel->saveToFile("//Users//francescousai//Desktop//example.skel");
     }
+    
+    
+    
     
     bool MainStructure::isColliding(const Module &m) const{
         bool collision_found = false;

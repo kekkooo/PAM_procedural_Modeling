@@ -17,6 +17,8 @@
 #include <iostream>
 
 #include <GEL/HMesh/Manifold.h>
+#include <GEL/CGLA/Vec3d.h>
+#include <GEL/CGLA/Mat4x4d.h>
 
 namespace Procedural{
     typedef size_t NodeID;
@@ -31,6 +33,10 @@ namespace Procedural{
         double                  radius  = 0.0;
         std::set<NodeID>        neighbors;
         BoneID                  boneID;
+        
+        void transform( const CGLA::Mat4x4d& T ){
+            pos = T.mul_3D_point( pos );
+        }
     };
     
     struct SkelBone{
@@ -90,9 +96,13 @@ namespace Procedural{
             // ids exist
             assert( b_id >= 0 && b_id < bones.size() );
             assert( n_id >= 0 && n_id < nodes.size() );
-            // bone is not closed
-            assert( nodes[bones[b_id].nodes.back()].type != SNT_Pole );
-            assert( nodes[bones[b_id].nodes.back()].type != SNT_Junction );
+            // bone has only 1 endpoint
+            int e = 0;
+            e += nodes[bones[b_id].nodes.back()].type  == SNT_Pole      ? 1 : 0;
+            e += nodes[bones[b_id].nodes.back()].type  == SNT_Junction  ? 1 : 0;
+            e += nodes[bones[b_id].nodes.front()].type == SNT_Pole      ? 1 : 0;
+            e += nodes[bones[b_id].nodes.front()].type == SNT_Junction  ? 1 : 0;
+            assert( e == 1 );
             // node is not an endpoint
             assert( nodes[n_id].type != SNT_Pole );
             assert( nodes[n_id].type != SNT_Junction );
@@ -106,13 +116,12 @@ namespace Procedural{
             assert( n_id >= 0 && n_id < nodes.size() );
             // bone is properly opened
             assert( nodes[bones[b_id].nodes.front()].type == SNT_Pole ||
-                    nodes[bones[b_id].nodes.front()].type != SNT_Junction );
+                    nodes[bones[b_id].nodes.front()].type == SNT_Junction );
             // bone is not closed
             assert( nodes[bones[b_id].nodes.back()].type != SNT_Pole );
             assert( nodes[bones[b_id].nodes.back()].type != SNT_Junction );
             // node is not an endpoint
-            assert( nodes[n_id].type != SNT_Pole );
-            assert( nodes[n_id].type != SNT_Junction );
+            assert( nodes[n_id].type == SNT_Pole || nodes[n_id].type == SNT_Junction );
             // bone has at least 1 node
             assert( bones.back().nodes.size() > 0 );
             
@@ -379,21 +388,15 @@ namespace Procedural{
             poleToNode = std::move( remapped );
         }
         
+        void transform( const CGLA::Mat4x4d& T ){
+            for( int i = 0; i < nodes.size(); ++i ){
+                nodes[i].transform( T );
+            }
+        }
+        
         // ther is copied by value
         void merge( const Skeleton &other, std::vector< std::pair< HMesh::VertexID, HMesh::VertexID > >& other_this_matches ){
             
-            // this should connect the two skeletons at the match points
-            // remove poles at each side
-            // add a node in the middle with radius that is the mean between the radii of two opened tubes that will be glued.
-            // extend the this-bone ended with one of match's pole in order to incorporate all the nodes of the other skeleton
-            // connected to the other match's pole.
-            // copy the other bones onto this skeleton
-            
-            // a lot of asserts
-            
-            // offset other
-            // copy other's nodes and bones to this
-            // fuse the bones
             std::vector< NodeID > this_pole_nodes, other_pole_nodes;
             for( auto item : other_this_matches ){
                 
@@ -423,16 +426,19 @@ namespace Procedural{
                 new_node_IDs[node.ID] = new_node.ID;
             }
             // this make sense since those nodes will be merged
-            for( int i = 0; i < this_pole_nodes.size(); ++i ){
-                new_node_IDs[other_pole_nodes[i]] = this_pole_nodes[i];
-            }
+//            for( int i = 0; i < this_pole_nodes.size(); ++i ){
+//                new_node_IDs[other_pole_nodes[i]] = this_pole_nodes[i];
+//            }
             
             std::vector< BoneID > other_bones_glued;
             
             // merge the glued poles and reopen their bones
             for( int i = 0; i< this_pole_nodes.size(); ++i ){
                 const SkelNode& other_node = other.nodes[other_pole_nodes[i]];
+                assert( nodes[this_pole_nodes[i]].type == SNT_Pole );
+
                 nodes[this_pole_nodes[i]].type = SNT_Rib;
+#warning da correggere, così viene sempre 0
                 nodes[this_pole_nodes[i]].radius =
                     std::max( nodes[this_pole_nodes[i]].radius, other_node.radius );
                 
@@ -440,8 +446,15 @@ namespace Procedural{
                 bool reverse            = other_node.ID == other.bones[other_node.boneID].nodes.back();
                 size_t other_bone_size  = other.bones[other_node.boneID].nodes.size();
                 BoneID curr_bone        = nodes[this_pole_nodes[i]].boneID;
-                for( int bi = 1; bi < other.bones[other_node.boneID].nodes.size() - 1; ++i ){
-                    int index = reverse ? bi : other_bone_size - bi - 1;
+                if( !( bones[curr_bone].nodes.back( ) == this_pole_nodes[i] )){    // need to reverse, in order to push always on the back
+                    std::vector<NodeID> b_nodes = std::move( bones[curr_bone].nodes );
+                    while( b_nodes.size() > 0 ){
+                        bones[curr_bone].nodes.push_back( b_nodes.back() );
+                        b_nodes.pop_back();
+                    }
+                }
+                for( int bi = 1; bi < other.bones[other_node.boneID].nodes.size() - 1; ++bi ){
+                    int index = reverse ? other_bone_size - bi - 1 : bi;
 
                     assert( new_node_IDs.count( other.bones[other_node.boneID].nodes[index] ) > 0 );
                     NodeID mapped_node = new_node_IDs[other.bones[other_node.boneID].nodes[index]];
@@ -461,12 +474,18 @@ namespace Procedural{
             for( const SkelBone& b : other.bones ){
                 if( std::find( other_bones_glued.begin(), other_bones_glued.end(), b.ID ) != other_bones_glued.end()) { continue; }
                 openBone(b.nodes.front());
-                for( int bni = 0 ; bni < b.nodes.size() - 1; ++bni ){
+                for( int bni = 1 ; bni < b.nodes.size() - 1; ++bni ){
                     assert( new_node_IDs.count(b.nodes[bni] > 0 ));
                     addToCurrentBone( new_node_IDs[b.nodes[bni]] );
                 }
                 closeBone( b.nodes.back( ));
             }
+            
+            for( auto item : other.poleToNode ){
+                if( new_node_IDs.count( item.second ) == 0 ) { continue; }
+                poleToNode[item.first] = new_node_IDs[item.second];
+            }
+            
             assert( sanityCheck( ));
         }
     };

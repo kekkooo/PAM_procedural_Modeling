@@ -25,11 +25,12 @@ Module::Module( std::string path, Moduletype mType ){
     assert( f.good() );
     
     this->m = new Manifold();
-    this->skeleton = new Skeleton();
     
     obj_load( path, *this->m );
     bsphere( *m, bsphere_center, bsphere_radius );
     BuildPoleInfo();
+    
+    this->skeleton = new Skeleton();
     this->skeleton->build( *m, this->poleSet );
     this->skeleton->saveToFile("//Users//francescousai//Desktop//example.skel");
 }
@@ -64,6 +65,9 @@ Module::Module( Manifold &manifold, Moduletype mType, size_t no_glueings ){
     this->no_of_glueings = no_glueings;
     
     BuildPoleInfo();
+    
+    this->skeleton = new Skeleton();
+    this->skeleton->build( *m, this->poleSet );
 }
 
     
@@ -109,6 +113,11 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_mod
     
     assert( M->poleInfoMap.size() == this->poleInfoMap.size( ));
     
+    M->skeleton = new Skeleton();
+    vector< pair< VertexID, VertexID > > _;
+    M->skeleton->merge( *skeleton, _ );
+    M->skeleton->transform( T );
+    
     return *M;
 }
     
@@ -121,6 +130,7 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
         poleList[i] = newID;
     }
     poleInfoMap = std::move( p );
+    skeleton->reAlignIDs( remapper );
     
 }
 
