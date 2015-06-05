@@ -394,6 +394,32 @@ namespace Procedural{
             }
         }
         
+        void copyNew( const Skeleton &other ){
+            nodes.clear();
+            bones.clear();
+            poleToNode.clear();
+            junctionSingularityToNode.clear();
+            for( const SkelNode& node : other.nodes ){
+                SkelNode new_node;
+                new_node.ID     = node.ID;
+                new_node.radius = node.radius;
+                new_node.pos    = node.pos;
+                new_node.type   = node.type;
+                nodes.push_back( new_node );
+            }
+            for( const auto item : other.poleToNode ){
+                poleToNode[item.first] = item.second;
+            }
+            for( const SkelBone& bone : other.bones ){
+                SkelBone new_bone;
+                new_bone.ID = bone.ID;
+                for( NodeID id : bone.nodes ){
+                    new_bone.nodes.push_back( id );
+                }
+                bones.push_back( new_bone );
+            }
+        }
+        
         // ther is copied by value
         void merge( const Skeleton &other, std::vector< std::pair< HMesh::VertexID, HMesh::VertexID > >& other_this_matches ){
             
@@ -425,10 +451,6 @@ namespace Procedural{
                 nodes.push_back( new_node );
                 new_node_IDs[node.ID] = new_node.ID;
             }
-            // this make sense since those nodes will be merged
-//            for( int i = 0; i < this_pole_nodes.size(); ++i ){
-//                new_node_IDs[other_pole_nodes[i]] = this_pole_nodes[i];
-//            }
             
             std::vector< BoneID > other_bones_glued;
             
@@ -437,6 +459,7 @@ namespace Procedural{
                 const SkelNode& other_node = other.nodes[other_pole_nodes[i]];
                 assert( nodes[this_pole_nodes[i]].type == SNT_Pole );
 
+                // merge the poles
                 nodes[this_pole_nodes[i]].type = SNT_Rib;
 #warning da correggere, così viene sempre 0
                 nodes[this_pole_nodes[i]].radius =
@@ -444,41 +467,50 @@ namespace Procedural{
                 
                 // copy the bone outgoing from other_pole_nodes[i]
                 bool reverse            = other_node.ID == other.bones[other_node.boneID].nodes.back();
-                size_t other_bone_size  = other.bones[other_node.boneID].nodes.size();
                 BoneID curr_bone        = nodes[this_pole_nodes[i]].boneID;
-                if( !( bones[curr_bone].nodes.back( ) == this_pole_nodes[i] )){    // need to reverse, in order to push always on the back
+                BoneID other_curr_bone  = other.nodes[other_node.boneID].boneID;
+                size_t other_bone_size  = other.bones[other_curr_bone].nodes.size();
+
+                if( !( bones[curr_bone].nodes.back( ) == this_pole_nodes[i] )){
+                    // need to reverse, in order to push always on the back
                     std::vector<NodeID> b_nodes = std::move( bones[curr_bone].nodes );
                     while( b_nodes.size() > 0 ){
                         bones[curr_bone].nodes.push_back( b_nodes.back() );
                         b_nodes.pop_back();
                     }
                 }
-                for( int bi = 1; bi < other.bones[other_node.boneID].nodes.size() - 1; ++bi ){
+                
+                for( int bi = 1; bi < other_bone_size - 1; ++bi ){
                     int index = reverse ? other_bone_size - bi - 1 : bi;
 
-                    assert( new_node_IDs.count( other.bones[other_node.boneID].nodes[index] ) > 0 );
-                    NodeID mapped_node = new_node_IDs[other.bones[other_node.boneID].nodes[index]];
+                    assert( new_node_IDs.count( other.bones[other_curr_bone].nodes[index] ) > 0 );
+                    NodeID mapped_node = new_node_IDs[other.bones[other_curr_bone].nodes[index]];
 
                     assert( mapped_node >= 0 && mapped_node < nodes.size() );
                     addToBone( curr_bone, mapped_node );
                 }
                 if( reverse ){
-                    closeBone( curr_bone, other.bones[other_node.boneID].nodes.front( ));
+                    NodeID front = other.bones[other_curr_bone].nodes.front( );
+                    assert( other.nodes[front].type == SNT_Pole || other.nodes[front].type == SNT_Junction );
+                    closeBone( curr_bone, front );
                 }
                 else{
-                    closeBone( curr_bone, other.bones[other_node.boneID].nodes.back( ));
+                    NodeID back = other.bones[other_curr_bone].nodes.back( );
+                    assert( other.nodes[back].type == SNT_Pole || other.nodes[back].type == SNT_Junction );
+
+                    closeBone( curr_bone, back );
                 }
-                other_bones_glued.push_back( curr_bone );
+                other_bones_glued.push_back( other_curr_bone );
             }
             
             for( const SkelBone& b : other.bones ){
                 if( std::find( other_bones_glued.begin(), other_bones_glued.end(), b.ID ) != other_bones_glued.end()) { continue; }
-                openBone(b.nodes.front());
+                openBone( new_node_IDs[b.nodes.front()] );
                 for( int bni = 1 ; bni < b.nodes.size() - 1; ++bni ){
                     assert( new_node_IDs.count(b.nodes[bni] > 0 ));
                     addToCurrentBone( new_node_IDs[b.nodes[bni]] );
                 }
-                closeBone( b.nodes.back( ));
+                closeBone( new_node_IDs[b.nodes.back( )]);
             }
             
             for( auto item : other.poleToNode ){

@@ -113,9 +113,8 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_mod
     
     assert( M->poleInfoMap.size() == this->poleInfoMap.size( ));
     
-    M->skeleton = new Skeleton();
-    vector< pair< VertexID, VertexID > > _;
-    M->skeleton->merge( *skeleton, _ );
+    M->skeleton = new Skeleton();    
+    M->skeleton->copyNew( *skeleton );
     M->skeleton->transform( T );
     
     return *M;
@@ -131,7 +130,6 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
     }
     poleInfoMap = std::move( p );
     skeleton->reAlignIDs( remapper );
-    
 }
 
 const PoleInfo& Module::getPoleInfo( HMesh::VertexID p ) const{
