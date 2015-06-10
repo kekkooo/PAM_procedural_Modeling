@@ -206,7 +206,7 @@ namespace Procedural{
             
             // build bones ball
             for( const SkelBone& b : bones ){
-                double      radius = 0;
+                double      radius = ( nodes.at( b.nodes.front( )).pos - nodes.at( b.nodes.back( )).pos ).length() ;
                 CGLA::Vec3d centroid( 0.0 );
                 const SkelNode& start = nodes[b.nodes.front()];
                 cd_hierarchy->bones[b.ID];
@@ -239,7 +239,7 @@ namespace Procedural{
                         double rr = ( cd_hierarchy->bones[neighbor_bone_id].ball.center - n.pos ).length();
                         if( rr > radius ){ radius = rr; }
                     }
-                    cd_hierarchy->joints[n.ID].ball.radius = n.ID;
+                    cd_hierarchy->joints[n.ID].ball.radius = radius;
                 }
             }
         }
