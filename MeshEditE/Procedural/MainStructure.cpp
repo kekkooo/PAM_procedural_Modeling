@@ -126,7 +126,8 @@ namespace Procedural{
         
         matches.clear();
         skel->merge( m.getSkeleton(), matches );
-        skel->saveToFile("//Users//francescousai//Desktop//example.skel");
+        skel->saveToFile( "//Users//francescousai//Desktop//example.skel" );
+        skel->saveCollisionDetectionHierarchyToFile( "//Users//francescousai//Desktop//example_cd.skel" );
     }
     
     

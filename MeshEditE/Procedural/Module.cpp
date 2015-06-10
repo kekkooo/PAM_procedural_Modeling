@@ -129,7 +129,10 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
         poleList[i] = newID;
     }
     poleInfoMap = std::move( p );
-    skeleton->reAlignIDs( remapper );
+    Skeleton* temp = skeleton;
+    skeleton = new Skeleton();
+    skeleton->copyAndRealignIDs( *temp, remapper );
+//    skeleton->reAlignIDs( remapper );
 }
 
 const PoleInfo& Module::getPoleInfo( HMesh::VertexID p ) const{

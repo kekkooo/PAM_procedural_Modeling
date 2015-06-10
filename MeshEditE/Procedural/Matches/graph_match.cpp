@@ -60,7 +60,7 @@ void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, Mani
                     n2 = Procedural::Geometry::vertex_normal( m, v2 );
         n1.normalize();
         n2.normalize();
-
+#warning consider using squared length
         double distance = ( m.pos( v1 ) - m.pos( v2 )).length();
         double angle    = Geometry::get_angle( n1, n2 );
         
@@ -101,7 +101,7 @@ void normalize_costs( GraphStruct &g1, GraphStruct g2 ){
 EdgeCost get_best_subset( Manifold &m,  vector<Match> &proposed, vector< Match > &selected, size_t target )
 {
     vector<VertexID> host_vertices, module_poles;
-    for( auto pole_and_vertex : proposed )
+    for( const auto& pole_and_vertex : proposed )
     {
         module_poles.push_back(  pole_and_vertex.first);
         host_vertices.push_back( pole_and_vertex.second );
@@ -163,7 +163,7 @@ EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &host_candidates,
         GraphNode   choosen  = (*total_cost.begin()).first;
         
         // scegliere il vertice con il costo maggiore della star
-        for( auto star_cost : total_cost )
+        for( const auto& star_cost : total_cost )
         {
             if( star_cost.second > max_cost )
             {
@@ -218,7 +218,7 @@ GraphNode remove_most_expensive_node( GraphStruct &g )
     GraphNode   choosen  = (*total_cost.begin()).first;
     
     // scegliere il vertice con il costo maggiore della star
-    for( auto star_cost : total_cost )
+    for( const auto& star_cost : total_cost )
     {
         if( star_cost.second > max_cost )
         {
@@ -266,7 +266,7 @@ std::ostream& operator<< (std::ostream &out, GraphStruct &g)
             }
         }
         out << "the arcs are :" << std::endl;
-        for( auto e : g.arcs )
+        for( const auto& e : g.arcs )
         {
             graph_print(out, e) ;
             out << " ==> ";

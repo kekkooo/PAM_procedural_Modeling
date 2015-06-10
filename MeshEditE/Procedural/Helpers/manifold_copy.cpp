@@ -118,7 +118,7 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
     
     VertexIDRemap other_to_m_pre_cleanup;
     
-    for( auto item : possibleNewIDs ){
+    for( const auto& item : possibleNewIDs ){
         int sum = 0;
         for( VertexID candidate : item.second ){
             if ( m.in_use(candidate)){
@@ -139,7 +139,7 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
         if( m_poles.count( p )) { m_poles_remap[p] = remap.vmap[p]; };
     }
     
-    for( auto item : other_to_m_pre_cleanup ){
+    for( const auto& item : other_to_m_pre_cleanup ){
         VertexID newID = remap.vmap[ item.second ];
         assert( newID != InvalidVertexID );
         other_poles_remap[item.first] = newID;

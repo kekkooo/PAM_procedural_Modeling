@@ -95,7 +95,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
     
     // find the nearest host candidate for each module's pole
     // and, for each candidate matched, store its matched pole and distance
-    for( auto& id_and_info : candidate.getPoleInfoMap())
+    for( const auto& id_and_info : candidate.getPoleInfoMap())
     {
         double      distance    = numeric_limits<double>::max();
         Vec3d       foundPos;
@@ -174,7 +174,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
     
     // sanity check
     map<VertexID, int> _candidates, _poles;
-    for( auto& item : M_pole_to_H_vertex ){
+    for( const auto& item : M_pole_to_H_vertex ){
         _poles[item.first]          = 0;
         _candidates[item.second]    = 0;
     }
@@ -208,6 +208,7 @@ bool StatefulEngine::findSecondClosest( const VertexID &pole, const PoleGeometry
     size_t      valence     = 0;
     for( Walker w = m->walker( closest ); !w.full_circle(); w = w.circulate_vertex_ccw())
     {
+#warning consider using squared length
         double dist = ( closest_pos - m->pos( w.vertex( ))).length( );
         mean_dist += dist;
         ++valence;

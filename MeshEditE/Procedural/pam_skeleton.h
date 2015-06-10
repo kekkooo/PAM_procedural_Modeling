@@ -15,6 +15,7 @@
 #include <set>
 #include <fstream>
 #include <iostream>
+#include <unordered_map>
 
 #include <GEL/HMesh/Manifold.h>
 #include <GEL/CGLA/Vec3d.h>
@@ -34,6 +35,10 @@ namespace Procedural{
         std::set<NodeID>        neighbors;
         BoneID                  boneID;
         
+        bool isBranching()  const { return ( neighbors.size() > 2 ); }
+        bool isBone()       const { return ( neighbors.size() == 2 ); }
+        bool isLeaf()       const { return ( neighbors.size() == 1 ); }
+        
         void transform( const CGLA::Mat4x4d& T ){
             pos = T.mul_3D_point( pos );
         }
@@ -44,6 +49,33 @@ namespace Procedural{
         std::vector<NodeID>   nodes;
     };
     
+    /***************************************/
+    /* Collision Detection DATA STRUCTURES */
+    /***************************************/
+    struct Ball{
+        CGLA::Vec3d center;
+        double      radius;
+    };
+    struct BoneBall{
+        BoneID  ID;
+        Ball    ball;
+        std::vector<NodeID> nodes;
+    };
+    struct BranchingBall{
+        NodeID  ID;
+        Ball    ball;
+        std::vector<BoneID> incidentBones;
+    };
+    
+    struct ShapeBall{
+        Ball ball;
+        std::unordered_map<NodeID, BranchingBall>   joints;
+        std::unordered_map<BoneID, BoneBall>        bones;
+    };
+
+    /***************************************/
+    /*              Skeleton               */
+    /***************************************/
     struct Skeleton{
     private:
         
@@ -163,11 +195,62 @@ namespace Procedural{
             return ok;
         }
         
+        void mergeCollisionDetectionHierarchy(){
+#warning this should actually merge!
+            buildCollisionDetectionHierarchy();
+        }
+        
+        
+        void buildCollisionDetectionHierarchy(){
+            this->cd_hierarchy = new ShapeBall();
+            
+            // build bones ball
+            for( const SkelBone& b : bones ){
+                double      radius = 0;
+                CGLA::Vec3d centroid( 0.0 );
+                const SkelNode& start = nodes[b.nodes.front()];
+                cd_hierarchy->bones[b.ID];
+                assert(cd_hierarchy->bones.count( b.ID ));
+                cd_hierarchy->bones[b.ID].ID = b.ID;
+
+                for( NodeID nid : b.nodes ){
+                    const SkelNode& node = nodes[nid];
+                    centroid += node.pos;
+                    double rr = ( start.pos - node.pos ).length();
+                    if( rr > radius ){ radius = rr; }
+                    cd_hierarchy->bones[b.ID].nodes.push_back( nid );
+                }
+                cd_hierarchy->bones[b.ID].ball.center = centroid / b.nodes.size();
+                cd_hierarchy->bones[b.ID].ball.radius = radius;
+            }
+            
+            // build joints ball
+            //      get bone IDs
+            for( const SkelNode& n : nodes ){
+                if( n.isBranching() ){
+                    assert( n.type == SNT_Junction );
+                    cd_hierarchy->joints[n.ID];
+                    cd_hierarchy->joints[n.ID].ID = n.ID;
+                    assert( cd_hierarchy->joints.count(n.ID) > 0 );
+                    double radius = 0;
+                    for( NodeID neighbor : n.neighbors ){
+                        BoneID neighbor_bone_id = nodes[neighbor].boneID;
+                        cd_hierarchy->joints[n.ID].incidentBones.push_back( neighbor_bone_id );
+                        double rr = ( cd_hierarchy->bones[neighbor_bone_id].ball.center - n.pos ).length();
+                        if( rr > radius ){ radius = rr; }
+                    }
+                    cd_hierarchy->joints[n.ID].ball.radius = n.ID;
+                }
+            }
+        }
+        
         public :
         std::vector< SkelNode > nodes;
         std::vector< SkelBone > bones;
         std::map< HMesh::VertexID, NodeID> poleToNode;
         std::map< HMesh::VertexID, NodeID> junctionSingularityToNode;
+        ShapeBall* cd_hierarchy;
+        bool valid = false;
         
         void build( HMesh::Manifold& m, const std::set<HMesh::VertexID> &poleSet ){
             
@@ -248,6 +331,7 @@ namespace Procedural{
                 centroid /= vertices.size();
                 // calculate ball radius // use max radius
                 for( HMesh::VertexID v : vertices ){
+#warning consider using squared radius
                     double length = ( centroid - m.pos(v) ).length();
                     if( length > radius ){ radius = length; }
                 }
@@ -321,6 +405,9 @@ namespace Procedural{
                                 if( length > radius ){ radius = length; }
                             }
                             assert( radius > 0.0 );
+                            if( connectedToPole ){
+                                
+                            }
                             SkelNode nl;
                             nl.ID       = nodeID;
                             nl.type     = SNT_Rib;
@@ -351,9 +438,12 @@ namespace Procedural{
                     bone_killed : ;
                 }
             }
+            assert( sanityCheck( ));
+            valid = true;
+            buildCollisionDetectionHierarchy();
         }
         
-        void saveToFile( std::string path ){
+        void saveToFile( std::string path ) const {
             
             std::cout << " there are " << nodes.size() << " nodes  and " << bones.size() << " bones " << std::endl;
             
@@ -361,11 +451,11 @@ namespace Procedural{
             if( t.is_open()){
                 t << "ID Cx Cy Cz RADIUS #NEIGHBORS NEIGHBORS_LIST" << std::endl << nodes.size() << std::endl;
                 
-                for( SkelNode& n : nodes ){
+                for( const SkelNode& n : nodes ){
                     //                if( n.neighbors.size() == 0 ) { continue; }
                     t << n.ID << " " << n.pos[0] << " " << n.pos[1] << " " << n.pos[2] << " " << n.radius << " "
                     << n.neighbors.size();
-                    for(NodeID neighbor : n.neighbors ){
+                    for( NodeID neighbor : n.neighbors ){
                         t << " " << neighbor;
                     }
                     t << std::endl;
@@ -376,6 +466,62 @@ namespace Procedural{
                 }
                 t.close();
             }
+        }
+        
+        
+        void saveCollisionDetectionHierarchyToFile( std::string path ) const{
+            // build a simil skeleton
+            Skeleton s;
+            
+            std::map< BoneID, NodeID > cd_bone_to_node;
+            std::map< NodeID, size_t > cd_node_to_node;
+            
+            for( SkelNode fn : this->nodes ){
+                if( fn.type == SNT_Pole ){
+                    fn.neighbors.clear();
+                    cd_node_to_node[fn.ID] = s.nodes.size();
+                    s.nodes.push_back( fn );
+                }
+                if( fn.type == SNT_Junction ){
+                    assert( cd_hierarchy->joints.count( fn.ID ) > 0 );
+                    fn.radius = cd_hierarchy->joints.at( fn.ID ).ball.radius;
+                    fn.neighbors.clear();
+                    cd_node_to_node[fn.ID] = s.nodes.size();
+                    s.nodes.push_back( fn );
+                }
+            }
+            NodeID bid = s.nodes.size();
+            
+            for( auto item : cd_hierarchy->bones ){
+                SkelNode b;
+                b.ID        = bid;
+                b.type      = SNT_Rib;
+                b.pos       = item.second.ball.center;
+                b.radius    = item.second.ball.radius;
+                cd_bone_to_node[item.first] = b.ID;
+                s.nodes.push_back( b );
+                ++bid;
+            }
+            
+            for( const auto& item : cd_hierarchy->joints ){
+                for( BoneID b : item.second.incidentBones ){
+                    s.nodes[cd_node_to_node[item.first]].neighbors.insert( cd_bone_to_node[b] );
+                    s.nodes[cd_bone_to_node[b]].neighbors.insert( cd_node_to_node[item.first] );
+                    
+                    s.nodes[cd_bone_to_node[b]].neighbors.insert( bones[b].nodes.front() );
+                    s.nodes[cd_bone_to_node[b]].neighbors.insert( bones[b].nodes.back() );
+                    
+                    s.nodes[bones[b].nodes.front()].neighbors.insert( cd_bone_to_node[b] );
+                    s.nodes[bones[b].nodes.back()].neighbors.insert( cd_bone_to_node[b] );
+                }
+            }
+            
+            s.saveToFile("//Users//francescousai//Desktop//cd.skel");
+        }
+        
+        void copyAndRealignIDs( const Skeleton &other, const HMesh::VertexIDRemap& vremap ){
+            copyNew( other );
+            reAlignIDs( vremap );
         }
         
         void reAlignIDs( const HMesh::VertexIDRemap& vremap ){
@@ -519,6 +665,7 @@ namespace Procedural{
             }
             
             assert( sanityCheck( ));
+            mergeCollisionDetectionHierarchy();
         }
     };
 
