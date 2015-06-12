@@ -196,13 +196,15 @@ namespace Procedural{
         }
         
         void mergeCollisionDetectionHierarchy(){
-#warning this should actually merge!
+#warning this should actually merge?
+            this->cd_hierarchy = NULL;
             buildCollisionDetectionHierarchy();
         }
         
         
         void buildCollisionDetectionHierarchy(){
             this->cd_hierarchy = new ShapeBall();
+            cd_hierarchy->ball = bounding_sphere;
             
             // build bones ball
             for( const SkelBone& b : bones ){
@@ -250,12 +252,20 @@ namespace Procedural{
         std::map< HMesh::VertexID, NodeID> poleToNode;
         std::map< HMesh::VertexID, NodeID> junctionSingularityToNode;
         ShapeBall* cd_hierarchy;
+        Ball       bounding_sphere;
         bool valid = false;
+        
         
         void build( HMesh::Manifold& m, const std::set<HMesh::VertexID> &poleSet ){
             
             NodeID nodeID = 0;
             std::set< HMesh::VertexID> skelStarters;
+            
+            CGLA::Vec3d centroid;
+            float      radius;
+            HMesh::bsphere( m, centroid, radius );
+            bounding_sphere.center = centroid;
+            bounding_sphere.radius = radius;
             
             // build edge_info structure
             HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges(m);
@@ -668,7 +678,6 @@ namespace Procedural{
             mergeCollisionDetectionHierarchy();
         }
     };
-
 }
 
 #endif

@@ -693,8 +693,8 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 
             // generate K rotations along the candidate normal
             double step = M_PI_4 / 2.0;
-            double curr_angle = 0;
-//            double curr_angle = ( randomizer() % 16 ) * step;
+//            double curr_angle = 0;
+            double curr_angle = ( randomizer() % 16 ) * step;
 
             // build and save rotations
             for ( int i = 0; i < 16; ++i, curr_angle +=step ) {
