@@ -10,6 +10,9 @@
 #include <GEL/GLGraphics/MeshEditor.h>
 #include <GEL/CGLA/Vec3d.h>
 #include <GEL/HMesh/obj_save.h>
+#include <GEL/CGLA/Mat3x3d.h>
+#include <GEL/CGLA/Quaternion.h>
+#include <GEL/CGLA/ArithQuat.h>
 
 #include <map>
 #include <queue>
@@ -172,20 +175,162 @@ CGLA::Mat4x4d get_rotation_mat4d ( CGLA::Vec3d axis, double angle )
     return t;
 }
 
-CGLA::Mat4x4d   get_alignment_for_2_vectors     ( Vec3d v1, Vec3d v2, Vec3d centroid )
+CGLA::Mat4x4d alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 ){
+
+    v1.normalize();
+    v2.normalize();
+    
+//    cout << v1 << " ### " << v2 << "?" << endl;
+    assert( (( fabs( v1[0] ) > GEO_EPS ) || ( fabs( v1[1] ) > GEO_EPS ) || ( fabs(  v1[2] ) > GEO_EPS )));
+    assert( (( fabs( v2[0] ) > GEO_EPS ) || ( fabs( v2[1] ) > GEO_EPS ) || ( fabs(  v2[2] ) > GEO_EPS )));
+
+    Vec3f vi( v1[0], v1[1], v1[2] ), vii( v2[0], v2[1], v2[2] );
+    
+    double d = dot( v1, v2 );
+    
+    bool parallel = fabs( 1 - dot( v1, v2 )) < GEO_EPS;
+    bool opposite = dot( v1, v2 ) < -GEO_EPS;
+
+    // se non sono paralleli, allineai
+    if( !parallel ){
+        Quaternion q;
+        
+        q.make_rot( vi, -vii );
+        Mat4x4f _m = q.get_Mat4x4f();
+        Mat4x4d m  = Mat4x4d_to_float( _m );
+        
+        return m;
+    }
+    // if parallel and opposite return identity
+    if( parallel && opposite ){
+        return identity_Mat4x4d();
+    }
+    
+    // if parallel but not opposite build rotation that replaces reflection
+    if( parallel && !opposite ){
+        // probably v1 and v2 are equal
+//        cout << v1 << " is equal to " << v2 << "?" << endl;
+        Mat4x4d T;
+
+        // I should reflect v1 with respect to the plane whose normal is v2
+        // instead of building a reflection matrix
+        // build a transformation that brings v1 be aligned with Y-axis and centroid to be placed at origin
+        // then build a rotation matrix of angle PI along X-axis
+        Vec3f   y_axis  = Vec3f( 0.0, 1.0, 0.0 );
+
+        Mat4x4d rot_to_y, rot;
+        Mat4x4f rot_yf = identity_Mat4x4f();
+        
+        bool parallel_to_y = fabs( 1 - fabs( dot( vi, y_axis ))) < GEO_EPS;
+
+        if( !parallel_to_y ){
+            Quaternion q;
+            q.make_rot( vi, y_axis );
+            rot_yf = q.get_Mat4x4f();
+            rot_to_y = Mat4x4d_to_float( rot_yf );
+
+            Mat4x4d rot_to_y_invert = invert_ortho( rot_to_y );
+            rot = rotation_Mat4x4d( XAXIS, M_PI );
+            
+            T = rot_to_y_invert * rot * rot_to_y;
+        }
+        else{ // do not need to transform
+            rot = rotation_Mat4x4d( XAXIS, M_PI );
+            T = rot;
+        }
+        
+        
+        cout << T << endl;
+        if( isnan(T[1][1])){
+            cout <<  rot  << endl << rot_to_y << endl;
+        }
+        
+        assert( !isnan( T[1][1] ));
+        return T;
+    }
+    // TODOOOOOOOOO!!!!!
+    assert(false);
+    // cannot reach this statement
+    return identity_Mat4x4d();
+}
+
+CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2 )
 {
-    Vec3d   rotation_axis   = CGLA::cross( v1, v2 );
-    double  rotation_angle  = get_angle( v1, v2 ); // - M_PI;
-    Mat4x4d rot             = get_rotation_mat4d( rotation_axis, rotation_angle);
-    // find center of the module mesh
-    Mat4x4d tr_origin = translation_Mat4x4d( -centroid );
-    Mat4x4d tr_back   = translation_Mat4x4d( centroid );
-    Mat4x4d t =  tr_back * rot * tr_origin;
+    assert( !(( v1[0] > GEO_EPS ) && ( v1[1] > GEO_EPS ) && ( v1[2] > GEO_EPS )));
+    assert( !(( v2[0] > GEO_EPS ) && ( v2[1] > GEO_EPS ) && ( v2[2] > GEO_EPS )));
+    
+    v1.normalize();
+    v2.normalize();
+    Vec3d   rotation_axis;
+    double  rotation_angle  = get_angle( v1, v2 );
+    
+    if(  fabs( 1.0 - dot ( v1, v2 )) < GEO_EPS ){
+        rotation_axis = CGLA::cross( v1, v2 );
+    }
+    else{
+        rotation_axis = CGLA::cross( v1, -v2 );
+        rotation_angle = -rotation_angle;
+    }
+    
+    bool parallel = ( fabs(rotation_axis[0] + rotation_axis[1] + rotation_axis[2]) < GEO_EPS );
+    bool opposite = ( (( v1[0] + v2[0] ) < GEO_EPS ) && (( v1[1] + v2[1] ) < GEO_EPS ) && (( v1[2] + v2[2] ) < GEO_EPS ));
+    
+    if( parallel && opposite ){
+        // probably v1 and v2 are equal
+        cout << v1 << " is equal to " << v2 << "?" << endl;
+        cout << "rotation axis :" << endl << rotation_axis << endl;
+        cout << "angle :" << endl << rotation_angle << endl;
+        cout << "build reflection" << endl;
+        Mat4x4d T;
+        v1.normalize();
+//        buildReflectionMatrix(v1, T);
+        // instead of building a reflection matrix
+        // build a transformation that brings v1 be aligned with Y-axis and centroid to be placed at origin
+        // then build a rotation matrix of angle PI along X-axis
+        Vec3d   y_axis  = Vec3d(0.0, 1.0, 0.0);
+        Vec3d   _axis   = CGLA::cross( v1, y_axis );
+        double  _angle  = get_angle( v1, y_axis );
+        Mat4x4d rot_to_y, rot;
+        // normal could be aligned to y_axis
+        if( _axis[0] + _axis[1] + _axis[2] < GEO_EPS ){
+            rot_to_y = identity_Mat4x4d();
+        }
+        else{
+            rot_to_y = get_rotation_mat4d( _axis, _angle);
+        }
+        
+        
+        Mat4x4d rot_to_y_invert =  invert_ortho(rot_to_y);
+        
+        // What happens if V1 is the XAxis or the ZAxis??
+        rot = rotation_Mat4x4d( XAXIS, M_PI );
+        T = rot_to_y_invert * rot * rot_to_y;
+
+        cout << T << endl;
+        if( isnan(T[1][1])){
+            cout <<  rot  << endl << rot_to_y << endl;
+        }
+        
+        
+        assert( !isnan( T[1][1] ));
+        return T;
+    }
+    
+    // if angle is near 0 but normals are opposite just return identity
+    if( parallel ){
+        return identity_Mat4x4d();
+    }
+
+    
+    assert( !isnan(rotation_angle )); // fail!
+    
+    Mat4x4d t  = get_rotation_mat4d( rotation_axis, rotation_angle);
 
 //    cout << rot         << endl << endl;
 //    cout << tr_origin   << endl << endl;
 //    cout << tr_back     << endl << endl;
 //    cout << t           << endl << endl;
+    assert( !isnan( t[1][1] ));
     return t;
 }
 
@@ -429,7 +574,52 @@ void bridge_pole_one_rings(Manifold& mani, VertexID vid0, VertexID vid1)
     vector<HalfEdgeID> newhalfedges = mani.bridge_faces(f0, f1, connections);
 }
 
+void buildReflectionMatrix ( CGLA::Vec3d& planeNormal, CGLA::Mat4x4d &T ){
+    planeNormal.normalize();
+    
+    double  a = planeNormal[0],
+            b = planeNormal[1],
+            c = planeNormal[2];
 
+    Vec4d r0 = Vec4d( 1.0 - 2.0 * a * a , -2.0 * a * b      ,-2.0 * a * c       ,0.0 );
+    Vec4d r1 = Vec4d( -2.0 * a * b      , 1.0 - 2 * b * b   ,-2.0 * b * c       ,0.0 );
+    Vec4d r2 = Vec4d( -2.0 * a * c      , -2.0 * b * c      ,1.0 - 2.0 * c * c  ,0.0 );
+    Vec4d r3 = Vec4d( 0.0               ,0.0                ,0.0                ,1.0 );
+    
+    T = Mat4x4d( r0, r1, r2, r3 );
+}
+
+CGLA::Mat4x4d Mat4x4d_to_float ( CGLA::Mat4x4f &m ){
+    Vec4d r0( m[0][0], m[0][1], m[0][2], m[0][3] );
+    Vec4d r1( m[1][0], m[1][1], m[1][2], m[1][3] );
+    Vec4d r2( m[2][0], m[2][1], m[2][2], m[2][3] );
+    Vec4d r3( m[3][0], m[3][1], m[3][2], m[3][3] );
+
+    Mat4x4d _m( r0, r1, r2, r3);
+    return _m;
+}
+
+CGLA::Vec3d mul_3D_dir ( const CGLA::Mat4x4d &t, const CGLA::Vec3d &dir ){
+    // TODO vector must be multiplied expanding to 4d vector with w=0!!!!!!
+    Vec4d v( dir[0], dir[1], dir[2], 0.0 );
+    Vec4d vt = t * v;
+    Vec3d v3d(vt[0], vt[1], vt[2]);
+    v3d.normalize();
+    return v3d;
+}
+
+// if positive it intersects
+double sphere_intersects ( const Vec3d &c1, double r1, const Vec3d &c2, double r2 ){
+    
+    assert( r1 > 0 && r2 > 0);
+    
+    Vec3d cc = c1- c2;
+    double length = cc.length();
+    assert( length > 0 );
+    double intersection = ( r1 + r2 ) - length;
+    cout << "( " << r1 << ", " << r2 << " ) # " << length << endl;
+    return intersection;
+}
 
 
 

@@ -43,7 +43,7 @@ typedef std::vector<ID_and_dist>                                        IDs_and_
 struct match_info{
     Procedural::GraphMatch::EdgeCost            cost;               // total cost of the match
     std::vector<Procedural::GraphMatch::Match>  matches;            // the matches
-    CGLA::Mat4x4d                               random_transform;   // transform applied to the vertice
+    CGLA::Mat4x4d                               random_transform;   // transform to be applied to the vertices
 };
 
 /*=========================================================================*

@@ -144,7 +144,6 @@ Vec3d vertex_normal ( Manifold& m, VertexID v)
     }
     
     vn / w.no_steps();
-    //    vn.normalize();
     return vn;
 }
         
@@ -693,8 +692,8 @@ void bsphere( Manifold& m, Vec3d& centroid, double& radius )
     ++v;
     for(; v != m.vertices_end(); ++v )
     {
-        pmin = v_min(m.pos(*v), pmin);
-        pmax = v_max(m.pos(*v), pmax);
+        pmin = v_min( m.pos(*v), pmin );
+        pmax = v_max( m.pos(*v), pmax );
     }
     
     Manifold::Vec rad = ( pmax - pmin ) * 0.5f;

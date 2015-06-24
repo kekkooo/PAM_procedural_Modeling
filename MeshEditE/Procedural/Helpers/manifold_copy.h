@@ -16,8 +16,19 @@
 namespace Procedural{
     namespace Helpers{
         
+        void add_manifold( HMesh::Manifold &m, HMesh::Manifold& other,
+                           HMesh::VertexIDRemap &m_poles_remap, HMesh::VertexIDRemap &other_remap,
+                           std::set<HMesh::VertexID> & other_IDs_in_result );
+        
         void add_manifold( HMesh::Manifold &m, HMesh::Manifold &other,
-                           std::set<HMesh::VertexID> &m_IDs_in_result, std::set<HMesh::VertexID> & other_IDs_in_result );
+                           std::set<HMesh::VertexID> &m_IDs_in_result,
+                           std::set<HMesh::VertexID> & other_IDs_in_result );
+        
+        void add_manifold( HMesh::Manifold &m, HMesh::Manifold &other,
+                           std::set<HMesh::VertexID> &m_IDs_in_result,
+                           std::set<HMesh::VertexID> & other_IDs_in_result,
+                           HMesh::IDRemap &remap );
+        
         void test_delete ( HMesh::Manifold &m, std::set<HMesh::VertexID> &to_delete );
         
 }}

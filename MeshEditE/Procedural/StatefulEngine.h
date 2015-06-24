@@ -24,6 +24,8 @@
 
 #include "MeshEditE/Procedural/Helpers/module_alignment.h"
 #include "MeshEditE/Procedural/EngineHelpers/InfoContainers.h"
+#include "MesheditE/Procedural/Module.h"
+#include "MesheditE/Procedural/MainStructure.h"
 
 namespace GEL_Geometry = Geometry;
 
@@ -43,11 +45,26 @@ typedef std::pair< std::vector< Procedural::GraphMatch::Match>,
                                 Procedural::GraphMatch::EdgeCost >      matchesAndCost;
 typedef std::pair<HMesh::VertexID, double>                              IdDistPair;
 typedef std::vector<IdDistPair>                                         IDsDistsVector;
-//struct match_info{
-//    Procedural::GraphMatch::EdgeCost            cost;               // total cost of the match
-//    std::vector<Procedural::GraphMatch::Match>  matches;            // the matches
-//    CGLA::Mat4x4d                               random_transform;   // transform applied to the vertice
-//};
+typedef std::pair<double, GraphMatch::EdgeCost>                         ExtendedCost;
+        
+inline bool operator <( const ExtendedCost& l, const ExtendedCost& r)
+{
+    if( l.first < r.first && l.second < r.second )
+    {
+        return true;
+    }
+    else if( GraphMatch::is_equal( l.first, r.first ))
+    {
+        return ( l.second < r.second );
+    }
+    else if( l.second == r.second )
+    {
+        return ( l.first < r.first );
+    }
+    else { return false; }
+}
+        
+// MATCH è ( polo_modulo, polo_host )
 
         
 struct MatchInfoProxy{
@@ -61,7 +78,7 @@ struct MatchInfoProxy{
         }
         void setMatchInfo( Procedural::Helpers::ModuleAlignment::match_info& mi )
         {
-            matchInfo = mi;
+            matchInfo = std::move( mi );
             isValid = true;
         }
 };
@@ -72,6 +89,11 @@ struct CandidateInfo{
 struct CandidateSet{
 public:
     const VertexSet& getCandidates(){ return candidates; }
+    const std::vector<HMesh::VertexID> getCandidateVector(){
+        std::vector<HMesh::VertexID> v;
+        for( VertexID c : candidates ){ v.push_back(c); }
+        return v;
+    }
     void insert( HMesh::VertexID id, CandidateInfo info ){
         candidates.insert( id );
         candidate_infos[id] = info;
@@ -96,14 +118,12 @@ class StatefulEngine{
     
     /************************************************
      * METHODS                                      *
-     * devo aggiungere quelli relativi al branching *
-     * e alla gestione del quanto di ogni cosa      *
      ***********************************************/
     public :
     static  StatefulEngine& getCurrentEngine();
             void            setHost( HMesh::Manifold &host );
-            void            setModule( HMesh::Manifold &module );
-            void            testMultipleTransformations( int no_tests, size_t no_glueings );
+            void            setModule( Procedural::Module &module );
+            bool            testMultipleTransformations( int no_tests, size_t no_glueings );
             void            glueModuleToHost();
             void            consolidate();
     
@@ -113,36 +133,27 @@ class StatefulEngine{
             void            alignModuleNormalsToHost( );
             void            alignUsingBestMatch( );
             void            actualGlueing();
-
-
-/* INLINE FUNCTIONS*/
-    inline  void            setConstraint1D( ){ dim_constraint = StatefulEngine::DimensionalityConstraint::Constrained_1D; }
-    inline  void            setConstraint2D( ){ dim_constraint = StatefulEngine::DimensionalityConstraint::Constrained_2D; }
-    inline  void            setConstraint3D( ){ dim_constraint = StatefulEngine::DimensionalityConstraint::Constrained_3D; }
-    inline  DimensionalityConstraint getConstraint() { return  dim_constraint; }
+    
+            void            glueCurrent();
+            size_t          noFreePoles();
+    
+            inline const MainStructure& getMainStructure() const{ return *mainStructure; };
     
     private :
                             StatefulEngine();
                             StatefulEngine( StatefulEngine const& ) = delete;
             void operator   = (StatefulEngine const&)               = delete;
 
-            void            buildRandomTransform( CGLA::Mat4x4d &t );
-            // you can assume that the module's poles are vertices of its convex hull
-            void            buildCollisionAvoidingTranslation(
-                                const CGLA::Mat4x4d &rot, CGLA::Mat4x4d &tr );
-
-            void            buildCollisionAvoidingRandomTransform( CGLA::Mat4x4d &t );
+            void            buildRandomRotation( CGLA::Mat4x4d &t );
 
             /*  INHERITED FROM module_alignment */
-            void            buildHostKdTree();
-            void            transformModulePoles( CGLA::Mat4x4d &t, VertexPosMap &new_pos );
+            void            buildMainStructureKdTree();
 
-            /// this is to fix - look inside
-            void            matchModuleToHost( VertexPosMap& module_poles_positions, VertexMatchMap& M_pole_to_H_vertex );
-            bool            findSecondClosest( const HMesh::VertexID &pole, const HMesh::VertexID &closest,
-                                               HMesh::VertexID &second_closest, VertexSet &assigned );
-            void            fillCandidateSet();
-            void            addNecessaryPoles();
+            void            matchModuleToHost( Module &candidate, VertexMatchMap& M_pole_to_H_vertex );
+            bool            findSecondClosest( const HMesh::VertexID &pole, const PoleGeometryInfo &pgi,
+                                               const HMesh::VertexID &closest, HMesh::VertexID &second_closest, VertexSet &assigned );
+    
+            void            buildTransformationList( std::vector< CGLA::Mat4x4d> &transformations );
 
 
     
@@ -154,14 +165,19 @@ class StatefulEngine{
 private:
 
     HMesh::Manifold     *m;
-    VertexSet           H_vertices,
-                        M_vertices;
-    DimensionalityConstraint dim_constraint;
 
-    kD_Tree*             tree;
+    VertexSet           M_vertices;
+
+    
+    Procedural::MainStructure*  mainStructure;
+    Procedural::Module*         candidateModule;
+    
+    std::vector<Procedural::Module>
+                        transformedModules;
+
+    kD_Tree*            tree;
     bool                treeIsValid;
     
-    CandidateSet        H_candidates;
     Procedural::EngineHelpers::EdgeInfoContainer edge_info;
     
     MatchInfoProxy      best_match;

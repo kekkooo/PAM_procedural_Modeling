@@ -14,10 +14,12 @@
 #include <tuple>
 #include "polarize.h"
 #include <GEL/CGLA/Mat4x4d.h>
+#include <GEL/CGLA/Mat4x4f.h>
 
 
 // Geometric Structure Utilities : structural_helpers.h
-
+#define GEO_EPS     0.00000001
+#define ARITH_EPS   0.000001
 
 
 // other stuff                      : other.h
@@ -29,7 +31,7 @@ CGLA::Vec3f     color_ramp2                     ( int value, int max );
 void            linspace                        ( double min, double max, int num,
                                                       std::vector<double> &values);
 CGLA::Mat4x4d   get_rotation_mat4d              ( CGLA::Vec3d axis, double cosine );
-CGLA::Mat4x4d   get_alignment_for_2_vectors     ( CGLA::Vec3d v1, CGLA::Vec3d v2, CGLA::Vec3d centroid );
+CGLA::Mat4x4d   get_alignment_for_2_vectors     ( CGLA::Vec3d v1, CGLA::Vec3d v2 );
 void            alt_glue_poles                  ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
 void            bezier                          ( CGLA::Vec3d p0, CGLA::Vec3d p1, CGLA::Vec3d p2, int n, std::vector< CGLA::Vec3d >& points );
 void            save_colored_obj                ( HMesh::Manifold &m, std::string &path );
@@ -39,6 +41,13 @@ void            save_intermediate_result        ( HMesh::Manifold &m, const std:
 int             get_starter_offset              ( HMesh::Manifold &m1, HMesh::VertexID p1,
                                                   HMesh::Manifold &m2, HMesh::VertexID p2 );
 void            bridge_pole_one_rings           ( HMesh::Manifold& mani, HMesh::VertexID vid0, HMesh::VertexID vid1);
+void            buildReflectionMatrix           ( CGLA::Vec3d& planeNormal, CGLA::Mat4x4d &T );
+CGLA::Mat4x4d   alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 );
+CGLA::Mat4x4d   Mat4x4d_to_float                ( CGLA::Mat4x4f &m );
+CGLA::Vec3d     mul_3D_dir                      ( const CGLA::Mat4x4d &t, const CGLA::Vec3d &dir );
+
+double          sphere_intersects               ( const CGLA::Vec3d &c1, double r1,
+                                                  const CGLA::Vec3d &c2, double r2 );
 
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )

@@ -30,8 +30,9 @@ inline EdgeCost operator +( const EdgeCost& l, const EdgeCost& r )
 
 inline EdgeCost operator -( const EdgeCost& l, const EdgeCost& r )
         { return std::make_pair( fabs( l.first - r.first ), fabs( l.second - r.second )); };
-        
+
 inline bool is_equal( double l, double r ) { return fabs( l - r ) < EDGE_COST_EPS; }
+
 inline bool operator ==( const EdgeCost& l, EdgeCost& r ) { return is_equal( l.first, r.first ) && is_equal( l.second, r.second ); }
 inline bool operator !=( const EdgeCost& l, EdgeCost& r ) { return !( l == r ); }
         
