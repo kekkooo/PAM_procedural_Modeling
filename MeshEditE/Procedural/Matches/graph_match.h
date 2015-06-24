@@ -14,6 +14,10 @@
 #include <ostream>
 #include <GEL/HMesh/Manifold.h>
 
+#include <MeshEditE/Procedural/Module.h>
+#include <MeshEditE/Procedural/MainStructure.h>
+
+
 #define EDGE_COST_EPS 0.00000001
 
 namespace Procedural{
@@ -22,7 +26,7 @@ namespace Procedural{
 typedef size_t                                          GraphNode;
 typedef std::pair<size_t, size_t>                       GraphEdge;
 typedef std::pair<double, double>                       EdgeCost;
-typedef std::pair< HMesh::VertexID, HMesh::VertexID >   Match;
+//typedef std::pair< HMesh::VertexID, HMesh::VertexID >   Match;
 
 // should define here the operators +,-, >, <, == for the EdgeCost
 inline EdgeCost operator +( const EdgeCost& l, const EdgeCost& r )

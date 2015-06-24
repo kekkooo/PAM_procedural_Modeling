@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <set>
 
-#include <MeshEditE/Procedural/Matches/graph_match.h>
+//#include <MeshEditE/Procedural/Matches/graph_match.h>
 #include <GEL/HMesh/Manifold.h>
 
 namespace Procedural {
@@ -38,7 +38,7 @@ class MainStructure{
 public:
     MainStructure();
     // those methods work only on a logical basis not on a geometrical one
-    void glueModule( Module &m, std::vector<Procedural::GraphMatch::Match> &matches  );
+    void glueModule( Module &m, std::vector<Match> &matches  );
     void reAlignIDs( HMesh::VertexIDRemap &remapper );
     bool isColliding( const Module& m ) const;
     void saveSkeleton( std::string path ) const;

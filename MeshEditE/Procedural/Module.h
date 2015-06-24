@@ -29,6 +29,8 @@
 
 namespace Procedural{
     
+typedef std::pair< HMesh::VertexID, HMesh::VertexID >   Match;
+    
 enum PoleLabel {
     NoneP    = 0,       // this is 00000000 it will match no value
     RedP     = 1,

@@ -17,7 +17,6 @@
 using namespace std;
 using namespace HMesh;
 using namespace Procedural;
-using namespace Procedural::GraphMatch;
 
 namespace Procedural{
     
