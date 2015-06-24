@@ -11,7 +11,6 @@ using namespace CGLA;
 using namespace GLGraphics;
 
 MeshEditor me;
-Procedural::Engine engine;
 
 // ==================================
 #pragma mark ---- Error Reporting ----
@@ -138,61 +137,32 @@ GLenum glReportError (int where = -1)
         switch ([theEvent keyCode])
         {
             case 0 : // A
-                engine.add_module();
                 break;
                 // ### aggiunte da me ###
             case 46: // M
-                engine.setMesh( &me.active_mesh( ));
                 break;
             case 8: // C
-                engine.setMesh( &me.active_mesh( ));
-                engine.buildCube();
                 break;
             case 14 : // E
-                engine.extrudePoles();
                 break;
             case 1 : // S
-                engine.polarSubdivision();                
                 break;
             case 2 : // D
-                engine.pickABranchAndScaleIt(0);
                 break;
             case 3 : // F
-                engine.pickABranchAndScaleIt(1);
                 break;
             case 4 : // G
-                engine.pickABranchAndScaleIt(2);
                 break;
             case 5 : // H
-                engine.pickABranchAndScaleIt(3);
                 break;
             case 11 : // B
-                engine.addRandomBranches();
                 break;
             case 17 : // T
-            {
-                std::set< HMesh::VertexID > selected;
-                engine.get_candidates( selected );
-                for( auto f : me.active_mesh().faces( ))
-                    DebugRenderer::face_colors[f]   = Vec3f( 0.0, 0.0, 0.0);
-                for( auto v : me.active_mesh().vertices( ))
-                    DebugRenderer::vertex_colors[v] = Vec3f( 0.0, 0.0, 0.0);
-                for( auto h : me.active_mesh().halfedges( ))
-                    DebugRenderer::edge_colors[h]   = Vec3f( 0.0, 0.0, 0.0);
-                for( auto vid : selected )
-                {
-                    DebugRenderer::vertex_colors[vid] = Vec3f( 1.0, 0.0, 0.0);
-//                    me.get_vertex_selection()[vid] = 1;
-                }
-            }
                 break;
             case 34 : // I
-                engine.smooth_near_junctions();
                 break;
             case 35 : // P
-                engine.perturbate();
                 break;
-                
         }
     }
     else
@@ -357,7 +327,6 @@ GLenum glReportError (int where = -1)
     GLint swapInt = 1;
     [[self openGLContext] setValues:&swapInt forParameter:NSOpenGLCPSwapInterval]; // set to vbl sync
     me.init();
-    engine.init( &me.active_mesh( ));
     register_console_funcs(&me);
     // procedural modeling extensions.
     Procedural::ConsoleFuncs::register_match_console_funcs(&me);

@@ -23,7 +23,6 @@
 #include <GEL/CGLA/Mat4x4d.h>
 
 #include "MeshEditE/Procedural/Helpers/module_alignment.h"
-#include "MeshEditE/Procedural/EngineHelpers/InfoContainers.h"
 #include "MesheditE/Procedural/Module.h"
 #include "MesheditE/Procedural/MainStructure.h"
 
@@ -91,7 +90,7 @@ public:
     const VertexSet& getCandidates(){ return candidates; }
     const std::vector<HMesh::VertexID> getCandidateVector(){
         std::vector<HMesh::VertexID> v;
-        for( VertexID c : candidates ){ v.push_back(c); }
+        for( HMesh::VertexID c : candidates ){ v.push_back(c); }
         return v;
     }
     void insert( HMesh::VertexID id, CandidateInfo info ){
@@ -178,7 +177,6 @@ private:
     kD_Tree*            tree;
     bool                treeIsValid;
     
-    Procedural::EngineHelpers::EdgeInfoContainer edge_info;
     
     MatchInfoProxy      best_match;
     

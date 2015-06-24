@@ -11,14 +11,15 @@
 #include <sstream>
 #include <random>
 #include <GEL/HMesh/obj_save.h>
+#include <GEL/HMesh/obj_load.h>
+
 #include "polarize.h"
 #include <MeshEditE/Procedural/Operations/basic_shapes.h>
 #include <MeshEditE/Procedural/Operations/Algorithms.h>
 #include <MeshEditE/Procedural/Operations/structural_operations.h>
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
-#include <MeshEditE/Procedural/PMEngine.h>
-#include <MeshEditE/Procedural/Matches/Matches.h>
+
 #include "patch_mapping.h"
 #include <MeshEditE/Test.h>
 #include <MeshEditE/Procedural/Helpers/manifold_copy.h>
@@ -230,47 +231,6 @@ void console_test_save_to_results_folder( MeshEditor *me, const std::vector< std
 }
 
 
-void test_match( MeshEditor *me, const std::vector< std::string > &args )
-{
-    static std::mersenne_twister_engine<std::uint_fast32_t, 32, 624, 397, 31,
-                0x9908b0df, 11, 0xffffffff, 7, 0x9d2c5680, 15, 0xefc60000, 18, 1812433253> rrrr;
-
-    rrrr.seed( time(0) );
-    cout << rrrr();
-    CGLA::gel_srand( rrrr() );
-//    Procedural::Matching::build(me->active_mesh());
-    Procedural::Matching::console_call(me->active_mesh());
-}
-
-void test_trasform( MeshEditor *me, const std::vector< std::string > &args )
-{
-    static std::mersenne_twister_engine<std::uint_fast32_t, 32, 624, 397, 31,
-    0x9908b0df, 11, 0xffffffff, 7, 0x9d2c5680, 15, 0xefc60000, 18, 1812433253> rrrr;
-    rrrr.seed( time(0) );
-    cout << rrrr();
-    CGLA::gel_srand( rrrr() );
-    
-    int id = 0;
-    if(args.size() > 0){
-        istringstream a0(args[0]);
-        a0 >> id;
-    }
-
-    Procedural::Matching::console_call2( me->active_mesh( ), id);
-}
-
-void test_align_selected( MeshEditor *me, const std::vector< std::string > &args )
-{
-    Manifold& m = me->active_mesh();
-    vector< VertexID > selected;
-    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit )
-    {
-        if( me->get_vertex_selection()[*vit] ) selected.push_back(*vit);
-    }
-    
-    Procedural::Matching::align_to_selected( m, selected );
-}
-
 void console_save_patched_obj( MeshEditor *me, const std::vector< std::string > &args )
 {
     Manifold& m = me->active_mesh();
@@ -358,9 +318,6 @@ namespace Procedural{
         
 void register_match_console_funcs( GLGraphics::MeshEditor* me )
 {
-    me->register_console_function( "test.match.do",         test_match, "test.match.do" );
-    me->register_console_function( "test.match.transform",  test_trasform, "test.match.transform" );
-    me->register_console_function( "test.match.align_selected",  test_align_selected, "test.match.align_selected" );
     me->register_console_function( "test.copy_and_delete_test",  copy_and_delete_test, "copy_and_delete_test" );
     me->register_console_function( "test.poles_info",  poles_info, "test.poles_info" );
 }

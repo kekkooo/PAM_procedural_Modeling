@@ -31,7 +31,6 @@ using namespace Procedural::Geometry;
 using namespace Procedural::Helpers::ModuleAlignment;
 using namespace Procedural::GraphMatch;
 using namespace Procedural::Operations::Structural;
-using namespace Procedural::EngineHelpers;
 
 /*=========================================================================*
  *                     PRIVATE FUNCTIONS                                   *
@@ -476,7 +475,6 @@ StatefulEngine& StatefulEngine::getCurrentEngine(){
 
 
 void StatefulEngine::setHost( Manifold &host ){
-//    assert( this->m == NULL );
     this->m = &host;
     this->mainStructure = new MainStructure();
     
@@ -484,7 +482,6 @@ void StatefulEngine::setHost( Manifold &host ){
     std::vector<Procedural::GraphMatch::Match> matches;
     mainStructure->glueModule( *starter, matches);
     
-    edge_info.Update( m );
 }
 
 
@@ -497,22 +494,15 @@ void StatefulEngine::setModule(Procedural::Module &module){
 
 void StatefulEngine::consolidate(){
     assert( this->m != NULL );
-//    assert( this->M_vertices.size() > 0 );
     assert( this->candidateModule->getPoleInfoMap().size() > 0 );
     // in this way you lose any reference to which vertices are from host and module
 
-//    Module* tmp_module = candidateModule;
     candidateModule = NULL;
     transformedModules.clear();
     
     M_vertices.clear();
     treeIsValid = false;
-    edge_info.Invalidate();
-
-//    kD_Tree* temp = tree;
     tree = NULL;
-//    delete temp;
-//    delete tmp_module;
 }
 
 
