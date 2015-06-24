@@ -126,35 +126,21 @@ namespace Procedural{
         
         matches.clear();
         skel->merge( m.getSkeleton(), matches );
-        skel->saveToFile( "//Users//francescousai//Desktop//example.skel" );
-        skel->saveCollisionDetectionHierarchyToFile( "//Users//francescousai//Desktop//example_cd.skel" );
+//        skel->saveToFile( "//Users//francescousai//Desktop//example.skel" );
+
     }
-    
-    
-    
     
     bool MainStructure::isColliding(const Module &m) const{
-        bool collision_found = false;
-        
-#ifdef TRACE
-        cout << "module sphere : " << m.bsphere_center << " # " << m.bsphere_radius << endl;
-#endif
-        
-        for ( size_t i = 0; i < modules.size() && (!collision_found); ++i) {
-            Module *mi = modules[i].module;
-            cout << "gluedM sphere : " << mi->bsphere_center << " # " << mi->bsphere_radius << endl;
-            
-            double collision_deepness =
-                sphere_intersects( m.bsphere_center, m.bsphere_radius,
-                                   mi->bsphere_center, mi->bsphere_radius);
-            double min_radius = min( mi->bsphere_radius, m.bsphere_radius );
-            collision_found = collision_deepness > ( min_radius / 2.0 );
-            if( collision_found ){
-                cout << "collision found! " << collision_deepness << " => " << min_radius << endl;
-            }
-
-        }
-        return collision_found;
+        return Procedural::collide( *( this->skel ), m.getSkeleton() );
     }
+    
+    void MainStructure::saveBVH( std::string path ) const{
+        skel->saveCollisionDetectionHierarchyToFile( path );
+    }
+    
+    void MainStructure::saveSkeleton( std::string path ) const{
+        skel->saveToFile( path );
+    }
+    
     
 }

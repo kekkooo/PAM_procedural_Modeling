@@ -16,10 +16,11 @@
 namespace Procedural{
     
     struct ModuleInfo{
-        Module* m           = NULL;
-        float   probability = 1.0;
-        size_t  no_pieces   = 0;
-        size_t  no_glueings = 1;
+        Module*         m           = NULL;
+        float           probability = 1.0;
+        size_t          no_pieces   = 0;
+        size_t          no_glueings = 1;
+        std::string     name;
     };
     
 class Toolbox{
@@ -34,7 +35,9 @@ class Toolbox{
         void fromJson( std::string path );
         void clear();
         void undoLast();
-        inline size_t noRemainingPieces() { return total_pieces; }
+        void print() const;
+    
+        inline size_t noRemainingPieces() const { return total_pieces; }
 
 private :
     Toolbox();

@@ -21,17 +21,59 @@
 #include <GEL/CGLA/Vec3d.h>
 #include <GEL/CGLA/Mat4x4d.h>
 
+#include "polarize.h"
+
 namespace Procedural{
     typedef size_t NodeID;
     typedef size_t BoneID;
     
     enum SkelNodeType{ SNT_Pole, SNT_Rib, SNT_Junction };
     
+    /***************************************/
+    /* Collision Detection DATA STRUCTURES */
+    /***************************************/
+    struct Ball{
+        CGLA::Vec3d center;
+        double      radius;
+        
+        void transform( const CGLA::Mat4x4d& T ){
+            center = T.mul_3D_point( center );
+        }
+    };
+    struct BoneBall{
+        BoneID  ID;
+        Ball    ball;
+        std::vector<NodeID> nodes;
+
+        void transform( const CGLA::Mat4x4d& T ){
+            ball.transform( T );
+        }
+
+    };
+    struct BranchingBall{
+        NodeID  ID;
+        Ball    ball;
+        std::vector<BoneID> incidentBones;
+        
+        void transform( const CGLA::Mat4x4d& T ){
+            ball.transform( T );
+        }
+
+    };
+    
+    class ShapeBall{
+    public:
+        Ball ball;
+        std::unordered_map<NodeID, BranchingBall>   joints;
+        std::unordered_map<BoneID, BoneBall>        bones;
+
+    };
+
+    
     struct SkelNode{
         NodeID                  ID;
         SkelNodeType            type    = SNT_Rib;
-        CGLA::Vec3d             pos;
-        double                  radius  = 0.0;
+        Ball                    ball;
         std::set<NodeID>        neighbors;
         BoneID                  boneID;
         
@@ -40,7 +82,7 @@ namespace Procedural{
         bool isLeaf()       const { return ( neighbors.size() == 1 ); }
         
         void transform( const CGLA::Mat4x4d& T ){
-            pos = T.mul_3D_point( pos );
+            ball.transform( T );
         }
     };
     
@@ -49,30 +91,6 @@ namespace Procedural{
         std::vector<NodeID>   nodes;
     };
     
-    /***************************************/
-    /* Collision Detection DATA STRUCTURES */
-    /***************************************/
-    struct Ball{
-        CGLA::Vec3d center;
-        double      radius;
-    };
-    struct BoneBall{
-        BoneID  ID;
-        Ball    ball;
-        std::vector<NodeID> nodes;
-    };
-    struct BranchingBall{
-        NodeID  ID;
-        Ball    ball;
-        std::vector<BoneID> incidentBones;
-    };
-    
-    struct ShapeBall{
-        Ball ball;
-        std::unordered_map<NodeID, BranchingBall>   joints;
-        std::unordered_map<BoneID, BoneBall>        bones;
-    };
-
     /***************************************/
     /*              Skeleton               */
     /***************************************/
@@ -208,7 +226,7 @@ namespace Procedural{
             
             // build bones ball
             for( const SkelBone& b : bones ){
-                double      radius = ( nodes.at( b.nodes.front( )).pos - nodes.at( b.nodes.back( )).pos ).length() ;
+                double      radius = ( nodes.at( b.nodes.front( )).ball.center - nodes.at( b.nodes.back( )).ball.center ).length() ;
                 CGLA::Vec3d centroid( 0.0 );
                 const SkelNode& start = nodes[b.nodes.front()];
                 cd_hierarchy->bones[b.ID];
@@ -217,8 +235,8 @@ namespace Procedural{
 
                 for( NodeID nid : b.nodes ){
                     const SkelNode& node = nodes[nid];
-                    centroid += node.pos;
-                    double rr = ( start.pos - node.pos ).length();
+                    centroid += node.ball.center;
+                    double rr = ( start.ball.center - node.ball.center ).length();
                     if( rr > radius ){ radius = rr; }
                     cd_hierarchy->bones[b.ID].nodes.push_back( nid );
                 }
@@ -238,7 +256,7 @@ namespace Procedural{
                     for( NodeID neighbor : n.neighbors ){
                         BoneID neighbor_bone_id = nodes[neighbor].boneID;
                         cd_hierarchy->joints[n.ID].incidentBones.push_back( neighbor_bone_id );
-                        double rr = ( cd_hierarchy->bones[neighbor_bone_id].ball.center - n.pos ).length();
+                        double rr = ( cd_hierarchy->bones[neighbor_bone_id].ball.center - n.ball.center ).length();
                         if( rr > radius ){ radius = rr; }
                     }
                     cd_hierarchy->joints[n.ID].ball.radius = radius;
@@ -255,6 +273,7 @@ namespace Procedural{
         Ball       bounding_sphere;
         bool valid = false;
         
+        const ShapeBall& getCdHierarchy() const { return * cd_hierarchy; }
         
         void build( HMesh::Manifold& m, const std::set<HMesh::VertexID> &poleSet ){
             
@@ -280,9 +299,9 @@ namespace Procedural{
                 skelStarters.insert( v );
                 // save pole
                 SkelNode n;
-                n.ID        = nodeID;
-                n.type      = SNT_Pole;
-                n.pos       = m.pos( v );
+                n.ID            = nodeID;
+                n.type          = SNT_Pole;
+                n.ball.center   = m.pos( v );
                 
                 poleToNode[v] = n.ID;
                 nodes.push_back( n );
@@ -348,10 +367,10 @@ namespace Procedural{
                 assert( radius > 0.0 );
                 // save pole
                 SkelNode j;
-                j.ID        = nodeID;
-                j.type      = SNT_Junction;
-                j.pos       = centroid;
-                j.radius    = radius;
+                j.ID            = nodeID;
+                j.type          = SNT_Junction;
+                j.ball.center   = centroid;
+                j.ball.radius   = radius;
                 nodes.push_back( j );
                 ++nodeID;
             }
@@ -419,10 +438,10 @@ namespace Procedural{
                                 
                             }
                             SkelNode nl;
-                            nl.ID       = nodeID;
-                            nl.type     = SNT_Rib;
-                            nl.pos      = centroid;
-                            nl.radius   = connectedToPole ? ( centroid - nodes[startingNode].pos ).length() : radius;
+                            nl.ID           = nodeID;
+                            nl.type         = SNT_Rib;
+                            nl.ball.center  = centroid;
+                            nl.ball.radius  = connectedToPole ? ( centroid - nodes[startingNode].ball.center ).length() : radius;
                             nodes.push_back( nl );
                             addToCurrentBone( nl.ID );
                             ++nodeID;
@@ -463,7 +482,8 @@ namespace Procedural{
                 
                 for( const SkelNode& n : nodes ){
                     //                if( n.neighbors.size() == 0 ) { continue; }
-                    t << n.ID << " " << n.pos[0] << " " << n.pos[1] << " " << n.pos[2] << " " << n.radius << " "
+                    t << n.ID << " " << n.ball.center[0] << " " << n.ball.center[1] << " " << n.ball.center[2] << " "
+                                     << n.ball.radius << " "
                     << n.neighbors.size();
                     for( NodeID neighbor : n.neighbors ){
                         t << " " << neighbor;
@@ -494,7 +514,7 @@ namespace Procedural{
                 }
                 if( fn.type == SNT_Junction ){
                     assert( cd_hierarchy->joints.count( fn.ID ) > 0 );
-                    fn.radius = cd_hierarchy->joints.at( fn.ID ).ball.radius;
+                    fn.ball.radius = cd_hierarchy->joints.at( fn.ID ).ball.radius;
                     fn.neighbors.clear();
                     cd_node_to_node[fn.ID] = s.nodes.size();
                     s.nodes.push_back( fn );
@@ -504,10 +524,10 @@ namespace Procedural{
             
             for( auto item : cd_hierarchy->bones ){
                 SkelNode b;
-                b.ID        = bid;
-                b.type      = SNT_Rib;
-                b.pos       = item.second.ball.center;
-                b.radius    = item.second.ball.radius;
+                b.ID            = bid;
+                b.type          = SNT_Rib;
+                b.ball.center   = item.second.ball.center;
+                b.ball.radius   = item.second.ball.radius;
                 cd_bone_to_node[item.first] = b.ID;
                 s.nodes.push_back( b );
                 ++bid;
@@ -557,10 +577,10 @@ namespace Procedural{
             junctionSingularityToNode.clear();
             for( const SkelNode& node : other.nodes ){
                 SkelNode new_node;
-                new_node.ID     = node.ID;
-                new_node.radius = node.radius;
-                new_node.pos    = node.pos;
-                new_node.type   = node.type;
+                new_node.ID             = node.ID;
+                new_node.ball.radius    = node.ball.radius;
+                new_node.ball.center    = node.ball.center;
+                new_node.type           = node.type;
                 nodes.push_back( new_node );
             }
             for( const auto item : other.poleToNode ){
@@ -573,6 +593,32 @@ namespace Procedural{
                     new_bone.nodes.push_back( id );
                 }
                 bones.push_back( new_bone );
+            }
+            
+            // collision detection hierarchy
+            cd_hierarchy = new ShapeBall();
+            cd_hierarchy->ball.center = other.cd_hierarchy->ball.center;
+            cd_hierarchy->ball.radius = other.cd_hierarchy->ball.radius;
+            
+            for( const auto& item : other.cd_hierarchy->joints ){
+                cd_hierarchy->joints[item.first];
+                assert( cd_hierarchy->joints.count( item.first ) > 0 );
+                cd_hierarchy->joints[item.first].ID = item.second.ID;
+                cd_hierarchy->joints[item.first].ball.center = item.second.ball.center;
+                cd_hierarchy->joints[item.first].ball.radius = item.second.ball.radius;
+                for( BoneID bid : item.second.incidentBones ){
+                    cd_hierarchy->joints[item.first].incidentBones.push_back( bid );
+                }
+            }
+            for( const auto& item : other.cd_hierarchy->bones ){
+                cd_hierarchy->bones[item.first];
+                assert( cd_hierarchy->bones.count( item.first ) > 0 );
+                cd_hierarchy->bones[item.first].ID = item.second.ID;
+                cd_hierarchy->bones[item.first].ball.center = item.second.ball.center;
+                cd_hierarchy->bones[item.first].ball.radius = item.second.ball.radius;
+                for( NodeID nid : item.second.nodes ){
+                    cd_hierarchy->bones[item.first].nodes.push_back( nid );
+                }
             }
         }
         
@@ -599,10 +645,10 @@ namespace Procedural{
                 if( std::find( other_pole_nodes.begin(), other_pole_nodes.end(), node.ID ) != other_pole_nodes.end()){ continue; }
                 
                 SkelNode new_node;
-                new_node.ID     = ++current_node_id;
-                new_node.radius = node.radius;
-                new_node.pos    = node.pos;
-                new_node.type   = node.type;
+                new_node.ID             = ++current_node_id;
+                new_node.ball.radius    = node.ball.radius;
+                new_node.ball.center    = node.ball.center;
+                new_node.type           = node.type;
                 
                 nodes.push_back( new_node );
                 new_node_IDs[node.ID] = new_node.ID;
@@ -618,8 +664,8 @@ namespace Procedural{
                 // merge the poles
                 nodes[this_pole_nodes[i]].type = SNT_Rib;
 #warning da correggere, così viene sempre 0
-                nodes[this_pole_nodes[i]].radius =
-                    std::max( nodes[this_pole_nodes[i]].radius, other_node.radius );
+                nodes[this_pole_nodes[i]].ball.radius =
+                    std::max( nodes[this_pole_nodes[i]].ball.radius, other_node.ball.radius );
                 
                 // copy the bone outgoing from other_pole_nodes[i]
                 bool reverse            = other_node.ID == other.bones[other_node.boneID].nodes.back();

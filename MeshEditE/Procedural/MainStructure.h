@@ -41,6 +41,8 @@ public:
     void glueModule( Module &m, std::vector<Procedural::GraphMatch::Match> &matches  );
     void reAlignIDs( HMesh::VertexIDRemap &remapper );
     bool isColliding( const Module& m ) const;
+    void saveSkeleton( std::string path ) const;
+    void saveBVH( std::string path ) const;
     
     const Procedural::PoleList& getPoles();
     const Procedural::PoleList& getFreePoles();

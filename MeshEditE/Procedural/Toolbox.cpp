@@ -65,6 +65,11 @@ namespace Procedural {
             int    mNoPieces    = tb[i]["no_pieces"].GetInt();
             int    mNoGlueings  = tb[i]["no_glueings"].GetInt();
             
+            // get the name of the module
+            char delimiter = '/';
+            int index = mFilename.length() - 1;
+            while( mFilename[index] != delimiter ){ --index; assert( index >= 0 );  }
+            string mName = mFilename.substr( index, mFilename.length() + 1 - index -3  );
 
             ModuleInfo* mInfo = new ModuleInfo;
             mInfo->m                    = new Module( mFilename, mType);
@@ -72,6 +77,7 @@ namespace Procedural {
             mInfo->no_glueings          = mNoGlueings;
             mInfo->no_pieces            = mNoPieces;
             mInfo->probability          = mProbability;
+            mInfo->name                 = mName;
             this->modules.push_back( mInfo );
             total_pieces += mNoPieces;
         }
@@ -119,7 +125,6 @@ namespace Procedural {
 #warning a lot of things to do here!
 
         while( !done ){
-        
             // choose the index
             do{
                 index = randomizer( ) % modules.size();
@@ -133,6 +138,8 @@ namespace Procedural {
         total_pieces                -= 1;
         last_used_module            = index;
         used_module                 = true;
+        
+        cout << " picking module :  " << modules[index]->name << endl;
         
         return *(modules[index]->m);
     }
@@ -149,6 +156,14 @@ namespace Procedural {
         modules[last_used_module]->no_pieces += 1;
         total_pieces                         += 1;
         used_module                          = false;
+    }
+    
+    void Toolbox::print() const{
+        for ( const auto& m : modules ) {
+            cout << " ##### MODULE : " << m->name <<  "######" << endl
+                 << m->no_glueings << " glueings " << endl
+                 << m->no_pieces   << " available" << endl << endl;
+        }
     }
     
     

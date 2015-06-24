@@ -16,6 +16,7 @@
 #include "MeshEditE/Procedural/Helpers/geometric_properties.h"
 #include "MeshEditE/Procedural/Helpers/svd_alignment.h"
 #include "MeshEditE/Procedural/Operations/structural_operations.h"
+#include "collision_detection.h"
 
 #include "Test.h"
 
@@ -660,10 +661,6 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
         const Vec3d H_pole_pos      = mainStructure->getPoleInfo(H_pole).geometry.pos;
         const Vec3d H_pole_normal   = mainStructure->getPoleInfo(H_pole).geometry.normal;
         size_t H_pole_valence       = mainStructure->getPoleInfo(H_pole).geometry.valence;
-// this is not const because I normalize, but if I refer to the main structure there will be no need to normalize
-//        const Vec3d   H_pole_pos      = m->pos( H_pole );
-//        Vec3d   H_pole_normal   = vertex_normal( *m, H_pole );
-//        H_pole_normal.normalize();
         
         size_t M_starter = randomizer() % no_M_poles;
         // MODULE POLES LOOP
@@ -719,11 +716,14 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 
                 assert( !isnan( T[1][1] ));
                 
-                Module t_module = this->candidateModule->getTransformedModule( T );
+                Module& t_module = this->candidateModule->getTransformedModule( T );
                 
                 // skip if there is a collision.
                 // need to improve it
-//                if( mainStructure->isColliding(t_module)) continue;
+                if( mainStructure->isColliding( t_module )){
+                    cout << " skipping configuration - COLLISION " << endl;
+                    continue;
+                }
 
                 transformations.push_back( T );
                 transformedModules.push_back( t_module );

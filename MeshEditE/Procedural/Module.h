@@ -25,6 +25,7 @@
 #include <polarize.h>
 
 #include "pam_skeleton.h"
+#include "collision_detection.h"
 
 namespace Procedural{
     

@@ -145,6 +145,20 @@ toolbox_step_result toolbox_step( Procedural::Toolbox &t, StatefulEngine &s ){
     return result;
 }
 
+void toolbox_handle_result( const Procedural::Toolbox &t, const toolbox_step_result& result ){
+    if( !result.has_next ){
+        cout << "no more pieces " << endl;
+    }
+    if( !result.can_glue ){
+        cout << "cannot find a feasible solution. remaining pieces : " << t.noRemainingPieces() << endl;
+    }
+    if( !result.enough_free_poles ){
+        cout << "there aren't enough free poles. remaining pieces :" << t.noRemainingPieces() << endl;
+    }
+    t.print();
+
+}
+
 void empty_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     
     Procedural::Toolbox& t = Procedural::Toolbox::getToolboxInstance();
@@ -155,15 +169,7 @@ void empty_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     while( result.ok() ){
         result = toolbox_step( t, s );
     }
-    if( !result.has_next ){
-        cout << "no more pieces " << endl;
-    }
-    if( !result.can_glue ){
-        cout << "cannot find a feasible solution. remaining pieces : " << t.noRemainingPieces() << endl;
-    }
-    if( !result.enough_free_poles ){
-        cout << "there aren't enough free poles. remaining pieces :" << t.noRemainingPieces() << endl;
-    }
+    toolbox_handle_result( t, result );
 }
 
 
@@ -182,6 +188,7 @@ void step_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     if( !result.enough_free_poles ){
         cout << "there aren't enough free poles. remaining pieces :" << t.noRemainingPieces() << endl;
     }
+    toolbox_handle_result( t, result );
 }
 
 
@@ -209,6 +216,18 @@ void amnth( MeshEditor *me, const std::vector< std::string > &args ){
 
 }
 
+
+void saveSkel( MeshEditor *me, const std::vector< std::string > &args ){
+    StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    s.getMainStructure().saveSkeleton("//Users//francescousai//Desktop//example.skel");
+}
+
+void saveBVH( MeshEditor *me, const std::vector< std::string > &args ){
+    //    "//Users//francescousai//Desktop//bvh.skel"
+    StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    s.getMainStructure().saveBVH("//Users//francescousai//Desktop//bvh.skel");
+}
+
 namespace Procedural{
     namespace ConsoleFuncs{
 
@@ -228,6 +247,8 @@ void register_engine_console_funcs( GLGraphics::MeshEditor* me )
     me->register_console_function( "engine.debug.apply_random_transform", art, "engine.debug.apply_random_transform" );
     me->register_console_function( "engine.debug.apply_optimal_alignment", apa, "engine.debug.apply_optimal_alignment" );
     me->register_console_function( "engine.debug.align_Module_normals_to_host", amnth, "engine.debug.align_Module_normals_to_host" );
+    me->register_console_function( "engine.debug.saveSkel", saveSkel, "engine.debug.saveSkel" );
+    me->register_console_function( "engine.debug.saveBVH", saveBVH, "engine.debug.saveBVH" );
     
 }
 }}

@@ -137,6 +137,8 @@ class StatefulEngine{
             void            glueCurrent();
             size_t          noFreePoles();
     
+            inline const MainStructure& getMainStructure() const{ return *mainStructure; };
+    
     private :
                             StatefulEngine();
                             StatefulEngine( StatefulEngine const& ) = delete;
