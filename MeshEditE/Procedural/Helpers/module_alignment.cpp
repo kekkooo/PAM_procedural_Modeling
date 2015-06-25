@@ -270,112 +270,112 @@ void add_necessary_poles( Manifold &m, vector<Match> &matches, set<VertexID> &ho
 
 
             
-void AddModule( Manifold &host, Manifold &module, size_t no_glueings, vector<Match> &result )
-{
-    // initialize random generator
-    static std::mersenne_twister_engine<std::uint_fast32_t, 32, 624, 397, 31,
-    0x9908b0df, 11, 0xffffffff, 7, 0x9d2c5680, 15, 0xefc60000, 18, 1812433253> rrrr;
-    rrrr.seed( time(0) ); rrrr(); rrrr(); rrrr(); rrrr(); rrrr(); rrrr(); rrrr();
-    CGLA::gel_srand( rrrr() );
-
-    vector<matches_and_cost>    matches_vector;
-    kd_tree                     tree;
-    set<VertexID>               host_IDs, module_IDs;
-    vector<match_info>          proposed_matches;
-    
-    add_manifold( host, module, host_IDs, module_IDs );
-    build_manifold_kdtree( host, host_IDs, tree );
-    // for now it will be just for one time
-    std::cout << "while filling " << endl;
-    for( int i = 0; i < 10; ++i )
-    {
-        map<VertexID, Vec3d>    transformed_module_poles;
-        vertex_match            module_to_host;
-        vector<Match>           current_matches, best_matches;
-        match_info              mi;
-        
-        mi.random_transform =
-            transform_module_poles( host, host_IDs, module_IDs, transformed_module_poles );
-        
-//        for( auto p : transformed_module_poles )
+//void AddModule( Manifold &host, Manifold &module, size_t no_glueings, vector<Match> &result )
+//{
+//    // initialize random generator
+//    static std::mersenne_twister_engine<std::uint_fast32_t, 32, 624, 397, 31,
+//    0x9908b0df, 11, 0xffffffff, 7, 0x9d2c5680, 15, 0xefc60000, 18, 1812433253> rrrr;
+//    rrrr.seed( time(0) ); rrrr(); rrrr(); rrrr(); rrrr(); rrrr(); rrrr(); rrrr();
+//    CGLA::gel_srand( rrrr() );
+//
+//    vector<matches_and_cost>    matches_vector;
+//    kd_tree                     tree;
+//    set<VertexID>               host_IDs, module_IDs;
+//    vector<match_info>          proposed_matches;
+//    
+//    add_manifold( host, module, host_IDs, module_IDs );
+//    build_manifold_kdtree( host, host_IDs, tree );
+//    // for now it will be just for one time
+//    std::cout << "while filling " << endl;
+//    for( int i = 0; i < 10; ++i )
+//    {
+//        map<VertexID, Vec3d>    transformed_module_poles;
+//        vertex_match            module_to_host;
+//        vector<Match>           current_matches, best_matches;
+//        match_info              mi;
+//        
+//        mi.random_transform =
+//            transform_module_poles( host, host_IDs, module_IDs, transformed_module_poles );
+//        
+////        for( auto p : transformed_module_poles )
+////        {
+////            cout << "########################" << endl;
+////            cout << "id  : " << p.first << endl;
+////            cout << "bef : " << host.pos(p.first) << endl;
+////            cout << "aft : " << p.second<< endl;
+////            cout << "########################" << endl;
+////        }
+////#define save_and_continue
+//#ifdef save_and_continue
+//        assert(false);
+//        for( VertexID vid : module_IDs )
 //        {
-//            cout << "########################" << endl;
-//            cout << "id  : " << p.first << endl;
-//            cout << "bef : " << host.pos(p.first) << endl;
-//            cout << "aft : " << p.second<< endl;
-//            cout << "########################" << endl;
+//            host.pos( vid ) = mi.random_transform.mul_3D_point( host.pos( vid ));
 //        }
-//#define save_and_continue
-#ifdef save_and_continue
-        assert(false);
-        for( VertexID vid : module_IDs )
-        {
-            host.pos( vid ) = mi.random_transform.mul_3D_point( host.pos( vid ));
-        }
-        save_intermediate_result( host, TEST_PATH, 10 + i );
-//        continue;
-#endif
-        
-        
-        match_module_to_host( host, tree, transformed_module_poles, module_to_host );
-//        continue;
-        for( auto pole_and_vertex : module_to_host )
-        {
-//            cout << pole_and_vertex.first << ", " << pole_and_vertex.second << endl;
-            current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
-        }
-        EdgeCost c = get_best_subset( host, current_matches, best_matches, no_glueings );
-
-        graph_print( cout, c ) << endl;;
-        mi.cost     = c;
-        mi.matches  = best_matches;
-        proposed_matches.push_back( mi );
-        graph_print( cout, proposed_matches[i].cost ) << endl;;
-    }
-    std::cout << "after filling " << endl;
-    assert( proposed_matches.size() > 0 );
-    // find the best solution between the proposed ones
-#pragma message( "all the matches have the same cost - I guess it is related to the RANDOM transform")
-    size_t      selected = 0;
-    EdgeCost    max_cost = proposed_matches[0].cost;
-    graph_print( cout, max_cost ) << endl;
-    for( int i = 1; i < proposed_matches.size(); ++i )
-    {
-        graph_print( cout, proposed_matches[i].cost ) << endl;;
-        if( proposed_matches[i].cost < max_cost )
-        {
-            selected = i;
-            max_cost = proposed_matches[i].cost;
-        }
-    }
-    // FROM NOW ON, THE OPERATIONS WILL USE THE SELECTED MATCHES
-    // remember that there is a return in the middle of code
-    apply_optimal_alignment( host, module_IDs, proposed_matches[selected] );
-    save_intermediate_result(host, TEST_PATH, 2);
-    align_module_normals_to_host( host, module_IDs, proposed_matches[selected].matches );
-    save_intermediate_result(host, TEST_PATH, 3);
-    add_necessary_poles( host, proposed_matches[selected].matches, host_IDs, module_IDs );
-    glue_matches( host, proposed_matches[selected].matches );
-    
-
-    /* How this should work
-     -) build a kdtree of the host
-     -) for N times
-        -)  compute a random transformation of the module (that brings it outside the host)
-            it only apply the transformation to its poles
-        -)  match each pole of the module to its closest point on the host
-        -)  use the complete graph utilities in order to get the subset ( with given cardinality )
-            that is the best fit between module and host
-        -)  collect the configuration and its COST
-     -) choose the configuration with smallest cost
-     -) use svd rigid motion utility to align the module to the host given the matching between
-        the choosen poles and vertices
-     -) add a pole to the host in those choosen vertices that are not poles
-     -) glue each choosen module's pole to its correspondent host's pole.
-     -) smooth the added skeleton ( this is something that needs a little more work )
-     */
-    result = std::move( proposed_matches[selected].matches );
-}
+//        save_intermediate_result( host, TEST_PATH, 10 + i );
+////        continue;
+//#endif
+//        
+//        
+//        match_module_to_host( host, tree, transformed_module_poles, module_to_host );
+////        continue;
+//        for( auto pole_and_vertex : module_to_host )
+//        {
+////            cout << pole_and_vertex.first << ", " << pole_and_vertex.second << endl;
+//            current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
+//        }
+//        EdgeCost c = get_best_subset( host, current_matches, best_matches, no_glueings );
+//
+//        graph_print( cout, c ) << endl;;
+//        mi.cost     = c;
+//        mi.matches  = best_matches;
+//        proposed_matches.push_back( mi );
+//        graph_print( cout, proposed_matches[i].cost ) << endl;;
+//    }
+//    std::cout << "after filling " << endl;
+//    assert( proposed_matches.size() > 0 );
+//    // find the best solution between the proposed ones
+//#pragma message( "all the matches have the same cost - I guess it is related to the RANDOM transform")
+//    size_t      selected = 0;
+//    EdgeCost    max_cost = proposed_matches[0].cost;
+//    graph_print( cout, max_cost ) << endl;
+//    for( int i = 1; i < proposed_matches.size(); ++i )
+//    {
+//        graph_print( cout, proposed_matches[i].cost ) << endl;;
+//        if( proposed_matches[i].cost < max_cost )
+//        {
+//            selected = i;
+//            max_cost = proposed_matches[i].cost;
+//        }
+//    }
+//    // FROM NOW ON, THE OPERATIONS WILL USE THE SELECTED MATCHES
+//    // remember that there is a return in the middle of code
+//    apply_optimal_alignment( host, module_IDs, proposed_matches[selected] );
+//    save_intermediate_result(host, TEST_PATH, 2);
+//    align_module_normals_to_host( host, module_IDs, proposed_matches[selected].matches );
+//    save_intermediate_result(host, TEST_PATH, 3);
+//    add_necessary_poles( host, proposed_matches[selected].matches, host_IDs, module_IDs );
+//    glue_matches( host, proposed_matches[selected].matches );
+//    
+//
+//    /* How this should work
+//     -) build a kdtree of the host
+//     -) for N times
+//        -)  compute a random transformation of the module (that brings it outside the host)
+//            it only apply the transformation to its poles
+//        -)  match each pole of the module to its closest point on the host
+//        -)  use the complete graph utilities in order to get the subset ( with given cardinality )
+//            that is the best fit between module and host
+//        -)  collect the configuration and its COST
+//     -) choose the configuration with smallest cost
+//     -) use svd rigid motion utility to align the module to the host given the matching between
+//        the choosen poles and vertices
+//     -) add a pole to the host in those choosen vertices that are not poles
+//     -) glue each choosen module's pole to its correspondent host's pole.
+//     -) smooth the added skeleton ( this is something that needs a little more work )
+//     */
+//    result = std::move( proposed_matches[selected].matches );
+//}
             
 
 bool ID_and_dist_comparer( ID_and_dist &l, ID_and_dist &r ) { return ( l.second < r.second ); }
@@ -448,7 +448,7 @@ void align_module_normals_to_host( Manifold &m, set<VertexID> &module_IDs, vecto
     }
 }
             
-void glue_matches( HMesh::Manifold &m, std::vector<Procedural::GraphMatch::Match> &matches )
+void glue_matches( HMesh::Manifold &m, std::vector<Procedural::Match> &matches )
 {
     for( Match match : matches )
     {

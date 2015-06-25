@@ -151,6 +151,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
                 }
             }
             // save the nearest match into the output map
+            unassigned_poles.er
             M_pole_to_H_vertex[nearest.first] = item.first;
             assigned_candidates.insert( item.first );
             // put all the other poles into the unassigned set
@@ -562,15 +563,31 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
             current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
         }
         
-#error handle the subset list
+#warning TODO? : IF NO_GLUEINGS IS NOT FIXED, WE SHOULD CHOOSE THE HIGHEST WITH THE LOWEST COST
         std::vector< SubsetResult > results;
         EdgeCost treshold = make_pair( 0.5, 0.5 );
 
         get_subsets( *mainStructure, transformedModules[i], current_matches, results, treshold );
-//        EdgeCost c = get_best_subset( *this->m, current_matches, best_matches, no_glueings );
+        
+        if( results.size() == 0 ){ std::cout << "result set is empty" << endl; continue; }
+        
+        // LEGACY
+        bool done = false;
+        int inner = 0;
+//        for( ; inner < results.size() && !done; ++inner ){
+//            done = results[inner].matches.size() == no_glueings;
+//        }
+//        
+//        if( !done ){ std::cout << "no glueings not matched" << endl; continue; }
+//        --inner;
+        
+        
+        
+        best_matches = std::move( results[inner].matches );
+        EdgeCost c   = results[inner].cost;
         
         for( auto& match : best_matches ){
-            distance_sum += ( transformedModules[i].getPoleInfo(match.first).geometry.pos - m->pos(match.second)).length();
+            distance_sum += ( transformedModules[i].getPoleInfo( match.first ).geometry.pos - mainStructure->getPoleInfo( match.second ).geometry.pos ).length();
         }
 
         mi.cost     = c;

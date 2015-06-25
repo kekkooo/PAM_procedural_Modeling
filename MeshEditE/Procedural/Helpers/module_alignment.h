@@ -50,8 +50,8 @@ struct match_info{
  *                     FUNCTION DECLARATIONS                               *
  *=========================================================================*/
         
-void AddModule(                 HMesh::Manifold &host, HMesh::Manifold &module, size_t no_glueings,
-                                std::vector<Procedural::Match> &matches );
+//void AddModule(                 HMesh::Manifold &host, HMesh::Manifold &module, size_t no_glueings,
+//                                std::vector<Procedural::Match> &matches );
 void build_manifold_kdtree(     HMesh::Manifold& m, const std::set< HMesh::VertexID > &selected, kd_tree &tree);
 
 CGLA::Mat4x4d transform_module_poles(

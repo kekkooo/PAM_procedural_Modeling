@@ -84,7 +84,7 @@ void get_subsets( const MainStructure& main, const Module& module,
                   const std::vector< Match >& proposed,
                   std::vector< SubsetResult >& result, EdgeCost treshold ){
     
-    size_t no_nodes = module.poleList.size();
+    size_t no_nodes = proposed.size();
     EdgeCost cost_sum = make_pair( 0.0, 0.0 );
     
     PoleList main_poles, module_poles;
@@ -114,7 +114,7 @@ void get_subsets( const MainStructure& main, const Module& module,
     bool go_on = s0.cost < treshold;
     
     // iterate removing until the target is found
-    for( size_t i = 0; i < no_nodes && go_on; ++i )
+    for( size_t i = 0; i < no_nodes - 1 && go_on; ++i )
     {
         result.push_back( s0 );
         
@@ -151,7 +151,10 @@ void get_subsets( const MainStructure& main, const Module& module,
         // rimuoverlo dal grafo
         g.RemoveNode( choosen );
         getSubsetResult( g, mtg_main, mtg_module, s0 );
+        go_on = s0.cost < treshold;
     }
+    
+    if( go_on ){ result.push_back( s0 ); }
     
     assert( g.no_nodes() > 0 );
 }
