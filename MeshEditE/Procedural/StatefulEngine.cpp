@@ -365,7 +365,7 @@ void StatefulEngine::glueCurrent(){
     set<VertexID> _h;
     IDRemap remap;
     VertexIDRemap host_remap, module_remap;
-    vector<GraphMatch::Match> remapped_matches;
+    vector<Match> remapped_matches;
     add_manifold(*m, *candidateModule->m, host_remap, module_remap, M_vertices );
     mainStructure->reAlignIDs( host_remap );
     candidateModule->reAlignIDs( module_remap );
@@ -435,7 +435,7 @@ void StatefulEngine::actualGlueing(){
         set<VertexID> _h;
         IDRemap remap;
         VertexIDRemap host_remap, module_remap;
-        vector<GraphMatch::Match> remapped_matches;
+        vector<Match> remapped_matches;
         add_manifold(*m, *candidateModule->m, host_remap, module_remap, M_vertices );
         mainStructure->reAlignIDs( host_remap );
         candidateModule->reAlignIDs( module_remap );
@@ -479,7 +479,7 @@ void StatefulEngine::setHost( Manifold &host ){
     this->mainStructure = new MainStructure();
     
     Module *starter = new Module( *m, 0 );
-    std::vector<Procedural::GraphMatch::Match> matches;
+    std::vector<Procedural::Match> matches;
     mainStructure->glueModule( *starter, matches);
     
 }
@@ -561,8 +561,13 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
 #endif
             current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
         }
+        
+#error handle the subset list
+        std::vector< SubsetResult > results;
+        EdgeCost treshold = make_pair( 0.5, 0.5 );
 
-        EdgeCost c = get_best_subset( *this->m, current_matches, best_matches, no_glueings );
+        get_subsets( *mainStructure, transformedModules[i], current_matches, results, treshold );
+//        EdgeCost c = get_best_subset( *this->m, current_matches, best_matches, no_glueings );
         
         for( auto& match : best_matches ){
             distance_sum += ( transformedModules[i].getPoleInfo(match.first).geometry.pos - m->pos(match.second)).length();

@@ -26,7 +26,11 @@ namespace Procedural{
 typedef size_t                                          GraphNode;
 typedef std::pair<size_t, size_t>                       GraphEdge;
 typedef std::pair<double, double>                       EdgeCost;
-//typedef std::pair< HMesh::VertexID, HMesh::VertexID >   Match;
+
+struct SubsetResult{
+    std::vector< Match > matches;
+    EdgeCost             cost;
+};
 
 // should define here the operators +,-, >, <, == for the EdgeCost
 inline EdgeCost operator +( const EdgeCost& l, const EdgeCost& r )
@@ -80,8 +84,11 @@ private:
     std::map< HMesh::VertexID, GraphNode > id_to_node;
     std::map< GraphNode, HMesh::VertexID > node_to_id;
 public:
-    inline GraphNode        getNode     ( HMesh::VertexID v )   { assert( id_to_node.count( v ) > 0 ); return id_to_node[v]; }
-    inline HMesh::VertexID  getVertexId ( GraphNode n )         { assert( node_to_id.count( n ) > 0 ); return node_to_id[n]; }
+    inline GraphNode        getNode     ( HMesh::VertexID v ) const
+        { assert( id_to_node.count( v ) > 0 ); return id_to_node.at( v ); }
+
+    inline HMesh::VertexID  getVertexId ( GraphNode n )
+        const  { assert( node_to_id.count( n ) > 0 ); return node_to_id.at( n ); }
     ManifoldToGraph( const std::vector<HMesh::VertexID> &vs )
     {
         GraphNode curr = 0;
@@ -111,8 +118,8 @@ public :
     std::vector<GraphNode> nodes;
     std::vector<GraphEdge> arcs;
     
-    inline bool exists( GraphNode n ) { return ( n <= max_node_idx && nodes[n] == n ); }
-    inline bool exists( GraphEdge e ) { return ( exists( e.first ) && exists( e.second )); }
+    inline bool exists( GraphNode n )const { return ( n <= max_node_idx && nodes[n] == n ); }
+    inline bool exists( GraphEdge e )const { return ( exists( e.first ) && exists( e.second )); }
     
     inline size_t no_nodes()
     {
@@ -134,20 +141,20 @@ public :
         costs[build_edge( n1, n2 )] = cost;
     }
     
-    inline EdgeCost getCost( GraphEdge e )
+    inline EdgeCost getCost( GraphEdge e )const
     {
         assert( exists( e ));
-        return costs[e];
+        return costs.at( e );
     }
     
-    inline EdgeCost getCost( GraphNode n1, GraphNode n2 )
+    inline EdgeCost getCost( GraphNode n1, GraphNode n2 ) const
     {
         assert( exists( n1 ));
         assert( exists( n2 ));
-        return costs[build_edge( n1, n2 )];
+        return costs.at( build_edge( n1, n2 ));
     }
     
-    inline void getStar( GraphNode n, std::vector< GraphEdge > &star )
+    inline void getStar( GraphNode n, std::vector< GraphEdge > &star ) const
     {
         assert( exists( n ));
         for( size_t i = 0; i < max_node_idx; ++i )
@@ -225,20 +232,20 @@ std::ostream& operator<< (std::ostream &out, GraphStruct &g);
 
 
 
-void        graphStruct_difference(         GraphStruct &g1, GraphStruct &g2, GraphStruct &g );
-GraphNode   remove_most_expensive_node (    GraphStruct &g );
-EdgeCost    getStarTotalCost(               GraphStruct &g, GraphNode n );
+void        graphStruct_difference(         const GraphStruct& g1, const GraphStruct& g2, GraphStruct& g );
+GraphNode   remove_most_expensive_node (    GraphStruct& g );
+EdgeCost    getStarTotalCost(               const GraphStruct& g, GraphNode n );
+EdgeCost    getGraphTotalCost(              const GraphStruct& g );
+void        getSubsetResult(                const GraphStruct& g, const ManifoldToGraph& mtg_main,
+                                            const ManifoldToGraph& mtg_module, SubsetResult& result );
 
-EdgeCost get_best_subset
-                        ( HMesh::Manifold &host,  std::vector<HMesh::VertexID> &host_candidates,
-                          HMesh::Manifold &module, std::vector<HMesh::VertexID> &poles,
-                          std::vector< Match > &selected, size_t target );
-EdgeCost get_best_subset
-                        ( HMesh::Manifold &m,  std::vector<Match> &proposed,
-                          std::vector< Match > &selected, size_t target );
+        
+        
+void get_subsets( const MainStructure& main, const Module& module,
+                  const std::vector< Match >& proposed,
+                  std::vector< SubsetResult >& result, EdgeCost treshold );
 
-void     fill_graph     ( HMesh::Manifold &m, std::vector<HMesh::VertexID> &vs, GraphStruct &g );
-void     normalize_costs( GraphStruct &g1, GraphStruct g2 );
+void     normalize_costs( GraphStruct& g1, GraphStruct& g2, double max_distance );
 
 
 }}

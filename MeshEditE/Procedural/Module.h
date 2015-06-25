@@ -78,7 +78,7 @@ public:
         bool isPole( HMesh::VertexID v );
         const Skeleton& getSkeleton() const;
 
-        inline const PoleInfoMap& getPoleInfoMap(){ return poleInfoMap;}
+        inline const PoleInfoMap& getPoleInfoMap()const{ return poleInfoMap;}
 private:
     void    BuildPoleInfo();            
     

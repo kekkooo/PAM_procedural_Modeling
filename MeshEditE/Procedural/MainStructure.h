@@ -44,12 +44,12 @@ public:
     void saveSkeleton( std::string path ) const;
     void saveBVH( std::string path ) const;
     
-    const Procedural::PoleList& getPoles();
-    const Procedural::PoleList& getFreePoles();
-    const Procedural::PoleList& getGluedPoles();
-    const Procedural::PoleSet&  getFreePoleSet();
-    const PoleInfo&             getPoleInfo( HMesh::VertexID p );
-    inline const PoleInfoMap&   getPoleInfoMap(){ return freePoleInfoMap;}
+    const Procedural::PoleList& getPoles() const;
+    const Procedural::PoleList& getFreePoles() const;
+    const Procedural::PoleList& getGluedPoles() const;
+    const Procedural::PoleSet&  getFreePoleSet() const;
+    const PoleInfo&             getPoleInfo( HMesh::VertexID p ) const;
+    inline const PoleInfoMap&   getPoleInfoMap() const{ return freePoleInfoMap;}
     
 private:
 /************************************************

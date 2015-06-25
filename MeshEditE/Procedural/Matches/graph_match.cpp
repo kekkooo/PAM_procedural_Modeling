@@ -38,109 +38,86 @@ GraphEdge build_edge( GraphNode n1, GraphNode n2 )
     if( n1 < n2 ) return std::make_pair( n1, n2 );
     else          return std::make_pair( n2, n1 );
 }
+        
 
-// fills the given graph with costs associated to each arc
-void fill_graph ( Manifold &m, vector<HMesh::VertexID> &vs, GraphStruct &g, ManifoldToGraph &mtg )
-{
-    vector< CGLA::Vec3d > pos, normals;
-    for( VertexID v : vs )
-    {
-        assert( v != InvalidVertexID );
-        CGLA::Vec3d p = m.pos(v),
-                    n = Procedural::Geometry::vertex_normal( m, v );
-        pos.push_back( p);
-        normals.push_back( n );
-    }
+void fill_graph( const PoleList &poles, const PoleInfoMap& poleInfo, GraphStruct &g, ManifoldToGraph &mtg ){
     // calculate costs save them into the graph
     for( GraphEdge e : g.arcs )
     {
         VertexID v1 = mtg.getVertexId( e.first ),
                  v2 = mtg.getVertexId( e.second );
-        CGLA::Vec3d n1 = Procedural::Geometry::vertex_normal( m, v1 ),
-                    n2 = Procedural::Geometry::vertex_normal( m, v2 );
+        
+        assert( poleInfo.count( v1 ) > 0 );
+        assert( poleInfo.count( v2 ) > 0 );
+        
+        CGLA::Vec3d n1 = poleInfo.at( v1 ).geometry.normal,
+                    n2 = poleInfo.at( v2 ).geometry.normal;
         n1.normalize();
         n2.normalize();
 #warning consider using squared length
-        double distance = ( m.pos( v1 ) - m.pos( v2 )).length();
-        double angle    = Geometry::get_angle( n1, n2 );
+        double distance = ( poleInfo.at( v1 ).geometry.pos - poleInfo.at( v2 ).geometry.pos).length();
+        double cos      = dot( n1, n2 ) + 1.0;
+        // since cos is in the range [-1, 1] and I use differences, I apply an offset to the range [ 0, 2 ]
         
         assert( distance > 0 );
-        assert( !isnan( angle ));
-        g.setCost( e, make_pair( distance, angle ));
+        assert( !isnan( cos ));
+        g.setCost( e, make_pair( distance, cos ));
     }
 }
         
-void normalize_costs( GraphStruct &g1, GraphStruct g2 ){
-    double max_distance = 0.0;
-    // get the maximum distance between g1 and g2
-    for( GraphEdge e : g1.arcs )
-    {
-        double current_distance = g1.getCost(e).first;
-        if( current_distance > max_distance ) { max_distance = current_distance; }
-    }
-    for( GraphEdge e : g2.arcs )
-    {
-        double current_distance = g1.getCost(e).first;
-        if( current_distance > max_distance ) { max_distance = current_distance; }
-    }
-    
+        
+void normalize_costs( GraphStruct &g1, GraphStruct g2, double max_distance ){
     // normalize edge cost values
     for( GraphEdge e : g1.arcs )
     {
-        g1.setCost(e, std::make_pair( g1.getCost(e).first / max_distance, g1.getCost(e).second / M_PI ));
+        g1.setCost( e, std::make_pair( g1.getCost( e ).first / max_distance, g1.getCost( e ).second / 2.0 ));
 #warning here I need a well thoughed assert
     }
     for( GraphEdge e : g2.arcs )
     {
-        g2.setCost(e, std::make_pair( g2.getCost(e).first / max_distance, g2.getCost(e).second / M_PI ));
+        g2.setCost( e, std::make_pair( g2.getCost( e ).first / max_distance, g2.getCost( e ).second / 2.0 ));
 #warning here I need a well thoughed assert
     }
 }
 
-
-EdgeCost get_best_subset( Manifold &m,  vector<Match> &proposed, vector< Match > &selected, size_t target )
-{
-    vector<VertexID> host_vertices, module_poles;
+void get_subsets( const MainStructure& main, const Module& module,
+                  const std::vector< Match >& proposed,
+                  std::vector< SubsetResult >& result, EdgeCost treshold ){
+    
+    size_t no_nodes = module.poleList.size();
+    EdgeCost cost_sum = make_pair( 0.0, 0.0 );
+    
+    PoleList main_poles, module_poles;
+    
     for( const auto& pole_and_vertex : proposed )
     {
         module_poles.push_back(  pole_and_vertex.first);
-        host_vertices.push_back( pole_and_vertex.second );
+        main_poles.push_back( pole_and_vertex.second );
     }
     
-    EdgeCost c = get_best_subset(m, host_vertices, m, module_poles, selected, target );
-    return c;
-}
-        
-
-/// taking as input the host mesh and the module mesh, with the respective
-/// vertices that are candidates for glueing. Taking also the target number of glueings,
-/// it returns the matches that minimize the cost of glueing them.
-EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &host_candidates,
-                          Manifold &module, vector< VertexID > &poles,
-                          vector< Match > &selected, size_t target )
-{
-    assert( host_candidates.size() == poles.size( ));
-    assert( target <= host_candidates.size());
-    
-    size_t no_nodes = host_candidates.size();
-    EdgeCost cost_sum = make_pair( 0.0, 0.0 );
     GraphStruct gm( no_nodes );
     GraphStruct gh( no_nodes );
     GraphStruct g( 0 );
-    ManifoldToGraph mtg_module( poles );
-    ManifoldToGraph mtg_host( host_candidates );
+    ManifoldToGraph mtg_module( module_poles );
+    ManifoldToGraph mtg_main( main_poles );
 
     // fill graph costs for module
-    fill_graph( module, poles, gm, mtg_module );
-    // fill graph costs for host
-    fill_graph( host, host_candidates, gh, mtg_host );
+    fill_graph( module_poles, module.getPoleInfoMap(), gm, mtg_module );
+    // fill graph costs for main
+    fill_graph( main_poles, main.getPoleInfoMap(), gh, mtg_main );
     // build difference graph
     graphStruct_difference( gm, gh, g );
-
+    
+    SubsetResult s0;
+    getSubsetResult( g, mtg_main, mtg_module, s0 );
+    
+    bool go_on = s0.cost < treshold;
+    
     // iterate removing until the target is found
-    size_t iterations = no_nodes - target;
-    for( size_t i = 0; i < iterations; ++i )
+    for( size_t i = 0; i < no_nodes && go_on; ++i )
     {
+        result.push_back( s0 );
+        
         map< GraphNode, EdgeCost > total_cost;
         // per ogni vertice
         for( size_t idx : g.nodes )
@@ -159,8 +136,8 @@ EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &host_candidates,
             }
         }
         
-        EdgeCost    max_cost = (*total_cost.begin()).second;
-        GraphNode   choosen  = (*total_cost.begin()).first;
+        EdgeCost    max_cost = ( *total_cost.begin( )).second;
+        GraphNode   choosen  = ( *total_cost.begin( )).first;
         
         // scegliere il vertice con il costo maggiore della star
         for( const auto& star_cost : total_cost )
@@ -173,21 +150,39 @@ EdgeCost get_best_subset( Manifold &host,   vector< VertexID > &host_candidates,
         }
         // rimuoverlo dal grafo
         g.RemoveNode( choosen );
+        getSubsetResult( g, mtg_main, mtg_module, s0 );
     }
+    
+    assert( g.no_nodes() > 0 );
+}
+    
+        
+void getSubsetResult( const GraphStruct& g, const ManifoldToGraph& mtg_main, const ManifoldToGraph& mtg_module,
+                      SubsetResult& result ){
+    result.cost = make_pair( 0.0, 0.0 );
+    result.matches.clear();
+    for( GraphNode index : g.nodes )
+    {
+        if( g.exists( index )) {
+            result.cost = result.cost + getStarTotalCost( g, index );
+            result.matches.push_back( make_pair( mtg_module.getVertexId( index ), mtg_main.getVertexId( index )));
+        }
+    }
+}
+
+EdgeCost getGraphTotalCost( const GraphStruct& g ){
+    EdgeCost cost_sum = make_pair( 0.0, 0.0 );
     // save the matches
     for( GraphNode index : g.nodes )
     {
-        if( g.exists( index ))
-        {
+        if( g.exists( index )) {
             cost_sum = cost_sum + getStarTotalCost( g, index );
-            selected.push_back( make_pair( mtg_module.getVertexId( index ), mtg_host.getVertexId( index )));
         }
     }
     return cost_sum;
 }
-  
         
-EdgeCost getStarTotalCost( GraphStruct &g, GraphNode n )
+EdgeCost getStarTotalCost( const GraphStruct &g, GraphNode n )
 {
     vector< GraphEdge > star;
     EdgeCost cost = make_pair( 0.0, 0.0 );
@@ -231,8 +226,9 @@ GraphNode remove_most_expensive_node( GraphStruct &g )
     return choosen;
 }
         
-        
-// UTILITIES
+/********************************************/
+/*                  UTILITIES               */
+/********************************************/
 std::ostream& graph_print (std::ostream &out, EdgeCost cost)
 {
     out << "(" << cost.first << ", " << cost.second << ")";

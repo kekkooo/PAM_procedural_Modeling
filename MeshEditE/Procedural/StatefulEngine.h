@@ -40,7 +40,7 @@ typedef std::set<HMesh::VertexID>                                       VertexSe
 typedef std::map< HMesh::VertexID, HMesh::VertexID >                    VertexMatchMap;
 typedef GEL_Geometry::KDTree< CGLA::Vec3d, HMesh::VertexID >            kD_Tree;
         
-typedef std::pair< std::vector< Procedural::GraphMatch::Match>,
+typedef std::pair< std::vector< Procedural::Match>,
                                 Procedural::GraphMatch::EdgeCost >      matchesAndCost;
 typedef std::pair<HMesh::VertexID, double>                              IdDistPair;
 typedef std::vector<IdDistPair>                                         IDsDistsVector;

@@ -25,25 +25,25 @@ namespace Procedural{
         skel = new Skeleton();
     }
 
-    const PoleList& MainStructure::getPoles(){
+    const PoleList& MainStructure::getPoles() const {
         return freePoles;
     }
 
-    const PoleList& MainStructure::getFreePoles(){
+    const PoleList& MainStructure::getFreePoles() const{
         return freePoles;
     }
     
-    const PoleSet& MainStructure::getFreePoleSet(){
+    const PoleSet& MainStructure::getFreePoleSet() const{
         return freePolesSet;
     }
 
-    const PoleList& MainStructure::getGluedPoles(){
+    const PoleList& MainStructure::getGluedPoles() const{
         return freePoles;
     }
     
-    const PoleInfo& MainStructure::getPoleInfo( HMesh::VertexID p ){
+    const PoleInfo& MainStructure::getPoleInfo( HMesh::VertexID p ) const{
         assert(freePoleInfoMap.count(p) > 0);
-        return freePoleInfoMap[p];
+        return freePoleInfoMap.at( p );
     }
 
     bool _in_set( set<VertexID > &s, VertexID v ){
