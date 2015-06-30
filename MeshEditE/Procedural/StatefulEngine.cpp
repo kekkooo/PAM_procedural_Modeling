@@ -514,6 +514,7 @@ void StatefulEngine::consolidate(){
 
 // this shouold maximize the number of matches while minimizing the total cost
 // should add a little penalty to the single matches since their cost is 0
+// can I minimize that in a least square sense?
 size_t StatefulEngine::chooseBestFitting( const vector< match_info > proposed_matches, const vector< ExtendedCost > extendedCosts ) const{
     size_t selected = 0;
     double max_double = numeric_limits<double>::max();
@@ -529,6 +530,7 @@ size_t StatefulEngine::chooseBestFitting( const vector< match_info > proposed_ma
             e.first += d_penalty;
         }else{
             double divider = sqrt( static_cast<double>( match_valency ));
+            e.first         /= divider;
             e.second.first  /= divider;
             e.second.second /= divider;
         }
