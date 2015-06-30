@@ -153,6 +153,9 @@ class StatefulEngine{
                                                const HMesh::VertexID &closest, HMesh::VertexID &second_closest, VertexSet &assigned );
     
             void            buildTransformationList( std::vector< CGLA::Mat4x4d> &transformations );
+            size_t          chooseBestFitting( const std::vector< Procedural::Helpers::ModuleAlignment::match_info > proposed_matches,
+                                               const std::vector< ExtendedCost > dxtendedCosts ) const;
+
 
 
     

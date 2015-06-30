@@ -25,7 +25,7 @@ namespace Procedural{
         
 typedef size_t                                          GraphNode;
 typedef std::pair<size_t, size_t>                       GraphEdge;
-typedef std::pair<double, double>                       EdgeCost;
+typedef std::pair<double, double>                       EdgeCost; // distance, cosine
 
 struct SubsetResult{
     std::vector< Match > matches;

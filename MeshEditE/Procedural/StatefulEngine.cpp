@@ -110,9 +110,13 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
 #ifdef TRACE
             cout << " HAVE FOUND "<< endl;
 #endif
-            Vec3d n_candidate = vertex_normal( *m, foundID );
-            n_candidate.normalize();
-            size_t valence = Geometry::valence( *m, foundID );
+//            Vec3d n_candidate = vertex_normal( *m, foundID );
+//            n_candidate.normalize();
+//            size_t valence = Geometry::valence( *m, foundID );
+            Vec3d n_candidate = mainStructure->getPoleInfo( foundID ).geometry.normal;
+            size_t valence    = mainStructure->getPoleInfo( foundID ).geometry.valence;
+
+
             
             // add only if match is valid
 #ifdef TRACE
@@ -130,6 +134,7 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
                 }
                 candidateNeighbors[foundID].push_back( make_pair( id_and_info.first, distance ));
                 assigned_candidates.insert( foundID );
+                // maps from module to main structure
                 internal_match[id_and_info.first] = foundID;
             }
         }
@@ -151,10 +156,9 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
                 }
             }
             // save the nearest match into the output map
-            unassigned_poles.er
             M_pole_to_H_vertex[nearest.first] = item.first;
             assigned_candidates.insert( item.first );
-            // put all the other poles into the unassigned set
+//          put all the other poles that have found a neighbor into the unassigned set
             for( IdDistPair& id_dist : item.second ){
                 if( id_dist.first != nearest.first ){ unassigned_poles.insert( id_dist.first ); }
             }
@@ -163,10 +167,12 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
     
     // for each unassigned pole try to find a secondary nearest match
     for( VertexID unassigned : unassigned_poles ){
-        assert( candidate.getPoleInfoMap().count(unassigned) > 0 );
-        const PoleGeometryInfo& pgi = candidate.getPoleInfo(unassigned).geometry;
+                
+        assert( candidate.getPoleInfoMap().count( unassigned ) > 0 );
+        const PoleGeometryInfo& pgi = candidate.getPoleInfo( unassigned ).geometry;
 
         VertexID second_cloesest = InvalidVertexID;
+        
         if( findSecondClosest( unassigned, pgi, internal_match[unassigned], second_cloesest, assigned_candidates )){
             assert( mainStructure->getFreePoleSet().count(second_cloesest) > 0 );
             M_pole_to_H_vertex[unassigned] = second_cloesest;
@@ -506,6 +512,38 @@ void StatefulEngine::consolidate(){
     tree = NULL;
 }
 
+// this shouold maximize the number of matches while minimizing the total cost
+// should add a little penalty to the single matches since their cost is 0
+size_t StatefulEngine::chooseBestFitting( const vector< match_info > proposed_matches, const vector< ExtendedCost > extendedCosts ) const{
+    size_t selected = 0;
+    double max_double = numeric_limits<double>::max();
+    ExtendedCost min_cost = make_pair( max_double, make_pair( max_double, max_double ));
+    double d_penalty = 0.0001;
+    EdgeCost penalty = make_pair( d_penalty, d_penalty );
+    for( int i = 0; i < proposed_matches.size(); ++i )
+    {
+        ExtendedCost e = extendedCosts[i];
+        size_t match_valency = proposed_matches[i].matches.size();
+        if( match_valency == 1 ){
+            e.second = e.second + penalty;
+            e.first += d_penalty;
+        }else{
+            double divider = sqrt( static_cast<double>( match_valency ));
+            e.second.first  /= divider;
+            e.second.second /= divider;
+        }
+        
+        if( e < min_cost )
+        {
+            selected = i;
+            min_cost = e;
+        }
+        
+        cout << i << ") #" << match_valency << " => ( " << e.first << ", ( " << e.second.first << ", " << e.second.second << " )"  << endl;
+    }
+    return selected;
+}
+
 
 bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_glueings ){
         assert( this->m != NULL );
@@ -515,8 +553,11 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     
     vector< matchesAndCost >    matches_vector;
     vector< match_info >        proposed_matches;
-    vector< ExtendedCost >      ExtendetCosts;
+    vector< ExtendedCost >      extendedCosts;
     vector< Mat4x4d >           Ts;
+    vector< pair< size_t, ExtendedCost >>   stats;
+    
+    for( size_t d = 0; d < candidateModule->poleList.size(); ++d){ stats.push_back( make_pair( 0, make_pair( 0.0, make_pair( 0.0, 0.0 ))));}
     
     buildTransformationList( Ts );
 //    return;
@@ -550,8 +591,7 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
         
         matchModuleToHost( transformedModules[i], M_to_H );
         
-        // if the number of matches is lower than the target, just skip this configuration
-        if( M_to_H.size() < no_glueings ) { continue; }
+        stats[M_to_H.size() - 1].first++;
         
         double distance_sum = 0.0;
         
@@ -563,35 +603,25 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
             current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
         }
         
-#warning TODO? : IF NO_GLUEINGS IS NOT FIXED, WE SHOULD CHOOSE THE HIGHEST WITH THE LOWEST COST
         std::vector< SubsetResult > results;
         EdgeCost treshold = make_pair( 0.5, 0.5 );
 
         get_subsets( *mainStructure, transformedModules[i], current_matches, results, treshold );
         
-        if( results.size() == 0 ){ std::cout << "result set is empty" << endl; continue; }
+        if( results.size() == 0 ){ /* std::cout << "result set is empty" << endl; */ continue; }
         
         // LEGACY
-        bool done = false;
-        int inner = 0;
-//        for( ; inner < results.size() && !done; ++inner ){
-//            done = results[inner].matches.size() == no_glueings;
-//        }
-//        
-//        if( !done ){ std::cout << "no glueings not matched" << endl; continue; }
-//        --inner;
+        assert( results.size() == 1 || results.front().matches.size() > results.back().matches.size( ));
         
-        
-        
-        best_matches = std::move( results[inner].matches );
-        EdgeCost c   = results[inner].cost;
+        best_matches = std::move( results.front().matches );
+        EdgeCost c   = results.front().cost;
         
         for( auto& match : best_matches ){
             distance_sum += ( transformedModules[i].getPoleInfo( match.first ).geometry.pos - mainStructure->getPoleInfo( match.second ).geometry.pos ).length();
         }
 
         mi.cost     = c;
-        ExtendetCosts.push_back( make_pair( distance_sum, c ));
+        extendedCosts.push_back( make_pair( distance_sum, c ));
 #ifdef TRACE
         cout << "configuration " << i << " has cost : "
         << mi.cost.first << ", " << mi.cost.second << ", " << distance_sum << endl;
@@ -607,17 +637,7 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
     }
     
     // find the best solution between the proposed ones
-    size_t      selected = 0;
-    ExtendedCost min_cost = ExtendetCosts[0];
-    for( int i = 1; i < proposed_matches.size(); ++i )
-    {
-        if( ExtendetCosts[i] < min_cost )
-        {
-            selected = i;
-            min_cost = ExtendetCosts[i];
-        }
-    }
-    
+    size_t      selected = chooseBestFitting(proposed_matches, extendedCosts );
     best_match.setMatchInfo( proposed_matches[selected] );
 
 #ifdef TRACE
@@ -636,6 +656,11 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
 
     }
 #endif
+    
+    // debug
+    for( size_t d = 0; d < candidateModule->poleList.size(); ++d){
+        std::cout << d+1 << ") " << stats[d].first << endl;
+    }
 
     return true;
 }

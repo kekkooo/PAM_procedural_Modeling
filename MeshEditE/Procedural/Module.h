@@ -55,6 +55,7 @@ struct PoleInfo{
     PoleGeometryInfo    geometry;
     Moduletype          moduleType  = 0;     // an identifier for the module's type
     PoleLabel           labels      = AllP;  // a label attached to a pole
+//    HMesh::VertexID     anisotropy_reference;
     int                 age;                 // pole's starting age
     bool                isFree      = false;
 };
