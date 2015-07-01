@@ -512,37 +512,76 @@ void StatefulEngine::consolidate(){
     tree = NULL;
 }
 
+
+
+bool lessThan( double lhs, double rhs, int no_decimals, bool acceptEqual = false ){
+    int _m = 10;
+    // multiply for one time more in order to get an extra decimal and use that for comparison
+    for( int i = 0; i <= no_decimals; ++i ){ _m *= 10; }
+
+    double mult = static_cast<double>( _m );
+    long eps = 5;
+
+    double t_lhs = trunc( mult * lhs );
+    double t_rhs = trunc( mult * rhs );
+    long ti_lhs = static_cast<long>( t_lhs );
+    long ti_rhs = static_cast<long>( t_rhs );
+    long diff = ti_lhs - ti_rhs;
+    // if diff < -eps is less
+    // if diff > eps is greater
+    // if -eps <= diff <= eps is equal
+    
+    cout << lhs     << ", " << rhs      << endl <<
+            t_lhs   << ", " << t_rhs    << endl <<
+            ti_lhs  << ", " << ti_rhs   << endl <<
+            diff    << endl;
+    
+    if( !acceptEqual ){
+        return ( diff < -eps );
+    }
+    else{
+        return diff < eps;
+    }
+    
+}
+
 // this shouold maximize the number of matches while minimizing the total cost
 // should add a little penalty to the single matches since their cost is 0
 // can I minimize that in a least square sense?
 size_t StatefulEngine::chooseBestFitting( const vector< match_info > proposed_matches, const vector< ExtendedCost > extendedCosts ) const{
+    assert( proposed_matches.size() > 0 );
     size_t selected = 0;
-    double max_double = numeric_limits<double>::max();
-    ExtendedCost min_cost = make_pair( max_double, make_pair( max_double, max_double ));
+    double best_sum_cost = numeric_limits<double>::max();
     double d_penalty = 0.0001;
-    EdgeCost penalty = make_pair( d_penalty, d_penalty );
+    double current_cost = 0.0;
+    
     for( int i = 0; i < proposed_matches.size(); ++i )
     {
         ExtendedCost e = extendedCosts[i];
         size_t match_valency = proposed_matches[i].matches.size();
         if( match_valency == 1 ){
-            e.second = e.second + penalty;
-            e.first += d_penalty;
+            current_cost = d_penalty;
         }else{
-            double divider = sqrt( static_cast<double>( match_valency ));
-            e.first         /= divider;
-            e.second.first  /= divider;
-            e.second.second /= divider;
+            double divider = static_cast<double>( match_valency );
+            divider = divider * divider;
+            cout << i << " # " << match_valency << " # " << divider << endl;
+            current_cost = ( e.first / divider ) + ( e.second.first / divider ) + ( e.second.second / divider );
         }
+
+        cout << i << ") #" << match_valency << " => ( " << e.first
+        << ", ( " << e.second.first << ", " << e.second.second << " ) = " << current_cost  << endl;
+
+        // clamp values and create INT for comparison
         
-        if( e < min_cost )
-        {
+        if( lessThan( current_cost, best_sum_cost, 6, false ) ||
+            ( lessThan( current_cost, best_sum_cost, 6, true ) &&
+            ( proposed_matches[i].matches.size() >= proposed_matches[selected].matches.size( )))){
+        
+            best_sum_cost = current_cost;
             selected = i;
-            min_cost = e;
         }
-        
-        cout << i << ") #" << match_valency << " => ( " << e.first << ", ( " << e.second.first << ", " << e.second.second << " )"  << endl;
     }
+    cout << "selected : " << selected << endl;
     return selected;
 }
 
@@ -759,10 +798,10 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 
                 // skip if there is a collision.
                 // need to improve it
-                if( mainStructure->isColliding( t_module )){
-                    cout << " skipping configuration - COLLISION " << endl;
-                    continue;
-                }
+//                if( mainStructure->isColliding( t_module )){
+//                    cout << " skipping configuration - COLLISION " << endl;
+//                    continue;
+//                }
 
                 transformations.push_back( T );
                 transformedModules.push_back( t_module );
