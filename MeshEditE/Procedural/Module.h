@@ -49,6 +49,8 @@ struct PoleGeometryInfo{
     unsigned int    valence;
     CGLA::Vec3d     pos;
     CGLA::Vec3d     normal;
+    CGLA::Vec3d     anisotropy_direction;
+    bool            bilateral_anisotropy = false ;
 };
     
 struct PoleInfo{
@@ -79,9 +81,11 @@ public:
         bool isPole( HMesh::VertexID v );
         const Skeleton& getSkeleton() const;
 
-        inline const PoleInfoMap& getPoleInfoMap()const{ return poleInfoMap;}
+        inline const PoleInfoMap& getPoleInfoMap()const{ return poleInfoMap; }
 private:
-    void    BuildPoleInfo();            
+    void    BuildPoleInfo();
+    void    getPoleAnisotropy( HMesh::VertexID pole, CGLA::Vec3d& dir, bool& bilateral ) const;
+    
     
 /************************************************
 * ATTRIBUTES                                   *

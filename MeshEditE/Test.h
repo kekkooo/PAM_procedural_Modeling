@@ -49,6 +49,7 @@ CGLA::Vec3d     mul_3D_dir                      ( const CGLA::Mat4x4d &t, const 
 double          sphere_intersects               ( const CGLA::Vec3d &c1, double r1,
                                                   const CGLA::Vec3d &c2, double r2 );
 
+
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )
 {

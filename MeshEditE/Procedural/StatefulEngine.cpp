@@ -563,9 +563,9 @@ size_t StatefulEngine::chooseBestFitting( const vector< match_info > proposed_ma
             current_cost = d_penalty;
         }else{
             double divider = static_cast<double>( match_valency );
-            divider = divider * divider;
+            double squared_divider = divider * divider;
             cout << i << " # " << match_valency << " # " << divider << endl;
-            current_cost = ( e.first / divider ) + ( e.second.first / divider ) + ( e.second.second / divider );
+            current_cost = ( e.first / divider ) +  (( e.second.first+ e.second.second ) / squared_divider ) ;
         }
 
         cout << i << ") #" << match_valency << " => ( " << e.first
@@ -573,8 +573,8 @@ size_t StatefulEngine::chooseBestFitting( const vector< match_info > proposed_ma
 
         // clamp values and create INT for comparison
         
-        if( lessThan( current_cost, best_sum_cost, 6, false ) ||
-            ( lessThan( current_cost, best_sum_cost, 6, true ) &&
+        if( lessThan( current_cost, best_sum_cost, 5, false ) ||
+            ( lessThan( current_cost, best_sum_cost, 5, true ) &&
             ( proposed_matches[i].matches.size() >= proposed_matches[selected].matches.size( )))){
         
             best_sum_cost = current_cost;
@@ -658,7 +658,12 @@ bool StatefulEngine::testMultipleTransformations( int no_tests, size_t no_gluein
         EdgeCost c   = results.front().cost;
         
         for( auto& match : best_matches ){
-            distance_sum += ( transformedModules[i].getPoleInfo( match.first ).geometry.pos - mainStructure->getPoleInfo( match.second ).geometry.pos ).length();
+            
+            double squared_dist = 0.0;
+            Vec3d d = transformedModules[i].getPoleInfo( match.first ).geometry.pos - mainStructure->getPoleInfo( match.second ).geometry.pos;
+            squared_dist = fabs( d[0] + d[1] + d[2] );
+            squared_dist /= 10E5;
+            distance_sum += squared_dist;
         }
 
         mi.cost     = c;

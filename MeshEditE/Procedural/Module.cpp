@@ -54,6 +54,16 @@ void Module::BuildPoleInfo(){
     }
 }
     
+void Module::getPoleAnisotropy( VertexID pole, Vec3d &dir, bool &bilateral ) const{
+    assert( is_pole( *m, pole ));
+    
+    // explore the pole's 1-ring
+    // find the best fitting plane ( PCA or Largest Triangle )
+    // project all vertices, pole included, onto that plane
+    // consider which vertex has the most similar direction,
+    // check if there is actually an anisotropy, and if it is bilateral 
+}
+    
     
 Module::Module( Manifold &manifold, Moduletype mType, size_t no_glueings ){
     this->m = &manifold;
