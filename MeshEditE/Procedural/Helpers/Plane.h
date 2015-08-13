@@ -11,6 +11,8 @@
 
 #include <iostream>
 #include <GEL/CGLA/Vec3d.h>
+#include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 
 #define PLANE_EPSILON 0.00001
 
@@ -84,7 +86,6 @@ public:
         return alpha;
     }
     
-    
     Plane() // initialize a null plane
     {
         _a = 0.f;
@@ -135,6 +136,7 @@ public:
 private:
     double  _a, _b, _c, _d;
     double TestPoint( Vec3d p ) { return (p[0] * _a + p[1] * _b + p[2] * _c - _d); }
+    
     
 };
 

@@ -50,6 +50,8 @@ double          sphere_intersects               ( const CGLA::Vec3d &c1, double 
                                                   const CGLA::Vec3d &c2, double r2 );
 
 
+
+
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )
 {

@@ -11,11 +11,13 @@
 #include "MeshEditE/Procedural/Helpers/geometric_properties.h"
 #include <GEL/HMesh/obj_load.h>
 #include <fstream>
+#include "Plane.h"
+#include "eigenv.h"
 
+using namespace std;
 using namespace HMesh;
 using namespace CGLA;
 using namespace Procedural::Geometry;
-using namespace std;
 
 namespace Procedural{
 
@@ -44,19 +46,37 @@ void Module::BuildPoleInfo(){
             PoleInfo pi;
             pi.geometry.valence = valence( *m, vid );
             pi.geometry.pos     = m->pos( vid );
-            Vec3d n = vertex_normal( *m, vid );
+            Vec3d n             = vertex_normal( *m, vid );
             n.normalize();
-            pi.geometry.normal = n;
+            pi.geometry.normal  = n;
             this->poleList.push_back( vid );
             this->poleSet.insert( vid );
             this->poleInfoMap[vid] = pi;
+            
+            Vec3d dir;
+            bool bilateral;
+            
+            getPoleAnisotropy( vid, dir, bilateral );
         }
     }
 }
     
+
+    
 void Module::getPoleAnisotropy( VertexID pole, Vec3d &dir, bool &bilateral ) const{
     assert( is_pole( *m, pole ));
     
+    vector< Vec3d > points;
+    
+    Walker w = m->walker( pole );
+    for( ; !w.full_circle(); w = w.circulate_vertex_ccw() ){
+        points.push_back( m->pos( w.vertex( )));
+        cout << points.back();
+    }
+    
+    
+    
+    Geometry::PCAResult p = EigenVectors( points );
     // explore the pole's 1-ring
     // find the best fitting plane ( PCA or Largest Triangle )
     // project all vertices, pole included, onto that plane

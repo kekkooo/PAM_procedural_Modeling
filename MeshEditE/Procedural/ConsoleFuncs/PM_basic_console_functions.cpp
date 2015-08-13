@@ -7,20 +7,31 @@
 //
 
 #include "PM_basic_console_functions.h"
-#include <GEL/GLGraphics/MeshEditor.h>
+
 #include <sstream>
 #include <random>
+#include <iostream>
+#include <fstream>
+//#include <sys/stat.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+
+#include <GEL/GLGraphics/MeshEditor.h>
 #include <GEL/HMesh/obj_save.h>
 #include <GEL/HMesh/obj_load.h>
 
 #include "polarize.h"
+#include "patch_mapping.h"
+
+
 #include <MeshEditE/Procedural/Operations/basic_shapes.h>
 #include <MeshEditE/Procedural/Operations/Algorithms.h>
 #include <MeshEditE/Procedural/Operations/structural_operations.h>
 #include <MeshEditE/Procedural/Helpers/structural_helpers.h>
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+#include <MeshEditE/Procedural/Helpers/misc.h>
 
-#include "patch_mapping.h"
 #include <MeshEditE/Test.h>
 #include <MeshEditE/Procedural/Helpers/manifold_copy.h>
 #include <MeshEditE/Tests/test_random_rotation.h>
@@ -311,7 +322,35 @@ void console_test_translate_outside_bsphere( MeshEditor *me, const std::vector< 
     test.translateOutsideBSphere();
 }
 
+void vertex_basic_info( MeshEditor *me, const std::vector< std::string > &args ){
+    
+    auto &m = me->active_mesh();
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit )
+    {
+        std::ostringstream oss;
+        if( me->get_vertex_selection()[*vit] == 1 )
+        {
+            oss << " vertex ID                  : " << *vit                        << endl;
+            oss << " is pole?                   : " << is_pole( m, *vit )          << endl;
+            oss << " valence                    : " << valency( m, *vit )          << endl;
+            
+            me->printf(oss.str().c_str());      oss.clear();
+        }
+    }
+}
 
+void filename_extraction( MeshEditor *me, const std::vector< std::string > &args ){
+    
+    std::string full_path( "/Users/francescousai/Documents/Dottorato/Conferenze/CGI_PG2015/Shapes/Modules/1plus_90_sim2.obj" );
+    std::string stem = Procedural::Helpers::Misc::get_filename_stem( full_path );
+    cout << "filename stem is : " << stem << endl;
+}
+
+void make_dir( MeshEditor *me, const std::vector< std::string > &args ){
+    
+    std::string base_folder("/Users/francescousai/Documents/Dottorato/Conferenze/CGI_PG2015/Results/" );
+    Procedural::Helpers::Misc::new_folder(base_folder, "blabla" );
+}
 
 namespace Procedural{
     namespace ConsoleFuncs{
@@ -320,6 +359,7 @@ void register_match_console_funcs( GLGraphics::MeshEditor* me )
 {
     me->register_console_function( "test.copy_and_delete_test",  copy_and_delete_test, "copy_and_delete_test" );
     me->register_console_function( "test.poles_info",  poles_info, "test.poles_info" );
+    me->register_console_function( "test.vertex_basic_info", vertex_basic_info, "test.vertex_basic_info" );
 }
 
 void register_basic_console_funcs( GLGraphics::MeshEditor* me )
@@ -336,6 +376,10 @@ void register_test_console_funcs( GLGraphics::MeshEditor* me )
     me->register_console_function( "test.set_host_and_module",   console_test_set_host_and_module, "test.set_host_and_module"     );
     me->register_console_function( "test.randomly_rotate",      console_test_randomly_rotate, "test.randomly_rotate"        );
     me->register_console_function( "test.translate_outside_bsphere",   console_test_translate_outside_bsphere, "test.translate_outside_bsphere"        );
+
+    me->register_console_function( "test.filename_extraction",   filename_extraction, "test.filename_extraction"        );
+    me->register_console_function( "test.make_dir",   make_dir, "test.make_dir"        );
+    
 }
         
 

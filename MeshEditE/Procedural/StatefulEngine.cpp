@@ -531,7 +531,8 @@ bool lessThan( double lhs, double rhs, int no_decimals, bool acceptEqual = false
     // if diff > eps is greater
     // if -eps <= diff <= eps is equal
     
-    cout << lhs     << ", " << rhs      << endl <<
+    cout <<
+            lhs     << ", " << rhs      << endl <<
             t_lhs   << ", " << t_rhs    << endl <<
             ti_lhs  << ", " << ti_rhs   << endl <<
             diff    << endl;
@@ -540,7 +541,7 @@ bool lessThan( double lhs, double rhs, int no_decimals, bool acceptEqual = false
         return ( diff < -eps );
     }
     else{
-        return diff < eps;
+        return diff < abs( eps );
     }
     
 }
@@ -551,9 +552,9 @@ bool lessThan( double lhs, double rhs, int no_decimals, bool acceptEqual = false
 size_t StatefulEngine::chooseBestFitting( const vector< match_info > proposed_matches, const vector< ExtendedCost > extendedCosts ) const{
     assert( proposed_matches.size() > 0 );
     size_t selected = 0;
-    double best_sum_cost = numeric_limits<double>::max();
-    double d_penalty = 0.0001;
-    double current_cost = 0.0;
+    double best_sum_cost  = numeric_limits<double>::max();
+    double d_penalty      = 0.0001;
+    double current_cost   = 0.0;
     
     for( int i = 0; i < proposed_matches.size(); ++i )
     {
@@ -563,22 +564,30 @@ size_t StatefulEngine::chooseBestFitting( const vector< match_info > proposed_ma
             current_cost = d_penalty;
         }else{
             double divider = static_cast<double>( match_valency );
-            double squared_divider = divider * divider;
+            double squared_divider = divider * divider;            
+            current_cost = ( e.first +  e.second.first+ e.second.second ) / squared_divider  ;
+            
             cout << i << " # " << match_valency << " # " << divider << endl;
-            current_cost = ( e.first / divider ) +  (( e.second.first+ e.second.second ) / squared_divider ) ;
+            
+            cout << i << ") #" << match_valency << " => ( " << e.first
+            << ", ( " << e.second.first << ", " << e.second.second << " ) = " << current_cost  << endl;
+
         }
 
-        cout << i << ") #" << match_valency << " => ( " << e.first
-        << ", ( " << e.second.first << ", " << e.second.second << " ) = " << current_cost  << endl;
 
         // clamp values and create INT for comparison
         
+        
         if( lessThan( current_cost, best_sum_cost, 5, false ) ||
             ( lessThan( current_cost, best_sum_cost, 5, true ) &&
-            ( proposed_matches[i].matches.size() >= proposed_matches[selected].matches.size( )))){
+            ( proposed_matches[i].matches.size() > proposed_matches[selected].matches.size( )))){
         
+            cout << "wins current "  << endl;
             best_sum_cost = current_cost;
             selected = i;
+        }
+        else{
+            cout << "wins old best "  << endl;
         }
     }
     cout << "selected : " << selected << endl;
