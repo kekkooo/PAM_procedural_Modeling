@@ -45,21 +45,32 @@ enum PoleLabel {
 
 typedef unsigned int Moduletype;
     
+struct PoleAnisotropyInfo{
+    CGLA::Vec3d     direction;
+    bool            is_defined   = false;
+    bool            is_bilateral = false ;
+};
+    
 struct PoleGeometryInfo{
     unsigned int    valence;
     CGLA::Vec3d     pos;
     CGLA::Vec3d     normal;
-    CGLA::Vec3d     anisotropy_direction;
-    bool            bilateral_anisotropy = false ;
 };
     
+
+    
 struct PoleInfo{
+    HMesh::VertexID     original_id;
+    PoleAnisotropyInfo  anisotropy;
     PoleGeometryInfo    geometry;
     Moduletype          moduleType  = 0;     // an identifier for the module's type
-    PoleLabel           labels      = AllP;  // a label attached to a pole
-//    HMesh::VertexID     anisotropy_reference;
+
     int                 age;                 // pole's starting age
-    bool                isFree      = false;
+    bool                isFree      = true;
+    bool                isActive    = true;
+    bool                can_connect_to_self = true; /* can connect to an instance of the 
+                                                     same pole on another module of the 
+                                                     same exact type ( same file ) */
 };
     
 typedef std::map<HMesh::VertexID, PoleInfo>             PoleInfoMap;
@@ -70,11 +81,11 @@ class Module{
     
 public:
          // this will instantiate the internal manifold structure and pole info using obj_load
-         Module () { m = NULL; }
-         Module( std::string path, Moduletype mType );
-         Module( HMesh::Manifold &manifold, Moduletype mType, size_t no_glueings = 1 );
+        Module () { m = NULL; }
+        Module( std::string path, std::string config, Moduletype mType );
+        Module( HMesh::Manifold &manifold, Moduletype mType );
     
-        Module& getTransformedModule( const CGLA::Mat4x4d &T, bool transform_module = false );
+        Module& getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geometry = false );
         void reAlignIDs( HMesh::VertexIDRemap &remapper );
     
         const PoleInfo&    getPoleInfo( HMesh::VertexID p ) const;
@@ -82,9 +93,12 @@ public:
         const Skeleton& getSkeleton() const;
 
         inline const PoleInfoMap& getPoleInfoMap()const{ return poleInfoMap; }
+    
+        static bool poleCanMatch( const PoleInfo& p1, const PoleInfo& p2);
 private:
     void    BuildPoleInfo();
-    void    getPoleAnisotropy( HMesh::VertexID pole, CGLA::Vec3d& dir, bool& bilateral ) const;
+    void    LoadPoleConfig( std::string path );
+    void    getPoleAnisotropy( HMesh::VertexID pole, CGLA::Vec3d& dir,  HMesh::VertexID neighbor ) const;
     
     
 /************************************************

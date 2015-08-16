@@ -19,7 +19,6 @@ namespace Procedural{
         Module*         m           = NULL;
         float           probability = 1.0;
         size_t          no_pieces   = 0;
-        size_t          no_glueings = 1;
         std::string     name;
     };
     

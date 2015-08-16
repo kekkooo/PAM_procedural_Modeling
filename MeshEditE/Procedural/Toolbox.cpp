@@ -13,6 +13,7 @@
 #include <streambuf>
 #include <iostream>
 
+#include "Helpers/misc.h"
 
 #include <GEL/HMesh/obj_load.h>
 
@@ -66,15 +67,11 @@ namespace Procedural {
             int    mNoGlueings  = tb[i]["no_glueings"].GetInt();
             
             // get the name of the module
-            char delimiter = '/';
-            int index = mFilename.length() - 1;
-            while( mFilename[index] != delimiter ){ --index; assert( index >= 0 );  }
-            string mName = mFilename.substr( index, mFilename.length() + 1 - index -3  );
+            string mName = Procedural::Helpers::Misc::get_filename_stem( mFilename );
 
             ModuleInfo* mInfo = new ModuleInfo;
-            mInfo->m                    = new Module( mFilename, mType);
+            mInfo->m                    = new Module( mFilename, mConfig, mType);
             mInfo->m->no_of_glueings    = mNoGlueings;
-            mInfo->no_glueings          = mNoGlueings;
             mInfo->no_pieces            = mNoPieces;
             mInfo->probability          = mProbability;
             mInfo->name                 = mName;
@@ -90,17 +87,10 @@ namespace Procedural {
     
     void Toolbox::addModule( std::string path, size_t no_pieces ){
         
-        Manifold* manifold = new Manifold();
-        obj_load( path, *manifold );
-        // here I should load configuration
-        // no_glueings
-        // type
-        size_t no_glueings = 1;
-        Module* module = new Module( *manifold, 0, 1 );
+        Module* module = new Module( path, "", 1 );
         ModuleInfo mi;
         mi.m = module;
         mi.no_pieces = no_pieces;
-        mi.no_glueings = no_glueings;
 
         total_pieces += no_pieces;
     }
@@ -161,7 +151,6 @@ namespace Procedural {
     void Toolbox::print() const{
         for ( const auto& m : modules ) {
             cout << " ##### MODULE : " << m->name <<  "######" << endl
-                 << m->no_glueings << " glueings " << endl
                  << m->no_pieces   << " available" << endl << endl;
         }
     }

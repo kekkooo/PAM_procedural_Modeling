@@ -122,7 +122,7 @@ class StatefulEngine{
     static  StatefulEngine& getCurrentEngine();
             void            setHost( HMesh::Manifold &host );
             void            setModule( Procedural::Module &module );
-            bool            testMultipleTransformations( int no_tests, size_t no_glueings );
+            bool            testMultipleTransformations();
             void            glueModuleToHost();
             void            consolidate();
     
@@ -138,10 +138,12 @@ class StatefulEngine{
     
             inline const MainStructure& getMainStructure() const{ return *mainStructure; };
     
-    private :
+
                             StatefulEngine();
                             StatefulEngine( StatefulEngine const& ) = delete;
             void operator   = (StatefulEngine const&)               = delete;
+    
+    //private :
 
             void            buildRandomRotation( CGLA::Mat4x4d &t );
 
@@ -154,18 +156,18 @@ class StatefulEngine{
     
             void            buildTransformationList( std::vector< CGLA::Mat4x4d> &transformations );
             size_t          chooseBestFitting( const std::vector< Procedural::Helpers::ModuleAlignment::match_info > proposed_matches,
-                                               const std::vector< ExtendedCost > dxtendedCosts ) const;
+                                               const std::vector< ExtendedCost > extendedCosts ) const;
 
 
-
+    
     
 
     
     /************************************************
      * ATTRIBUTES                                   *
      ***********************************************/
-private:
-
+//private:
+public:
     HMesh::Manifold     *m;
 
     VertexSet           M_vertices;
