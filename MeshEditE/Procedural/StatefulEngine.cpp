@@ -263,8 +263,73 @@ bool StatefulEngine::findSecondClosest( const VertexID &pole, const PoleGeometry
 
 /********** APPLICATION OF TRANSFORMATIONS **********/
 
+void StatefulEngine::buildOptimalAlignmentTransform( const Module& module, const std::vector<Match>& matches,
+                                                    CGLA::Mat4x4d& T ){
+    Mat4x4d r, t;
+    vector< Vec3d>     host_pos, module_pos;
+    for( auto& match : matches ){
+        module_pos.push_back( module.getPoleInfo( match.first ).geometry.pos );
+        host_pos.push_back(   mainStructure->getPoleInfo( match.second ).geometry.pos );
+    }
+    svd_rigid_motion( module_pos, host_pos, r, t );
+    T = t * r;
+}
+
+void StatefulEngine::buildNormalsAlignmentTransform( const Module& module, const std::vector<Match>& matches,
+                                                    CGLA::Mat4x4d& T ){
+    CGLA::Vec3d host_vec( 0 ), module_vec( 0 ), centroid( 0 );
+    double      _;
+    for( Match match : matches )
+    {
+        cout <<"centroid :" << centroid <<endl;
+        centroid = centroid + module.getPoleInfo( match.first ).geometry.pos;
+        Vec3d mn = module.getPoleInfo( match.first ).geometry.normal;
+        Vec3d hn = mainStructure->getPoleInfo(match.second).geometry.normal;
+        
+        assert( !( isnan( mn[0] ) || isnan( mn[1] ) || isnan( mn[2] )));
+        assert( !( isnan( hn[0] ) || isnan( hn[1] ) || isnan( hn[2] )));
+        if( !( isfinite( centroid[0] ) && isfinite( centroid[1] ) && isfinite( centroid[2] ))){
+            Vec3d why_are_you_inf = module.getPoleInfo(match.first).geometry.pos;
+            cout << why_are_you_inf;
+        }
+        
+        module_vec  += mn;
+        host_vec    += hn;
+    }
+    
+#ifdef TRACE
+    cout << "module vector :" << endl << module_vec << endl;
+    cout << "host vector   :" << endl << module_vec << endl;
+#endif
+    
+    module_vec.normalize();
+    host_vec.normalize();
+    centroid /= static_cast<double>( matches.size());
+    
+#ifdef TRACE
+    cout << "module vector normalized :" << endl << module_vec << endl;
+    cout << "host vector normalized   :" << endl << module_vec << endl;
+    cout << "centroid                 :" << endl << centroid << endl;
+#endif
+    // need to carefully choose which centroid I should use.
+    
+    Mat4x4d tr_origin = translation_Mat4x4d( -centroid ),
+            tr_back   = translation_Mat4x4d( centroid );
+    Mat4x4d t_align   = alt_get_alignment_for_2_vectors( module_vec, host_vec );
+            T         = tr_back * t_align * tr_origin;
+    
+    if( isnan(T[0][0])){
+        cout << "check here!" << endl;
+    }
+    
+#ifdef TRACE
+    cout << "Best Match Normal Alignment " << endl << T << endl;
+#endif
+
+}
+
 void StatefulEngine::applyRandomTransform(){
-//    cout << "transforming using : " << endl << best_match.getMatchInfo().random_transform << endl;
+    //    cout << "transforming using : " << endl << best_match.getMatchInfo().random_transform << endl;
     Module &tm = candidateModule->getTransformedModule( best_match.getMatchInfo().random_transform);
     candidateModule = &tm;
     
@@ -277,25 +342,13 @@ void StatefulEngine::applyRandomTransform(){
 
 
 void StatefulEngine::applyOptimalAlignment(){
-    Mat4x4d R, T;
-    vector< VertexID > host_v, module_p;
-    vector< Vec3d>     host_pos, module_pos;
-    for( auto& match : best_match.getMatchInfo().matches ){
-        module_p.push_back( match.first );
-        host_v.push_back( match.second );
-        
-        module_pos.push_back( candidateModule->getPoleInfo( match.first ).geometry.pos );
-        host_pos.push_back( m->pos( match.second ));
-    }
-
-    svd_rigid_motion( module_pos, host_pos, R, T );
+    Mat4x4d t;
+    buildOptimalAlignmentTransform( *candidateModule, best_match.getMatchInfo().matches, t );
     
-    Mat4x4d t = T * R;
-
 #ifdef TRACE
     cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
 #endif
-
+    
     Module &tm = candidateModule->getTransformedModule( t );
     candidateModule = &tm;
     for( VertexID v : M_vertices ){
@@ -306,47 +359,9 @@ void StatefulEngine::applyOptimalAlignment(){
 
 
 void StatefulEngine::alignModuleNormalsToHost(){
-    CGLA::Vec3d host_vec( 0 ), module_vec( 0 ), centroid( 0 );
-    double      _;
-    for( Match& match : best_match.getMatchInfo().matches )
-    {
-        centroid += candidateModule->getPoleInfo(match.first).geometry.pos;
-        Vec3d mn = candidateModule->getPoleInfo(match.first).geometry.normal;
-        Vec3d hn = vertex_normal( *m, match.second );
-        
-        assert( !( isnan( mn[0] ) || isnan( mn[1] ) || isnan( mn[2] )));
-        assert( !( isnan( hn[0] ) || isnan( hn[1] ) || isnan( hn[2] )));
-        
-        mn.normalize();
-        hn.normalize();
-        module_vec  += mn;
-        host_vec    += hn;
-    }
 
-#ifdef TRACE
-    cout << "module vector :" << endl << module_vec << endl;
-    cout << "host vector   :" << endl << module_vec << endl;
-#endif
-
-    module_vec.normalize();
-    host_vec.normalize();
-    centroid /= best_match.getMatchInfo().matches.size();
-
-#ifdef TRACE
-    cout << "module vector normalized :" << endl << module_vec << endl;
-    cout << "host vector normalized   :" << endl << module_vec << endl;
-    cout << "centroid                 :" << endl << centroid << endl;
-#endif
-    // need to carefully choose which centroid I should use.
-
-    Mat4x4d tr_origin = translation_Mat4x4d( -centroid ),
-            tr_back   = translation_Mat4x4d( centroid );
-    Mat4x4d t_align = alt_get_alignment_for_2_vectors( module_vec, host_vec );
-    Mat4x4d t = tr_back * t_align * tr_origin;
-
-#ifdef TRACE
-    cout << "Best Match Normal Alignment " << endl << t << endl;
-#endif
+    Mat4x4d t;
+    buildNormalsAlignmentTransform( *candidateModule, best_match.getMatchInfo().matches, t );
     
     Module& tm = candidateModule->getTransformedModule( t );
     candidateModule = &tm;
@@ -368,7 +383,6 @@ void StatefulEngine::alignUsingBestMatch( ){
         cout << "Warning : Best Match is not valid " << endl;
     }
 }
-
 
 
 void StatefulEngine::glueCurrent(){
@@ -596,11 +610,12 @@ size_t StatefulEngine::chooseBestFitting( const vector< match_info > proposed_ma
 bool StatefulEngine::testMultipleTransformations(){
         assert( this->m != NULL );
     
-    vector< matchesAndCost >    matches_vector;
-    vector< match_info >        proposed_matches;
-    vector< ExtendedCost >      extendedCosts;
-    vector< Mat4x4d >           Ts;
+    vector< matchesAndCost >                matches_vector;
+    vector< Mat4x4d >                       Ts;
     vector< pair< size_t, ExtendedCost >>   stats;
+    map<size_t, CandidateSubsetInfo>       best_subsets_for_valence;
+    size_t                                  max_valence = 0;
+
     
     for( size_t d = 0; d < candidateModule->poleList.size(); ++d){ stats.push_back( make_pair( 0, make_pair( 0.0, make_pair( 0.0, 0.0 ))));}
     
@@ -613,26 +628,8 @@ bool StatefulEngine::testMultipleTransformations(){
 
         VertexMatchMap  M_to_H;
         vector<Match>   current_matches, best_matches;
-        match_info      mi;
         
         assert( !isnan( Ts[i][1][1] )); // Need to discover why putting this assert prevents to assign NaN to mi.random_transform
-        
-        mi.random_transform = Ts[i];
-        assert( !isnan( mi.random_transform[1][1] ));
-
-#ifdef TRACE
-        cout << " Ts[i] " << Ts[i] << endl;
-#endif
-
-        // can be removed when solved
-
-#ifdef TRACE
-        cout << "poles with normals " << endl;
-        for( auto& item : transformedModules[i].getPoleInfoMap() )
-        {
-            cout << item.first << ")" << item.second.geometry.pos << "  #  " << item.second.geometry.normal << endl;
-        }
-#endif
         
         matchModuleToHost( transformedModules[i], M_to_H );
         
@@ -644,9 +641,6 @@ bool StatefulEngine::testMultipleTransformations(){
         
         for( auto& pole_and_vertex : M_to_H )
         {
-#ifdef TRACE
-            cout << pole_and_vertex.first << ", " << pole_and_vertex.second << endl;
-#endif
             current_matches.push_back( make_pair( pole_and_vertex.first, pole_and_vertex.second ));
         }
         
@@ -656,41 +650,81 @@ bool StatefulEngine::testMultipleTransformations(){
         get_subsets( *mainStructure, transformedModules[i], current_matches, results, treshold );
         
         if( results.size() == 0 ){ /* std::cout << "result set is empty" << endl; */ continue; }
-        
         // LEGACY
         assert( results.size() == 1 || results.front().matches.size() > results.back().matches.size( ));
-        
-        best_matches = std::move( results.front().matches );
-        EdgeCost c   = results.front().cost;
-        
-        for( auto& match : best_matches ){
-            
-            double squared_dist = 0.0;
-            Vec3d d = transformedModules[i].getPoleInfo( match.first ).geometry.pos - mainStructure->getPoleInfo( match.second ).geometry.pos;
-            squared_dist = fabs( d[0] + d[1] + d[2] );
-            squared_dist /= 10E5;
-            distance_sum += squared_dist;
-        }
 
-        mi.cost     = c;
-        extendedCosts.push_back( make_pair( distance_sum, c ));
-#ifdef TRACE
-        cout << "configuration " << i << " has cost : "
-        << mi.cost.first << ", " << mi.cost.second << ", " << distance_sum << endl;
-#endif
-        mi.matches  = std::move( best_matches );
-        proposed_matches.push_back( std::move( mi ));
-}
+        
+        // BUILD SubsetInfo and check if they are "better matches" than the previous
+        for( const SubsetResult& item : results ){
+            CandidateSubsetInfo info;
+            info.subset_match = item.matches;
+            assert( info.subset_match.size() == item.matches.size( ));
+            info.T_random           = Ts[i];
+            Module& step1 = transformedModules[i];
+            buildOptimalAlignmentTransform( step1, info.subset_match, info.T_align );
+            Module& step2 = step1.getTransformedModule( info.T_align );
+            buildNormalsAlignmentTransform( step2, info.subset_match, info.T_normals );
+            info.T_complete         = info.T_normals * info.T_align * info.T_random;
+            info.transformed_module = info.transformed_module = step2.getTransformedModule( info.T_normals );
+            // calculate costs
+            for( Match m : item.matches ){
+                info.distance_cost +=
+                    ( info.transformed_module.getPoleInfo( m.first ).geometry.pos -
+                      mainStructure->getPoleInfo( m.second ).geometry.pos ).length();
+                
+                info.distance_normal_angle +=
+                    dot( info.transformed_module.getPoleInfo( m.first ).geometry.normal,
+                         mainStructure->getPoleInfo( m.second ).geometry.normal ) + 1.0;
+                
+                info.calculateTotalCost();
+                
+                // save the less expensive subsets divided by valence.
+                if( best_subsets_for_valence.count(info.matchValence()) == 0 ){
+                    best_subsets_for_valence[info.matchValence()] = info;
+                }
+                else{
+                    if( info.getTotalCost() < best_subsets_for_valence[info.matchValence()].getTotalCost()){
+                        best_subsets_for_valence[info.matchValence()] = info;
+                    }
+                }
+                
+                if( info.matchValence() > max_valence ) { max_valence = info.matchValence(); }
+            }
+        }
+    }
+    assert( best_subsets_for_valence.count( max_valence ) > 0 );
+    CandidateSubsetInfo best_subset = best_subsets_for_valence[max_valence];
     
-    if( proposed_matches.size() <= 0 ){
+    for( int i = max_valence; i > 0; --i ){
+        if( best_subsets_for_valence.count( i ) > 0 ){
+            
+            cout << "match with valence : " << best_subsets_for_valence[i].matchValence()
+            << " with cost : ( " << best_subsets_for_valence[i].distance_cost
+            << ", " << best_subsets_for_valence[i].distance_normal_angle
+            << ", " << best_subsets_for_valence[i].distance_alignment << " ) => "
+            << best_subsets_for_valence[i].getTotalCost()       << ", "
+            << best_subsets_for_valence[i].getTotalCost( true )  << endl
+            << "while best was : ( "   << best_subset.matchValence()
+            << ", "                    << best_subset.getTotalCost()
+            << " )" << endl;
+            
+            if( best_subsets_for_valence[i].getTotalCost( true ) < best_subset.getTotalCost( true )){
+                best_subset = best_subsets_for_valence[i];
+            }
+        }
+    }
+    match_info      mi;
+    mi.random_transform = best_subset.T_random;
+    mi.matches = std::move( best_subset.subset_match );
+    best_match.setMatchInfo( mi );
+    
+    
+    if( !best_match.IsValid() ){
         cout << "unable to find a feasible solution of " << transformedModules.size() << " transformed modules " << endl;
         consolidate();
         return false;
     }
     
-    // find the best solution between the proposed ones
-    size_t      selected = chooseBestFitting(proposed_matches, extendedCosts );
-    best_match.setMatchInfo( proposed_matches[selected] );
 
 #ifdef TRACE
     cout << "Best Match random transform: " << selected << endl

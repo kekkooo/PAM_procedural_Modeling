@@ -46,6 +46,7 @@ enum PoleLabel {
 typedef unsigned int Moduletype;
     
 struct PoleAnisotropyInfo{
+    HMesh::VertexID directionID  = HMesh::InvalidVertexID;
     CGLA::Vec3d     direction;
     bool            is_defined   = false;
     bool            is_bilateral = false ;

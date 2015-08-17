@@ -25,11 +25,14 @@
 #include "MeshEditE/Procedural/Helpers/module_alignment.h"
 #include "MesheditE/Procedural/Module.h"
 #include "MesheditE/Procedural/MainStructure.h"
+#include "MesheditE/Test.h"
 
 namespace GEL_Geometry = Geometry;
 
 namespace Procedural{
     namespace Engines{
+        
+#define MATCH_PENALTY 0.0001
 
     /************************************************
      * TYPE DECLARATIONS                            *
@@ -80,6 +83,50 @@ struct MatchInfoProxy{
             matchInfo = std::move( mi );
             isValid = true;
         }
+};
+        
+#define DISTANCE_WEIGHT 1.0
+#define NORMAL_WEIGHT 1.0
+#define ALIGNMENT_WEIGHT 1.0
+        
+        
+struct CandidateSubsetInfo{
+    std::vector< Procedural::Match > subset_match;
+    Module                           transformed_module;
+    CGLA::Mat4x4d                    T_random;
+    CGLA::Mat4x4d                    T_align;
+    CGLA::Mat4x4d                    T_normals;
+    CGLA::Mat4x4d                    T_complete;
+    double                           distance_cost              = 0.0;
+    double                           distance_normal_angle      = 0.0;
+    double                           distance_alignment         = 0.0;
+
+    void calculateTotalCost(){
+        // set total_cost
+        if( subset_match.size() == 1 ){
+            total_cost = distance_alignment + MATCH_PENALTY;
+        }
+        else{
+            total_cost = DISTANCE_WEIGHT    * distance_cost
+                       + NORMAL_WEIGHT      * distance_normal_angle
+                       + ALIGNMENT_WEIGHT   * distance_alignment;
+            total_cost /= static_cast<double>( subset_match.size() * subset_match.size( ));
+        }
+    }
+    double getTotalCost( bool trunc = false ) const{
+        assert( total_cost >= -GEO_EPS );
+        if( trunc ){
+            double truncated = std::floor( total_cost * 1000000.0 ) / 1000000.0;
+            return truncated;
+        }
+        return total_cost;
+    }
+    size_t matchValence() const {
+        return subset_match.size();
+    }
+
+private :
+    double                           total_cost                 = -1.0;
 };
         
 struct CandidateInfo{
@@ -157,10 +204,13 @@ class StatefulEngine{
             void            buildTransformationList( std::vector< CGLA::Mat4x4d> &transformations );
             size_t          chooseBestFitting( const std::vector< Procedural::Helpers::ModuleAlignment::match_info > proposed_matches,
                                                const std::vector< ExtendedCost > extendedCosts ) const;
+    
+            void            buildOptimalAlignmentTransform( const Module& module, const std::vector<Match>& matches,
+                                                            CGLA::Mat4x4d& T );
+            void            buildNormalsAlignmentTransform( const Module& module, const std::vector<Match>& matches,
+                                                            CGLA::Mat4x4d& T );
 
 
-    
-    
 
     
     /************************************************
@@ -172,24 +222,20 @@ public:
 
     VertexSet           M_vertices;
 
+    std::vector<Procedural::Module>     transformedModules;
+    std::vector<CandidateSubsetInfo>    subsetsInfo;
     
     Procedural::MainStructure*  mainStructure;
     Procedural::Module*         candidateModule;
     
-    std::vector<Procedural::Module>
-                        transformedModules;
-
     kD_Tree*            tree;
     bool                treeIsValid;
-    
     
     MatchInfoProxy      best_match;
     
     std::mt19937_64     randomizer;
     double              last_x1, last_x2, last_x3;
     size_t              current_glueing_target;
-
-
 };
         
 

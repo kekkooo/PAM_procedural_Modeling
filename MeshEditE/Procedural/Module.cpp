@@ -101,10 +101,12 @@ void Module::LoadPoleConfig( std::string path ){
                         if( w.vertex().get_index() == direction ){ neighbor = w.vertex(); }
                     }
                     assert( neighbor != InvalidVertexID );
+
                         
                     Vec3d anisotropy( 0 );
                     getPoleAnisotropy( pole, anisotropy, neighbor );
-                    poleInfoMap[pole].anisotropy.direction = anisotropy;
+                    poleInfoMap[pole].anisotropy.directionID    = neighbor;
+                    poleInfoMap[pole].anisotropy.direction      = anisotropy;
                 }
                 done = true;
             }
@@ -137,19 +139,18 @@ void Module::BuildPoleInfo(){
     
 
 void Module::getPoleAnisotropy( VertexID pole, Vec3d &dir, VertexID neighbor ) const{
-    return;
     
     assert( is_pole( *m, pole ));
     
-    Plane p( poleInfoMap.at( pole ).geometry.pos, dir );
+    Plane p( poleInfoMap.at( pole ).geometry.pos, poleInfoMap.at( pole ).geometry.normal );
     
     Vec3d point_to_project  = m->pos( neighbor );
     Vec3d projected         = p.ortho( poleInfoMap.at( pole ).geometry.pos, point_to_project );
     
     dir = projected - poleInfoMap.at( pole ).geometry.pos;
     dir.normalize();
-    // test :
-    m->pos(neighbor) = projected;
+//    // test :
+//    m->pos( neighbor ) = projected;
 }
 
     
@@ -172,8 +173,9 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geo
         M->poleInfoMap[vid].geometry.valence        = poleInfoMap[vid].geometry.valence;
 
         M->poleInfoMap[vid].anisotropy.is_defined   = poleInfoMap[vid].anisotropy.is_defined;
-        M->poleInfoMap[vid].anisotropy.direction    = T.mul_3D_vector( poleInfoMap[vid].anisotropy.direction );
+        M->poleInfoMap[vid].anisotropy.direction    = mul_3D_dir( T, poleInfoMap[vid].anisotropy.direction );
         M->poleInfoMap[vid].anisotropy.is_bilateral = poleInfoMap[vid].anisotropy.is_bilateral;
+        M->poleInfoMap[vid].anisotropy.directionID  = poleInfoMap[vid].anisotropy.directionID;
         
         M->poleInfoMap[vid].age                     = poleInfoMap[vid].age;
         M->poleInfoMap[vid].isFree                  = poleInfoMap[vid].isFree;
