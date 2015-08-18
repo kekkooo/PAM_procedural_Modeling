@@ -119,6 +119,10 @@ namespace Procedural{
         
         /***** DEBUG AND SANITY CHECK ****/
         cout << glued_m_poles.size() << "-valent glueing at time : " << time << endl;
+        for( const Match& match : matches ){
+            cout << "( " << match.first << ", " << match.second << " )  # ";
+        }
+        cout << endl;
         cout << " num of free poles " << freePoles.size() << " # set : " << freePolesSet.size();
         cout << " num of glued poles " << gluedPoles.size() << endl;
         /*****          END         ****/

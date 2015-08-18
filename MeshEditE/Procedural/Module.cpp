@@ -62,7 +62,11 @@ Module::Module( Manifold &manifold, Moduletype mType ){
 void Module::LoadPoleConfig( std::string path ){
     std::cout << path;
     std::ifstream t( path );
-    assert( t.good() );
+//    assert( t.good() );
+    if( !t.std::__1::ios_base::good()){
+        cout << "configuration file " << path << "not found or not good" << endl;
+        return;
+    }
     std::string json( (std::istreambuf_iterator<char>(t)),
                      std::istreambuf_iterator<char>());
     
@@ -144,11 +148,23 @@ void Module::getPoleAnisotropy( VertexID pole, Vec3d &dir, VertexID neighbor ) c
     
     Plane p( poleInfoMap.at( pole ).geometry.pos, poleInfoMap.at( pole ).geometry.normal );
     
+    
+    
     Vec3d point_to_project  = m->pos( neighbor );
     Vec3d projected         = p.ortho( poleInfoMap.at( pole ).geometry.pos, point_to_project );
     
     dir = projected - poleInfoMap.at( pole ).geometry.pos;
     dir.normalize();
+    
+    cout <<
+    "pole ID      : " << pole << endl <<
+    "plane normal : " << poleInfoMap.at(pole).geometry.normal << endl <<
+    "pole pos     : " << poleInfoMap.at(pole).geometry.pos << endl <<
+    "neighbor ID  : " << neighbor << endl <<
+    "neighbor pos : " << point_to_project << endl <<
+    "projected    : " << projected << endl <<
+    "resulting dir: " << dir << endl << endl;
+
 //    // test :
 //    m->pos( neighbor ) = projected;
 }
@@ -226,6 +242,7 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
         VertexID newID = remapper[poleList[i]];
         p[newID] = poleInfoMap[poleList[i]];
         poleList[i] = newID;
+#warning it is necessary to realign also other IDs ( pole original_id and anisotropy_directionID
     }
     poleInfoMap = std::move( p );
     Skeleton* temp = skeleton;
@@ -253,6 +270,17 @@ bool Module::poleCanMatch( const PoleInfo& p1, const PoleInfo& p2){
     cout << "testing : " << p1.moduleType << " -> " << p1.original_id << " with "
                          << p2.moduleType << " -> " << p2.original_id << endl;
 
+    if( !p1.isActive ){
+        cout << "KO ( " << p1.moduleType << ", " << p1.original_id << ") is not active" << endl;
+        return false;
+    }
+    
+    if( !p2.isActive ){
+        cout << "KO ( " << p2.moduleType << ", " << p2.original_id << ") is not active" << endl;
+        return false;
+    }
+
+    
     // test valence
     if( p1.geometry.valence != p2.geometry.valence ) {
         cout << "KO for valence (" << p1.geometry.valence << ", " << p2.geometry.valence << " )" << endl;

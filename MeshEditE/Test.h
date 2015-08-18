@@ -18,6 +18,7 @@
 
 
 // Geometric Structure Utilities : structural_helpers.h
+#define ROUNDER       100000.0
 #define GEO_EPS     0.00000001
 #define ARITH_EPS   0.000001
 
@@ -48,6 +49,9 @@ CGLA::Vec3d     mul_3D_dir                      ( const CGLA::Mat4x4d &t, const 
 
 double          sphere_intersects               ( const CGLA::Vec3d &c1, double r1,
                                                   const CGLA::Vec3d &c2, double r2 );
+inline double          truncateDouble              ( double d ){
+   return ( std::floor( d * ROUNDER ) / ROUNDER );
+}
 
 
 

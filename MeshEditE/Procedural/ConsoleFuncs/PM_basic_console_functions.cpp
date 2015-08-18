@@ -277,6 +277,7 @@ void poles_info( MeshEditor *me, const std::vector< std::string > &args )
 {
     for( VertexID id : me->active_mesh().vertices())
     {
+
         if( is_pole( me->active_mesh(), id ))
         {
             int v = valency( me->active_mesh(), id );
@@ -352,6 +353,18 @@ void make_dir( MeshEditor *me, const std::vector< std::string > &args ){
     Procedural::Helpers::Misc::new_folder(base_folder, "blabla" );
 }
 
+void test_align_2_vectors( MeshEditor *me, const std::vector< std::string > &args ){
+    
+    CGLA::Vec3d v1( truncateDouble( -0.9999999870886812 ),
+                   truncateDouble(  0.0000000000506362105025912 ),
+                   truncateDouble( -0.00016069423553410683 ));
+    CGLA::Vec3d v2( truncateDouble( -0.99999999999988631 ),
+                    truncateDouble( -0.00000000000015025524820203546 ),
+                   truncateDouble( 0.00000047683712990382771 ));
+    CGLA::Mat4x4d t   = alt_get_alignment_for_2_vectors( v1, v2 );
+    cout << t << endl;
+}
+
 namespace Procedural{
     namespace ConsoleFuncs{
         
@@ -379,6 +392,8 @@ void register_test_console_funcs( GLGraphics::MeshEditor* me )
 
     me->register_console_function( "test.filename_extraction",   filename_extraction, "test.filename_extraction"        );
     me->register_console_function( "test.make_dir",   make_dir, "test.make_dir"        );
+    
+    me->register_console_function( "test.alignment_vectors",   test_align_2_vectors, "test.alignment_vectors");
     
 }
         

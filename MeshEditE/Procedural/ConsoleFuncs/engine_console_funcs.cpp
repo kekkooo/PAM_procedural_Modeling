@@ -72,6 +72,7 @@ void set_host_from_module( MeshEditor *me, const std::vector< std::string > &arg
         VertexIDRemap m_poles_remap, ____;
         // copy geometry to clean manifold
         Procedural::Helpers::add_manifold( me->active_mesh(), *(m.m), ____, m_poles_remap, M_vertices );
+        me->active_visobj().refit();
         // need to realign the ID's
         m.reAlignIDs( m_poles_remap );
         
@@ -391,6 +392,19 @@ void saveBVH( MeshEditor *me, const std::vector< std::string > &args ){
     s.getMainStructure().saveBVH("//Users//francescousai//Desktop//bvh.skel");
 }
 
+void print_pole_info( MeshEditor *me, const std::vector< std::string > &args ){
+    StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    for( VertexID id : me->active_mesh().vertices())
+    {
+        if( me->get_vertex_selection()[id] != 1 ) { continue; }
+        if( is_pole( me->active_mesh(), id ))
+        {
+            me->printf( s.getMainStructure().getPoleInfo( id ).toString().c_str() );
+        }
+    }
+
+}
+
 namespace Procedural{
     namespace ConsoleFuncs{
         
@@ -409,6 +423,8 @@ void register_engine_console_funcs( GLGraphics::MeshEditor* me )
 
     
     // experimental - debug purposes
+    
+    me->register_console_function( "engine.debug.print_pole_info", print_pole_info, "engine.debug.print_pole_info" );
     
     me->register_console_function( "engine.debug.next_configuration", next_configuration, "engine.debug.next_configuration" );
     me->register_console_function( "engine.debug.prev_configuration", prev_configuration, "engine.debug.prev_configuration" );

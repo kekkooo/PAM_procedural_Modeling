@@ -17,6 +17,7 @@
 #include <set>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include <GEL/HMesh/Manifold.h>
 #include <GEL/CGLA/Vec3d.h>
@@ -50,12 +51,31 @@ struct PoleAnisotropyInfo{
     CGLA::Vec3d     direction;
     bool            is_defined   = false;
     bool            is_bilateral = false ;
+    
+    std::string toString() const{
+        std::stringstream oss;
+        if( is_defined ){
+        oss << "\t ID  : " << directionID << std::endl
+            << "\t dir : " << direction << std::endl
+            << "\t Bi  : " << (is_bilateral ? " yes " : "no") << std::endl;
+        }
+        else{ oss << "not defined" << std::endl; }
+        return oss.str();
+    }
 };
     
 struct PoleGeometryInfo{
     unsigned int    valence;
     CGLA::Vec3d     pos;
     CGLA::Vec3d     normal;
+
+    std::string toString() const{
+        std::stringstream oss;
+        oss << "\t val   : " << valence << std::endl
+            << "\t pos   : " << pos << std::endl
+            << "\t norm  : " << normal << std::endl;
+        return oss.str();
+    }
 };
     
 
@@ -72,6 +92,21 @@ struct PoleInfo{
     bool                can_connect_to_self = true; /* can connect to an instance of the 
                                                      same pole on another module of the 
                                                      same exact type ( same file ) */
+    
+    std::string toString() const{
+        std::stringstream oss;
+        
+        oss
+        << " moduletype : " << moduleType << std::endl
+        << "original ID : " << original_id << std::endl
+        << "anisotropy  : "
+        << " [ " << std::endl << anisotropy.toString() << " ] " << std::endl
+        << "geometry [ " << std::endl << geometry.toString() << " ] " << std::endl
+        << "active      : " << (isActive ? " yes " : "no") << std::endl
+        << "self-connect: " << (can_connect_to_self ? " yes " : "no") << std::endl;
+
+        return oss.str();
+    }
 };
     
 typedef std::map<HMesh::VertexID, PoleInfo>             PoleInfoMap;

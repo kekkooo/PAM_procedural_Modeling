@@ -126,13 +126,12 @@ public:
     Vec3d ortho( Vec3d point_on_plane, Vec3d point )
     {
         if( OnPlane( point )){ return point; }
-        double normal_sign = OnPositiveSide( point ) ? 1.0 : -1.0;
         
         Vec3d n     = normal();
         Vec3d v     = point - point_on_plane;
         double dist = dot(v,  n);
         n.normalize();
-        Vec3d p     = point - ( n * dist * normal_sign );
+        Vec3d p     = point - ( n * dist  );
         return p;
     }
     

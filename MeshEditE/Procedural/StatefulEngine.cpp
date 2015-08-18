@@ -675,13 +675,23 @@ bool StatefulEngine::testMultipleTransformations(){
             info.transformed_module = info.transformed_module = step2.getTransformedModule( info.T_normals );
             // calculate costs
             for( Match m : item.matches ){
+                
+                PoleInfo module_pole_info = info.transformed_module.getPoleInfo( m.first );
+                PoleInfo host_pole_info   = mainStructure->getPoleInfo( m.second );
+                
                 info.distance_cost +=
-                    ( info.transformed_module.getPoleInfo( m.first ).geometry.pos -
-                      mainStructure->getPoleInfo( m.second ).geometry.pos ).length();
+                    ( module_pole_info.geometry.pos - host_pole_info.geometry.pos ).length();
                 
                 info.distance_normal_angle +=
-                    dot( info.transformed_module.getPoleInfo( m.first ).geometry.normal,
-                         mainStructure->getPoleInfo( m.second ).geometry.normal ) + 1.0;
+                    dot( module_pole_info.geometry.normal, host_pole_info.geometry.normal ) + 1.0;
+                
+                // calculation of the cost relative to the alignmento of the preferred direction
+                // needs to be explained
+                if( module_pole_info.anisotropy.is_defined && host_pole_info.anisotropy.is_defined ){
+                    double dot_value = dot( module_pole_info.anisotropy.direction, host_pole_info.anisotropy.direction );
+                    cout << module_pole_info.anisotropy.direction << endl << host_pole_info.anisotropy.direction << endl << endl;
+                    info.distance_alignment += ( dot_value - 1.0 ) * ( -1.0);
+                }
                 
                 info.calculateTotalCost();
                 
@@ -806,6 +816,9 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             assert( candidateModule->getPoleInfoMap().count(M_pole) > 0 );
             const PoleInfo& pinfo  = candidateModule->getPoleInfo(M_pole);
             
+            cout << "testing : " << pinfo.moduleType << " -> " << pinfo.original_id << " with "
+            << H_pole_info.moduleType << " -> " << H_pole_info.original_id << endl;
+
             if( !( Module::poleCanMatch( pinfo, H_pole_info ))){
                 skipped += 16;
                 continue;
@@ -820,7 +833,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             
             // generate K rotations along the candidate normal, according to the case
             // standard case, at least one pole is unconstrained
-            int no_steps = 0;
+            int no_steps = 16;
             double step = M_PI_4 / 2.0;
             double curr_angle = ( randomizer() % 16 ) * step;
 //            double curr_angle = 0;
@@ -840,6 +853,9 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 }
                 Vec3d m_pole_anis_dir_aligned = mul_3D_dir(( t_align * t_origin ), pinfo.anisotropy.direction );
                 curr_angle = get_angle( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction );
+                
+                cout << "before rotation around host axis " << endl << pinfo.anisotropy.direction <<
+                        m_pole_anis_dir_aligned << endl << H_pole_info.anisotropy.direction << endl;
             }
             
 
@@ -872,6 +888,10 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 //                    cout << " skipping configuration - COLLISION " << endl;
 //                    continue;
 //                }
+                
+                cout << "after rotation around host axis " <<
+                t_module.getPoleInfo(M_pole).anisotropy.direction << endl << H_pole_info.anisotropy.direction << endl;
+
 
                 transformations.push_back( T );
                 transformedModules.push_back( t_module );
