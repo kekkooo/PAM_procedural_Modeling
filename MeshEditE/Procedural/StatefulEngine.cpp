@@ -506,6 +506,13 @@ void StatefulEngine::setHost( Manifold &host ){
     mainStructure->glueModule( *starter, matches);
 }
 
+void StatefulEngine::setHostFromModule( Procedural::Module &starter, HMesh::Manifold &host ){
+    this->m = &host;
+    this->mainStructure = new MainStructure();
+    
+    std::vector<Procedural::Match> matches;
+    mainStructure->glueModule( starter, matches);
+}
 
 void StatefulEngine::setModule(Procedural::Module &module){
     assert( module.m != NULL );
@@ -809,13 +816,35 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             
             Vec3d m_pole_step1 = ( t_align * t_origin ).mul_3D_point( pinfo.geometry.pos );
 
-            // generate K rotations along the candidate normal
+
+            
+            // generate K rotations along the candidate normal, according to the case
+            // standard case, at least one pole is unconstrained
+            int no_steps = 0;
             double step = M_PI_4 / 2.0;
-//            double curr_angle = 0;
             double curr_angle = ( randomizer() % 16 ) * step;
+//            double curr_angle = 0;
+            
+            // both of them
+            if( pinfo.anisotropy.is_defined && H_pole_info.anisotropy.is_defined ){
+
+                if( pinfo.anisotropy.is_bilateral && H_pole_info.anisotropy.is_bilateral ){
+                    no_steps = 2;
+                    step        = M_PI;
+                    //curr_angle
+                }
+                else{ // only one is bilateral
+                    no_steps    = 1;
+                    step        = 2.0 * M_PI;
+                    //curr_angle
+                }
+                Vec3d m_pole_anis_dir_aligned = mul_3D_dir(( t_align * t_origin ), pinfo.anisotropy.direction );
+                curr_angle = get_angle( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction );
+            }
+            
 
             // build and save rotations
-            for ( int i = 0; i < 16; ++i, curr_angle +=step ) {
+            for ( int i = 0; i < no_steps; ++i, curr_angle +=step ) {
                 Mat4x4d rot = get_rotation_mat4d( H_pole_info.geometry.normal, curr_angle );
                 Vec3d m_pole_step2 = rot.mul_3D_point( m_pole_step1 );
                 

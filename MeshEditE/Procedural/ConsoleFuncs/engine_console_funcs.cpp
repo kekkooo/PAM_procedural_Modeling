@@ -22,6 +22,7 @@
 #include <MeshEditE/Procedural/Helpers/manifold_copy.h>
 
 #include<MeshEditE/Procedural/Helpers/misc.h>
+#include<polarize.h>
 
 
 using namespace std;
@@ -56,6 +57,35 @@ void set_host( MeshEditor *me, const std::vector< std::string > &args ){
     StatefulEngine &s = StatefulEngine::getCurrentEngine();
     s.setHost( me->active_mesh( ));
 }
+
+
+void set_host_from_module( MeshEditor *me, const std::vector< std::string > &args ){
+    
+    StatefulEngine &s       = StatefulEngine::getCurrentEngine();
+    Procedural::Toolbox& t  = Procedural::Toolbox::getToolboxInstance();
+
+    if( t.hasNext( )){
+        
+        // need a copy, not a reference
+        Module m = t.getNext();
+        
+        VertexIDRemap m_poles_remap, ____;
+        // copy geometry to clean manifold
+        Procedural::Helpers::add_manifold( me->active_mesh(), *(m.m), ____, m_poles_remap, M_vertices );
+        // need to realign the ID's
+        m.reAlignIDs( m_poles_remap );
+        
+        for( VertexID v : me->active_mesh( ).vertices()){
+            if(is_pole(me->active_mesh(), v)){
+                cout << "pole is : " << v << endl;
+            }
+        }
+
+        //this should be done after copy, if not, active_mesh() and m.m will point to the same Manifold object.
+        s.setHostFromModule( m, me->active_mesh() );
+    }
+}
+
 
 void optimal_transform( MeshEditor *me, const std::vector< std::string > &args ){
     
@@ -132,20 +162,23 @@ toolbox_step_result toolbox_step( Procedural::Toolbox &t, StatefulEngine &s ){
     Timer timer;
     cout << endl << "########################################" << endl << endl;
     timer.start();
+    
     Module m = t.getNext();
+    
     float t0 = timer.get_secs();
     cout << " adding a piece with "  << m.no_of_glueings << "-valent connection in " << t0 << "s" << endl;
     
     s.setModule( m );
     
     float t1 = timer.get_secs();
-    
     cout << "module set in : " << (t1-t0) << endl;
     
     result.enough_free_poles   = s.noFreePoles() >= m.no_of_glueings;
     if( result.enough_free_poles){
         float t1_1 = timer.get_secs();
+        
         result.can_glue  = s.testMultipleTransformations();
+
         float t2 = timer.get_secs();
         cout << "configurations tested in in : " << (t2-t1_1) << "s" << endl;
         
@@ -153,7 +186,9 @@ toolbox_step_result toolbox_step( Procedural::Toolbox &t, StatefulEngine &s ){
     
     if( result.can_glue && result.enough_free_poles ){
         float t2_1 = timer.get_secs();
+        
         s.glueCurrent();
+        
         float t3 = timer.get_secs();
         cout << "glueing done in : " << (t3-t2_1) << "s" << endl;
     }
@@ -362,7 +397,8 @@ namespace Procedural{
 
 void register_engine_console_funcs( GLGraphics::MeshEditor* me )
 {
-    me->register_console_function( "engine.set_host",   set_host, "engine.set_host_and_module" );
+    me->register_console_function( "engine.set_host",   set_host, "engine.set_hoste" );
+    me->register_console_function( "engine.set_host_from_module",   set_host_from_module, "engine.set_host_from_module" );
     me->register_console_function( "engine.optimal_transform", optimal_transform, "engine.optimal_transform" );
     me->register_console_function( "engine.align", align_module, "engine.align" );
     me->register_console_function( "engine.glue_current", glue_current, "engine.glue_current" );

@@ -169,6 +169,7 @@ class StatefulEngine{
     static  StatefulEngine& getCurrentEngine();
             void            setHost( HMesh::Manifold &host );
             void            setModule( Procedural::Module &module );
+            void            setHostFromModule( Procedural::Module &starter, HMesh::Manifold &host );
             bool            testMultipleTransformations();
             void            glueModuleToHost();
             void            consolidate();
