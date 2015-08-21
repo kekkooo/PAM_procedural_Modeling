@@ -131,8 +131,10 @@ namespace Procedural{
         /*****          END         ****/
         
         matches.clear();
+
         skel->merge( m.getSkeleton(), matches );
 //        skel->saveToFile( "//Users//francescousai//Desktop//example.skel" );
+        
 
     }
     
@@ -146,6 +148,11 @@ namespace Procedural{
     
     void MainStructure::saveSkeleton( std::string path ) const{
         skel->saveToFile( path );
+    }
+    
+    void MainStructure::setBoundingSphere( CGLA::Vec3d center, double radius ){
+        skel->bounding_sphere.center = center;
+        skel->bounding_sphere.radius = radius;
     }
     
     

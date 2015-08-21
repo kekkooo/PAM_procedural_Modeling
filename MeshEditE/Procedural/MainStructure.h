@@ -40,6 +40,7 @@ public:
     // those methods work only on a logical basis not on a geometrical one
     void glueModule( Module &m, std::vector<Match> &matches  );
     void reAlignIDs( HMesh::VertexIDRemap &remapper );
+    void setBoundingSphere( CGLA::Vec3d center, double radius );
     bool isColliding( const Module& m ) const;
     void saveSkeleton( std::string path ) const;
     void saveBVH( std::string path ) const;

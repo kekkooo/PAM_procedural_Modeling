@@ -334,6 +334,7 @@ void vertex_basic_info( MeshEditor *me, const std::vector< std::string > &args )
             oss << " vertex ID                  : " << *vit                        << endl;
             oss << " is pole?                   : " << is_pole( m, *vit )          << endl;
             oss << " valence                    : " << valency( m, *vit )          << endl;
+            oss << " pos                        : " << m.pos( *vit )              << endl;
             
             me->printf(oss.str().c_str());      oss.clear();
         }

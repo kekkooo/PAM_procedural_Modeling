@@ -427,7 +427,12 @@ void StatefulEngine::glueCurrent(){
     
     // glue_matches
     Helpers::ModuleAlignment::glue_matches( *m, best_match.getMatchInfo().matches );
-    // mainStructure->glueModule
+    
+    // need to reset bounding sphere of the main structure
+    Vec3d bsphere_center;
+    double bsphere_radius;
+    bsphere( *m, bsphere_center, bsphere_radius );
+    mainStructure->setBoundingSphere( bsphere_center, bsphere_radius );
     mainStructure->glueModule( *candidateModule, best_match.getMatchInfo().matches );
     
     IDRemap glue_remap;
@@ -515,6 +520,12 @@ void StatefulEngine::setHostFromModule( Procedural::Module &starter, HMesh::Mani
     this->mainStructure = new MainStructure();
     
     std::vector<Procedural::Match> matches;
+    
+    Vec3d bsphere_center;
+    double bsphere_radius;
+    bsphere( *m, bsphere_center, bsphere_radius );
+    mainStructure->setBoundingSphere( bsphere_center, bsphere_radius );
+    
     mainStructure->glueModule( starter, matches);
     debugColorization();
 }
@@ -716,8 +727,8 @@ bool StatefulEngine::testMultipleTransformations(){
                     best_subsets_for_valence[info.matchValence()] = info;
                 }
                 else{
-                    if( info.getTotalCost() < best_subsets_for_valence[info.matchValence()].getTotalCost()){
-
+//                    if( info.getTotalCost() < best_subsets_for_valence[info.matchValence()].getTotalCost()){
+                    if( CandidateSubsetInfo::betterThen( info, best_subsets_for_valence[info.matchValence()] )){
                         best_subsets_for_valence[info.matchValence()] = info;                        
                     }
                 }
@@ -750,7 +761,8 @@ bool StatefulEngine::testMultipleTransformations(){
             << ", "                    << best_subset.getTotalCost()
             << " )" << endl;
             
-            if( best_subsets_for_valence[i].getTotalCost( ) < best_subset.getTotalCost( )){
+            if( CandidateSubsetInfo::betterThen( best_subsets_for_valence[i], best_subset )){
+//            if( best_subsets_for_valence[i].getTotalCost( ) < best_subset.getTotalCost( )){
                 best_subset = best_subsets_for_valence[i];
             }
         }
@@ -906,7 +918,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 << H_pole_info.anisotropy.direction << H_pole_info.anisotropy.direction.length() << endl;
                 
                 // end - debug
-                if( fabs( dot( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction )) > 0.01 ){
+                if( fabs( dot( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction )) > 0.1 ){
                     cout << "pssss ehi check here!" << endl;
                 }
             }
@@ -929,7 +941,6 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 << "translation mat4 " << endl << tr_to_H_pole;
 #endif
                 T = tr_to_H_pole * rot * t_align * t_origin;
-                Mat4x4d T2 = rot * t_align * t_origin;
 
 #ifdef TRACE
                 cout << "complete transform" << endl <<  T;
@@ -937,19 +948,16 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 assert( !isnan( T[1][1] ));
                 
                 Module& t_module = this->candidateModule->getTransformedModule( T );
-                Module& t2_module = this->candidateModule->getTransformedModule( T2 );
-                Vec3d dirasdaddqw = mul_3D_dir( T2, pinfo.anisotropy.direction );
+
                 
                 // skip if there is a collision.
                 // need to improve it
-//                if( mainStructure->isColliding( t_module )){
-//                    cout << " skipping configuration - COLLISION " << endl;
-//                    continue;
-//                }
+                if( mainStructure->isColliding( t_module )){
+                    cout << " skipping configuration - COLLISION " << endl;
+                    continue;
+                }
                 
                 cout << "after rotation around host axis " << endl
-                << dirasdaddqw 
-                << t2_module.getPoleInfo(M_pole).anisotropy.direction
                 << t_module.getPoleInfo(M_pole).anisotropy.direction << t_module.getPoleInfo(M_pole).anisotropy.direction.length() << endl
                 << H_pole_info.anisotropy.direction << H_pole_info.anisotropy.direction.length() << endl;
 

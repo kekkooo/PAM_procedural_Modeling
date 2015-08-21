@@ -66,7 +66,15 @@ namespace Procedural{
         Ball ball;
         std::unordered_map<NodeID, BranchingBall>   joints;
         std::unordered_map<BoneID, BoneBall>        bones;
-
+        void transform( const CGLA::Mat4x4d& T ){
+            ball.transform( T );
+            for( const auto& item : joints ){
+                joints[item.first].ball.transform( T );
+            }
+            for( const auto& item : bones ){
+                bones[item.first].ball.transform( T );
+            }
+        }
     };
 
     
@@ -224,7 +232,7 @@ namespace Procedural{
             this->cd_hierarchy = new ShapeBall();
             cd_hierarchy->ball = bounding_sphere;
             
-            // build bones ball
+//             build bones ball
             for( const SkelBone& b : bones ){
                 double      radius = ( nodes.at( b.nodes.front( )).ball.center - nodes.at( b.nodes.back( )).ball.center ).length() ;
                 CGLA::Vec3d centroid( 0.0 );
@@ -249,7 +257,7 @@ namespace Procedural{
             for( const SkelNode& n : nodes ){
                 if( n.isBranching() ){
                     assert( n.type == SNT_Junction );
-                    cd_hierarchy->joints[n.ID];
+                    cd_hierarchy->joints[n.ID].ball.center = n.ball.center;
                     cd_hierarchy->joints[n.ID].ID = n.ID;
                     assert( cd_hierarchy->joints.count(n.ID) > 0 );
                     double radius = 0;
@@ -376,7 +384,6 @@ namespace Procedural{
             }
             
             // this should iterate through skelStarters and work differently if vertex is a pole or a junction
-            //        for( HMesh::VertexID pole : poleSet ){
             std::map< HMesh::HalfEdgeID, NodeID >   ribToNode;
             for( HMesh::VertexID v : skelStarters ){
                 
@@ -533,18 +540,18 @@ namespace Procedural{
                 ++bid;
             }
             
-            for( const auto& item : cd_hierarchy->joints ){
-                for( BoneID b : item.second.incidentBones ){
-                    s.nodes[cd_node_to_node[item.first]].neighbors.insert( cd_bone_to_node[b] );
-                    s.nodes[cd_bone_to_node[b]].neighbors.insert( cd_node_to_node[item.first] );
-                    
-                    s.nodes[cd_bone_to_node[b]].neighbors.insert( bones[b].nodes.front() );
-                    s.nodes[cd_bone_to_node[b]].neighbors.insert( bones[b].nodes.back() );
-                    
-                    s.nodes[bones[b].nodes.front()].neighbors.insert( cd_bone_to_node[b] );
-                    s.nodes[bones[b].nodes.back()].neighbors.insert( cd_bone_to_node[b] );
-                }
-            }
+//            for( const auto& item : cd_hierarchy->joints ){
+//                for( BoneID b : item.second.incidentBones ){
+//                    s.nodes[cd_node_to_node[item.first]].neighbors.insert( cd_bone_to_node[b] );
+//                    s.nodes[cd_bone_to_node[b]].neighbors.insert( cd_node_to_node[item.first] );
+//                    
+//                    s.nodes[cd_bone_to_node[b]].neighbors.insert( bones[b].nodes.front() );
+//                    s.nodes[cd_bone_to_node[b]].neighbors.insert( bones[b].nodes.back() );
+//                    
+//                    s.nodes[bones[b].nodes.front()].neighbors.insert( cd_bone_to_node[b] );
+//                    s.nodes[bones[b].nodes.back()].neighbors.insert( cd_bone_to_node[b] );
+//                }
+//            }
             
             s.saveToFile("//Users//francescousai//Desktop//cd.skel");
         }
@@ -568,6 +575,7 @@ namespace Procedural{
             for( int i = 0; i < nodes.size(); ++i ){
                 nodes[i].transform( T );
             }
+            cd_hierarchy->transform( T );
         }
         
         void copyNew( const Skeleton &other ){
@@ -622,7 +630,7 @@ namespace Procedural{
             }
         }
         
-        // ther is copied by value
+        // other is copied by value
         void merge( const Skeleton &other, std::vector< std::pair< HMesh::VertexID, HMesh::VertexID > >& other_this_matches ){
             
             std::vector< NodeID > this_pole_nodes, other_pole_nodes;

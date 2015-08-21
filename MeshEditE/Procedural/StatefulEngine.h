@@ -88,7 +88,9 @@ struct MatchInfoProxy{
 #define NORMAL_WEIGHT 1.0
 #define ALIGNMENT_WEIGHT 1.0
 #define MY_ROUNDER 100000.0
+#define MY_EPSILON 1.0/MY_ROUNDER
 #define MATCH_PENALTY 0.0001
+
         
         
 struct CandidateSubsetInfo{
@@ -115,10 +117,7 @@ struct CandidateSubsetInfo{
                        + ALIGNMENT_WEIGHT   * distance_alignment;
 //            total_cost /= static_cast<double>( subset_match.size() * subset_match.size( ));
             
-            int sum = 0;
-            for( Match m : subset_match ){
-                sum += transformed_module.getPoleInfo(m.first).geometry.valence;
-            }
+            size_t sum = valenceSum();
             double valence_divider = static_cast<double>( sum );
             total_cost /= valence_divider;
             if( trunc ){
@@ -134,6 +133,31 @@ struct CandidateSubsetInfo{
     size_t matchValence() const {
         return subset_match.size();
     }
+    
+    size_t valenceSum() const {
+        size_t sum = 0;
+        for( Match m : subset_match ){
+            sum += transformed_module.getPoleInfo(m.first).geometry.valence;
+        }
+        return sum;
+    }
+    
+    static bool betterThen( const CandidateSubsetInfo &lhs, const CandidateSubsetInfo &rhs ){
+        bool equal = fabs( lhs.getTotalCost() - rhs.getTotalCost()) < MY_EPSILON;
+        if( equal ){
+            if( lhs.matchValence() == rhs.matchValence( )){
+
+                return ( lhs.valenceSum() < rhs.valenceSum( ));
+            }
+            else{
+                return lhs.matchValence() < rhs.matchValence();
+            }
+        }
+        else{
+            return lhs.getTotalCost() < rhs.getTotalCost();
+        }
+    }
+
 
 private :
     double                           total_cost                 = -1.0;
