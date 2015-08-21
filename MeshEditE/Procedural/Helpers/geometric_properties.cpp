@@ -184,7 +184,9 @@ double get_angle ( CGLA::Vec3d l, CGLA::Vec3d r)
     l.normalize();
     r.normalize();
     double cos = CGLA::dot( l, r );
-    double in_range_cos = in_range( cos, -1.0, 1.0 );
+    cout << " ****** " << cos << " ******* ";
+//    double in_range_cos = in_range( cos, -1.0, 1.0 );
+    double in_range_cos = cos;
     return acos( in_range_cos );
 }
         

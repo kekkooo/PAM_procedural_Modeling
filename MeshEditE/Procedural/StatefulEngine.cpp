@@ -16,6 +16,7 @@
 #include "MeshEditE/Procedural/Helpers/geometric_properties.h"
 #include "MeshEditE/Procedural/Helpers/svd_alignment.h"
 #include "MeshEditE/Procedural/Operations/structural_operations.h"
+#include "MeshEditE/Procedural/Helpers/Plane.h"
 #include "collision_detection.h"
 
 #include "Test.h"
@@ -412,11 +413,12 @@ void StatefulEngine::glueCurrent(){
     
     best_match.getMatchInfo().matches = std::move( remapped_matches );
 
-#ifdef TRACE
+//#ifdef TRACE
     for( Match& match : best_match.getMatchInfo().matches){
-        cout << "match : ( " << match.first << ", " << match.second << " )" << endl;
+        cout << "match : ( " << candidateModule->getPoleInfo( match.first ).original_id << ", "
+             << mainStructure->getPoleInfo( match.second ).original_id << " )" << endl;
     }
-#endif
+//#endif
     
     applyRandomTransform();
     applyOptimalAlignment();
@@ -504,6 +506,8 @@ void StatefulEngine::setHost( Manifold &host ){
     Module *starter = new Module( *m, 0 );
     std::vector<Procedural::Match> matches;
     mainStructure->glueModule( *starter, matches);
+    
+    debugColorization();
 }
 
 void StatefulEngine::setHostFromModule( Procedural::Module &starter, HMesh::Manifold &host ){
@@ -512,6 +516,7 @@ void StatefulEngine::setHostFromModule( Procedural::Module &starter, HMesh::Mani
     
     std::vector<Procedural::Match> matches;
     mainStructure->glueModule( starter, matches);
+    debugColorization();
 }
 
 void StatefulEngine::setModule(Procedural::Module &module){
@@ -652,7 +657,7 @@ bool StatefulEngine::testMultipleTransformations(){
         }
         
         std::vector< SubsetResult > results;
-        EdgeCost treshold = make_pair( 0.5, 0.5 );
+        EdgeCost treshold = make_pair( 1.5, 1.5 );
 
         get_subsets( *mainStructure, transformedModules[i], current_matches, results, treshold );
         
@@ -660,7 +665,9 @@ bool StatefulEngine::testMultipleTransformations(){
         // LEGACY
         assert( results.size() == 1 || results.front().matches.size() > results.back().matches.size( ));
 
+        std:: cout << "|************  " << i << "************|" << endl;
         
+        int count = 0;
         // BUILD SubsetInfo and check if they are "better matches" than the previous
         for( const SubsetResult& item : results ){
             CandidateSubsetInfo info;
@@ -674,11 +681,13 @@ bool StatefulEngine::testMultipleTransformations(){
             info.T_complete         = info.T_normals * info.T_align * info.T_random;
             info.transformed_module = info.transformed_module = step2.getTransformedModule( info.T_normals );
             // calculate costs
+            cout <<  "\t *** subset " << count++ << endl;
             for( Match m : item.matches ){
                 
                 PoleInfo module_pole_info = info.transformed_module.getPoleInfo( m.first );
                 PoleInfo host_pole_info   = mainStructure->getPoleInfo( m.second );
                 
+                info.module_ball_radius = candidateModule->bsphere_radius;
                 info.distance_cost +=
                     ( module_pole_info.geometry.pos - host_pole_info.geometry.pos ).length();
                 
@@ -690,22 +699,39 @@ bool StatefulEngine::testMultipleTransformations(){
                 if( module_pole_info.anisotropy.is_defined && host_pole_info.anisotropy.is_defined ){
                     double dot_value = dot( module_pole_info.anisotropy.direction, host_pole_info.anisotropy.direction );
                     cout << module_pole_info.anisotropy.direction << endl << host_pole_info.anisotropy.direction << endl << endl;
-                    info.distance_alignment += ( dot_value - 1.0 ) * ( -1.0);
+                    
+                    // if anisotropy is bilateral for both I need to consider as Optimal also if directions are opposite
+                    if( module_pole_info.anisotropy.is_bilateral && host_pole_info.anisotropy.is_bilateral ){
+                        info.distance_alignment += fabs( dot_value - 1.0 );
+                    }else{
+                        info.distance_alignment += ( dot_value - 1.0 ) * ( -1.0);
+                    }
                 }
                 
-                info.calculateTotalCost();
+                info.calculateTotalCost( true );
                 
-                // save the less expensive subsets divided by valence.
-                if( best_subsets_for_valence.count(info.matchValence()) == 0 ){
+                
+                // save the less expensive subsets clustered by valence.
+                if( best_subsets_for_valence.count( info.matchValence() ) == 0 ){
                     best_subsets_for_valence[info.matchValence()] = info;
                 }
                 else{
                     if( info.getTotalCost() < best_subsets_for_valence[info.matchValence()].getTotalCost()){
-                        best_subsets_for_valence[info.matchValence()] = info;
+
+                        best_subsets_for_valence[info.matchValence()] = info;                        
                     }
                 }
                 
                 if( info.matchValence() > max_valence ) { max_valence = info.matchValence(); }
+                
+                cout
+                << "match with valence : " << info.matchValence()
+                << " with cost : ( " << info.distance_cost
+                << ", " << info.distance_normal_angle
+                << ", " << info.distance_alignment << " ) => "
+                << info.getTotalCost( )  << endl
+                << "****************************************" << endl   ;
+
             }
         }
     }
@@ -719,13 +745,12 @@ bool StatefulEngine::testMultipleTransformations(){
             << " with cost : ( " << best_subsets_for_valence[i].distance_cost
             << ", " << best_subsets_for_valence[i].distance_normal_angle
             << ", " << best_subsets_for_valence[i].distance_alignment << " ) => "
-            << best_subsets_for_valence[i].getTotalCost()       << ", "
-            << best_subsets_for_valence[i].getTotalCost( true )  << endl
+            << best_subsets_for_valence[i].getTotalCost()      << endl
             << "while best was : ( "   << best_subset.matchValence()
             << ", "                    << best_subset.getTotalCost()
             << " )" << endl;
             
-            if( best_subsets_for_valence[i].getTotalCost( true ) < best_subset.getTotalCost( true )){
+            if( best_subsets_for_valence[i].getTotalCost( ) < best_subset.getTotalCost( )){
                 best_subset = best_subsets_for_valence[i];
             }
         }
@@ -813,23 +838,23 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             cout << " polo : " << M_pole << endl;
 #endif
 
-            assert( candidateModule->getPoleInfoMap().count(M_pole) > 0 );
-            const PoleInfo& pinfo  = candidateModule->getPoleInfo(M_pole);
+            assert( candidateModule->getPoleInfoMap().count( M_pole ) > 0 );
+            const PoleInfo& pinfo  = candidateModule->getPoleInfo( M_pole );
             
-            cout << "testing : " << pinfo.moduleType << " -> " << pinfo.original_id << " with "
-            << H_pole_info.moduleType << " -> " << H_pole_info.original_id << endl;
+//            cout << "testing : " << pinfo.moduleType << " -> " << pinfo.original_id << " with "
+//            << H_pole_info.moduleType << " -> " << H_pole_info.original_id << endl;
 
             if( !( Module::poleCanMatch( pinfo, H_pole_info ))){
                 skipped += 16;
                 continue;
             }
             
+            cout << " testing  : ( " << pinfo.original_id << ", " << H_pole_info.original_id << " )" << endl;
+            
             // align normals
             Mat4x4d t_align = alt_get_alignment_for_2_vectors( pinfo.geometry.normal, H_pole_info.geometry.normal );
             
             Vec3d m_pole_step1 = ( t_align * t_origin ).mul_3D_point( pinfo.geometry.pos );
-
-
             
             // generate K rotations along the candidate normal, according to the case
             // standard case, at least one pole is unconstrained
@@ -838,30 +863,60 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             double curr_angle = ( randomizer() % 16 ) * step;
 //            double curr_angle = 0;
             
+            Vec3d m_pole_anis_dir_aligned;
             // both of them
             if( pinfo.anisotropy.is_defined && H_pole_info.anisotropy.is_defined ){
 
+                Vec3d moved_pole =(t_align * t_origin).mul_3D_point( pinfo.geometry.pos );
+                Vec3d to_H_pole = H_pole_info.geometry.pos - moved_pole;
+                Mat4x4d tr_to_H_pole = translation_Mat4x4d( to_H_pole );
+                
+                m_pole_anis_dir_aligned = mul_3D_dir(( tr_to_H_pole * t_align * t_origin ), pinfo.anisotropy.direction );
+                double anis_angle = get_angle( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction );
+                // debug
+                Vec3d m_anis_ortho = cross(m_pole_anis_dir_aligned, pinfo.geometry.normal );
+                double ortho_anis_angle = get_angle( m_anis_ortho, H_pole_info.anisotropy.direction );
+                
                 if( pinfo.anisotropy.is_bilateral && H_pole_info.anisotropy.is_bilateral ){
-                    no_steps = 2;
+                    no_steps    = 2;
                     step        = M_PI;
-                    //curr_angle
+                    curr_angle = ( randomizer() % 2 ) == 0 ? anis_angle : anis_angle + step;
                 }
                 else{ // only one is bilateral
                     no_steps    = 1;
                     step        = 2.0 * M_PI;
-                    //curr_angle
+                    curr_angle  = anis_angle;
                 }
-                Vec3d m_pole_anis_dir_aligned = mul_3D_dir(( t_align * t_origin ), pinfo.anisotropy.direction );
-                curr_angle = get_angle( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction );
                 
-                cout << "before rotation around host axis " << endl << pinfo.anisotropy.direction <<
-                        m_pole_anis_dir_aligned << endl << H_pole_info.anisotropy.direction << endl;
+                // debug
+                assert(  dot( pinfo.anisotropy.direction, pinfo.geometry.normal ) - 1.0 < 0.0000001 );
+                Plane alpha( H_pole_info.geometry.pos, H_pole_info.geometry.normal );
+                assert( alpha.OnPlane( H_pole_info.geometry.pos ));
+
+                assert( alpha.OnPlane( tr_to_H_pole.mul_3D_point( moved_pole )));
+                assert( alpha.OnPlane( H_pole_info.geometry.pos + m_pole_anis_dir_aligned ));
+                assert( alpha.OnPlane( H_pole_info.geometry.pos + H_pole_info.anisotropy.direction ));
+                
+                cout
+                << "current angle " << curr_angle << endl
+                << "orth an angle " << M_PI_2 - ortho_anis_angle  << endl
+                << "before rotation around host axis " << endl
+                << pinfo.anisotropy.direction << pinfo.anisotropy.direction.length() << endl
+                << m_pole_anis_dir_aligned << m_pole_anis_dir_aligned.length() << endl
+                << H_pole_info.anisotropy.direction << H_pole_info.anisotropy.direction.length() << endl;
+                
+                // end - debug
+                if( fabs( dot( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction )) > 0.01 ){
+                    cout << "pssss ehi check here!" << endl;
+                }
             }
+//            curr_angle = -curr_angle;
             
 
             // build and save rotations
             for ( int i = 0; i < no_steps; ++i, curr_angle +=step ) {
                 Mat4x4d rot = get_rotation_mat4d( H_pole_info.geometry.normal, curr_angle );
+
                 Vec3d m_pole_step2 = rot.mul_3D_point( m_pole_step1 );
                 
                 Vec3d   to_H_pole = H_pole_info.geometry.pos - m_pole_step2;
@@ -874,6 +929,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 << "translation mat4 " << endl << tr_to_H_pole;
 #endif
                 T = tr_to_H_pole * rot * t_align * t_origin;
+                Mat4x4d T2 = rot * t_align * t_origin;
 
 #ifdef TRACE
                 cout << "complete transform" << endl <<  T;
@@ -881,6 +937,8 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 assert( !isnan( T[1][1] ));
                 
                 Module& t_module = this->candidateModule->getTransformedModule( T );
+                Module& t2_module = this->candidateModule->getTransformedModule( T2 );
+                Vec3d dirasdaddqw = mul_3D_dir( T2, pinfo.anisotropy.direction );
                 
                 // skip if there is a collision.
                 // need to improve it
@@ -889,8 +947,11 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 //                    continue;
 //                }
                 
-                cout << "after rotation around host axis " <<
-                t_module.getPoleInfo(M_pole).anisotropy.direction << endl << H_pole_info.anisotropy.direction << endl;
+                cout << "after rotation around host axis " << endl
+                << dirasdaddqw 
+                << t2_module.getPoleInfo(M_pole).anisotropy.direction
+                << t_module.getPoleInfo(M_pole).anisotropy.direction << t_module.getPoleInfo(M_pole).anisotropy.direction.length() << endl
+                << H_pole_info.anisotropy.direction << H_pole_info.anisotropy.direction.length() << endl;
 
 
                 transformations.push_back( T );
@@ -905,4 +966,39 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 
 size_t StatefulEngine::noFreePoles(){
     return this->mainStructure->getFreePoles().size();
+}
+
+void StatefulEngine::debugColorization(){
+    
+    Vec3f v_color( 0.0, 0.0, 1.0 );
+    Vec3f f_color( 0.9, 0.9, 0.9 );
+    Vec3f e_color( 0.0, 0.0, 0.0 );
+    Vec3f d_color( 1.0, 0.0, 0.0 ); // directions
+    Vec3f p_color( 0.0, 1.0, 1.0 ); // pole
+    for( auto vit = m->vertices().begin(); vit != m->vertices().end(); ++vit )
+    {
+        assert( m->in_use( *vit ));
+        bool is_pole = mainStructure->getFreePoleSet().count( *vit ) > 0;
+        
+        
+        GLGraphics::DebugRenderer::vertex_colors[*vit] = is_pole ? p_color : v_color;
+        
+        Walker w = m->walker(*vit);
+        for(; !w.full_circle(); w = w.circulate_vertex_ccw())
+        {
+            if( is_pole && mainStructure->getPoleInfo(*vit).anisotropy.is_defined ){
+                if( w.vertex() == mainStructure->getPoleInfo(*vit).anisotropy.directionID ){
+                    GLGraphics::DebugRenderer::edge_colors[w.halfedge()]        = d_color;
+                    GLGraphics::DebugRenderer::edge_colors[w.opp().halfedge()]  = d_color;
+                }
+                else{
+                    GLGraphics::DebugRenderer::edge_colors[w.halfedge()]        = e_color;
+                    GLGraphics::DebugRenderer::edge_colors[w.opp().halfedge()]  = e_color;
+                }
+            }
+        }
+    }
+    for( auto fit = m->faces().begin(); fit != m->faces().end(); ++fit ){
+        GLGraphics::DebugRenderer::face_colors[*fit] = f_color;
+    }
 }

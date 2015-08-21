@@ -315,6 +315,7 @@ void save_all_configurations( MeshEditor *me, const std::vector< std::string > &
         Procedural::Helpers::test_delete( *(s.m), M_vertices );
         ++count;
     }
+    s.consolidate();
     
     
 }

@@ -148,8 +148,6 @@ void Module::getPoleAnisotropy( VertexID pole, Vec3d &dir, VertexID neighbor ) c
     
     Plane p( poleInfoMap.at( pole ).geometry.pos, poleInfoMap.at( pole ).geometry.normal );
     
-    
-    
     Vec3d point_to_project  = m->pos( neighbor );
     Vec3d projected         = p.ortho( poleInfoMap.at( pole ).geometry.pos, point_to_project );
     
@@ -239,9 +237,9 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
     // realign poleList
     PoleInfoMap p;
     for( int i = 0; i < poleList.size(); ++i ){
-        VertexID newID = remapper[poleList[i]];
-        p[newID] = poleInfoMap[poleList[i]];
-        poleList[i] = newID;
+        VertexID newID          = remapper[poleList[i]];
+                 p[newID]       = poleInfoMap[poleList[i]];
+                 poleList[i]    = newID;
 #warning it is necessary to realign also other IDs ( pole original_id and anisotropy_directionID
     }
     poleInfoMap = std::move( p );
@@ -267,23 +265,23 @@ const Skeleton& Module::getSkeleton() const{
 /*** STATIC ***/
 // this should be elsewhere, but I don't know where to put it.
 bool Module::poleCanMatch( const PoleInfo& p1, const PoleInfo& p2){
-    cout << "testing : " << p1.moduleType << " -> " << p1.original_id << " with "
-                         << p2.moduleType << " -> " << p2.original_id << endl;
+//    cout << "testing : " << p1.moduleType << " -> " << p1.original_id << " with "
+//                         << p2.moduleType << " -> " << p2.original_id << endl;
 
     if( !p1.isActive ){
-        cout << "KO ( " << p1.moduleType << ", " << p1.original_id << ") is not active" << endl;
+//        cout << "KO ( " << p1.moduleType << ", " << p1.original_id << ") is not active" << endl;
         return false;
     }
     
     if( !p2.isActive ){
-        cout << "KO ( " << p2.moduleType << ", " << p2.original_id << ") is not active" << endl;
+//        cout << "KO ( " << p2.moduleType << ", " << p2.original_id << ") is not active" << endl;
         return false;
     }
 
     
     // test valence
     if( p1.geometry.valence != p2.geometry.valence ) {
-        cout << "KO for valence (" << p1.geometry.valence << ", " << p2.geometry.valence << " )" << endl;
+//        cout << "KO for valence (" << p1.geometry.valence << ", " << p2.geometry.valence << " )" << endl;
         return false;
     }
 
@@ -291,7 +289,7 @@ bool Module::poleCanMatch( const PoleInfo& p1, const PoleInfo& p2){
     if( p1.moduleType == p2.moduleType ){
         if( p1.original_id == p2.original_id ){
             if( !( p1.can_connect_to_self && p2.can_connect_to_self )){
-                cout << "KO connect_to_self" << endl;
+//                cout << "KO connect_to_self" << endl;
                 return false;
             }
         }

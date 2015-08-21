@@ -32,7 +32,6 @@ namespace GEL_Geometry = Geometry;
 namespace Procedural{
     namespace Engines{
         
-#define MATCH_PENALTY 0.0001
 
     /************************************************
      * TYPE DECLARATIONS                            *
@@ -85,12 +84,15 @@ struct MatchInfoProxy{
         }
 };
         
-#define DISTANCE_WEIGHT 1.0
+#define DISTANCE_WEIGHT 0.001
 #define NORMAL_WEIGHT 1.0
 #define ALIGNMENT_WEIGHT 1.0
+#define MY_ROUNDER 100000.0
+#define MATCH_PENALTY 0.0001
         
         
 struct CandidateSubsetInfo{
+    double                           module_ball_radius         = 1.0;
     std::vector< Procedural::Match > subset_match;
     Module                           transformed_module;
     CGLA::Mat4x4d                    T_random;
@@ -101,24 +103,32 @@ struct CandidateSubsetInfo{
     double                           distance_normal_angle      = 0.0;
     double                           distance_alignment         = 0.0;
 
-    void calculateTotalCost(){
+    void calculateTotalCost( bool trunc = false ){
         // set total_cost
         if( subset_match.size() == 1 ){
-            total_cost = distance_alignment + MATCH_PENALTY;
+            total_cost = ( distance_cost + distance_normal_angle + distance_alignment )
+                     + ( MATCH_PENALTY / static_cast<double>( transformed_module.getPoleInfo( subset_match.front().first ).geometry.valence ));
         }
         else{
-            total_cost = DISTANCE_WEIGHT    * distance_cost
+            total_cost = DISTANCE_WEIGHT    * ( distance_cost / module_ball_radius )
                        + NORMAL_WEIGHT      * distance_normal_angle
                        + ALIGNMENT_WEIGHT   * distance_alignment;
-            total_cost /= static_cast<double>( subset_match.size() * subset_match.size( ));
+//            total_cost /= static_cast<double>( subset_match.size() * subset_match.size( ));
+            
+            int sum = 0;
+            for( Match m : subset_match ){
+                sum += transformed_module.getPoleInfo(m.first).geometry.valence;
+            }
+            double valence_divider = static_cast<double>( sum );
+            total_cost /= valence_divider;
+            if( trunc ){
+                total_cost = std::floor( total_cost * MY_ROUNDER ) / MY_ROUNDER;
+            }
         }
     }
-    double getTotalCost( bool trunc = false ) const{
+    
+    double getTotalCost(  ) const{
         assert( total_cost >= -GEO_EPS );
-        if( trunc ){
-            double truncated = std::floor( total_cost * 1000000.0 ) / 1000000.0;
-            return truncated;
-        }
         return total_cost;
     }
     size_t matchValence() const {
@@ -210,6 +220,7 @@ class StatefulEngine{
                                                             CGLA::Mat4x4d& T );
             void            buildNormalsAlignmentTransform( const Module& module, const std::vector<Match>& matches,
                                                             CGLA::Mat4x4d& T );
+            void            debugColorization();
 
 
 
