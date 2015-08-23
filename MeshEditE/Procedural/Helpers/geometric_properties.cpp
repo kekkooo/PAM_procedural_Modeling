@@ -181,13 +181,18 @@ bool is_2_neighbor_of_pole ( HMesh::Manifold& m, HMesh::VertexID v )
 // should be in a separate class
 double get_angle ( CGLA::Vec3d l, CGLA::Vec3d r)
 {
-    l.normalize();
-    r.normalize();
-    double cos = CGLA::dot( l, r );
-    cout << " ****** " << cos << " ******* ";
+//    l.normalize();
+//    r.normalize();
+    double cos = CGLA::dot( l, r ) / ( l.length() * r.length() );
+
+    cos = truncateDouble5( cos );
+
+//    cout << " ****** " << cos << " ******* ";
 //    double in_range_cos = in_range( cos, -1.0, 1.0 );
     double in_range_cos = cos;
-    return acos( in_range_cos );
+    double angle = acos( in_range_cos );
+    assert( errno != EDOM );
+    return angle;
 }
         
 double dihedral_angle ( Vec3d a, Vec3d b, Vec3d c, Vec3d d )

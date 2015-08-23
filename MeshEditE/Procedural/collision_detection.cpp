@@ -22,7 +22,7 @@ bool collide( const Skeleton& main, const Skeleton& other ){
     
     std::vector< std::pair< NodeID, NodeID > >      joints_to_test;
     std::set< std::pair< BoneID, BoneID > >         bones_to_test;
-    size_t tests, j_tests, b_tests, n_tests;
+    size_t tests = 0, j_tests = 0, b_tests = 0, n_tests = 0;
     
     
     for( const auto& item : main_cd.joints ){
@@ -41,7 +41,7 @@ bool collide( const Skeleton& main, const Skeleton& other ){
             const Ball b1 = main_cd.bones.at( bm ).ball;
             
             for( BoneID bo : other_cd.joints.at( item.second ).incidentBones ){
-                assert( other_cd.bones.count( bm ) > 0 );
+                assert( other_cd.bones.count( bo ) > 0 );
                 const Ball b2 = other_cd.bones.at( bo ).ball;
                 
                 ++tests;

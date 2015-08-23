@@ -23,6 +23,7 @@
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include <MesheditE/Procedural/Helpers/structural_helpers.h>
 #include "patch_mapping.h"
+#include "Test.h"
 
 
 using namespace GLGraphics;
@@ -172,6 +173,8 @@ CGLA::Mat4x4d get_rotation_mat4d ( CGLA::Vec3d axis, double angle )
     CGLA::Vec4d row4( 0.0, 0.0, 0.0, 1.0 );
 
     t = CGLA::Mat4x4d( row1, row2, row3, row4 );
+    
+    checkMat4( t );
     return t;
 }
 
@@ -199,6 +202,7 @@ CGLA::Mat4x4d alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 )
         Mat4x4f _m = q.get_Mat4x4f();
         Mat4x4d m  = Mat4x4d_to_float( _m );
         
+        checkMat4( m );
         return m;
     }
     // if parallel and opposite return identity
@@ -244,8 +248,8 @@ CGLA::Mat4x4d alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 )
         if( isnan(T[1][1])){
             cout <<  rot  << endl << rot_to_y << endl;
         }
-        
-        assert( !isnan( T[1][1] ));
+    
+        checkMat4( T );
         return T;
     }
     // TODOOOOOOOOO!!!!!
@@ -312,7 +316,7 @@ CGLA::Mat4x4d get_alignment_for_2_vectors( Vec3d v1, Vec3d v2 )
         }
         
         
-        assert( !isnan( T[1][1] ));
+        checkMat4( T );
         return T;
     }
     

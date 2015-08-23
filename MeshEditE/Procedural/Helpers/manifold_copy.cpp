@@ -33,8 +33,9 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
     m_poles_remap.clear();
     other_poles_remap.clear();
     
+    // save each vertexID of m into m_IDs_set, and its poles into m_poles
     for( VertexID v : m.vertices( )) {
-        m_IDs_set.insert(v);
+        m_IDs_set.insert( v );
         if( is_pole( m, v )) {  m_poles.insert( v ); }
     }
     // for each face of source save the connnectivity and add it to destination
@@ -116,12 +117,13 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
         }
     }
     
+    // map from Other_ID to m_ID
     VertexIDRemap other_to_m_pre_cleanup;
     
     for( const auto& item : possibleNewIDs ){
         int sum = 0;
         for( VertexID candidate : item.second ){
-            if ( m.in_use(candidate)){
+            if ( m.in_use( candidate )){
 //                cout << candidate << " # " << m.pos(candidate) << endl;
                 ++sum;
                 other_to_m_pre_cleanup[item.first] = candidate;
@@ -129,6 +131,29 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
         }
         assert( sum == 1);
     }
+    
+    // test
+    map<VertexID, VertexID> poleNeighborRemap;
+    for( auto item : other_to_m_pre_cleanup  ){
+        Walker o_walker = other.walker( item.first );
+        Walker m_walker = m.walker( item.second );
+        
+        Vec3d m_starter_pos = m.pos( m_walker.vertex() );
+        for( ; ( other.pos(o_walker.vertex()) - m_starter_pos).length() > 0.00001; o_walker = o_walker.circulate_vertex_ccw()  );
+        assert( !o_walker.full_circle());
+        while( !m_walker.full_circle()){
+            
+            poleNeighborRemap[o_walker.vertex()] = m_walker.vertex();
+            
+            m_walker = m_walker.circulate_vertex_ccw();
+            o_walker = o_walker.circulate_vertex_ccw();
+        }
+    }
+    for( auto item : poleNeighborRemap  ){
+        other_to_m_pre_cleanup[item.first] = item.second;
+    }
+    
+    // endtest
     
     
     m.cleanup( remap );

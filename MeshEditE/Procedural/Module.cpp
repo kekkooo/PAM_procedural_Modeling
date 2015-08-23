@@ -250,7 +250,7 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
 }
 
 const PoleInfo& Module::getPoleInfo( HMesh::VertexID p ) const{
-    assert(poleInfoMap.count(p) > 0);
+    assert(poleInfoMap.count( p ) > 0);
     return poleInfoMap.at(p);
 }
     

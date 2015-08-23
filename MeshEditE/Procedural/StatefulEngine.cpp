@@ -274,6 +274,7 @@ void StatefulEngine::buildOptimalAlignmentTransform( const Module& module, const
     }
     svd_rigid_motion( module_pos, host_pos, r, t );
     T = t * r;
+    checkMat4( T );
 }
 
 void StatefulEngine::buildNormalsAlignmentTransform( const Module& module, const std::vector<Match>& matches,
@@ -285,10 +286,14 @@ void StatefulEngine::buildNormalsAlignmentTransform( const Module& module, const
         cout <<"centroid :" << centroid <<endl;
         centroid = centroid + module.getPoleInfo( match.first ).geometry.pos;
         Vec3d mn = module.getPoleInfo( match.first ).geometry.normal;
-        Vec3d hn = mainStructure->getPoleInfo(match.second).geometry.normal;
+        Vec3d hn = mainStructure->getPoleInfo( match.second ).geometry.normal;
+        
+        truncateVec3d( mn );
+        truncateVec3d( hn );
         
         assert( !( isnan( mn[0] ) || isnan( mn[1] ) || isnan( mn[2] )));
         assert( !( isnan( hn[0] ) || isnan( hn[1] ) || isnan( hn[2] )));
+        
         if( !( isfinite( centroid[0] ) && isfinite( centroid[1] ) && isfinite( centroid[2] ))){
             Vec3d why_are_you_inf = module.getPoleInfo(match.first).geometry.pos;
             cout << why_are_you_inf;
@@ -303,8 +308,8 @@ void StatefulEngine::buildNormalsAlignmentTransform( const Module& module, const
     cout << "host vector   :" << endl << module_vec << endl;
 #endif
     
-    module_vec.normalize();
-    host_vec.normalize();
+//    module_vec.normalize();
+//    host_vec.normalize();
     centroid /= static_cast<double>( matches.size());
     
 #ifdef TRACE
@@ -319,9 +324,7 @@ void StatefulEngine::buildNormalsAlignmentTransform( const Module& module, const
     Mat4x4d t_align   = alt_get_alignment_for_2_vectors( module_vec, host_vec );
             T         = tr_back * t_align * tr_origin;
     
-    if( isnan(T[0][0])){
-        cout << "check here!" << endl;
-    }
+    checkMat4( T );
     
 #ifdef TRACE
     cout << "Best Match Normal Alignment " << endl << T << endl;
@@ -457,6 +460,7 @@ void StatefulEngine::glueCurrent(){
     }
 #endif
     consolidate();
+    debugColorization();
 }
 
 
@@ -849,6 +853,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 #ifdef TRACE
             cout << " polo : " << M_pole << endl;
 #endif
+            
 
             assert( candidateModule->getPoleInfoMap().count( M_pole ) > 0 );
             const PoleInfo& pinfo  = candidateModule->getPoleInfo( M_pole );
@@ -859,6 +864,10 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             if( !( Module::poleCanMatch( pinfo, H_pole_info ))){
                 skipped += 16;
                 continue;
+            }
+            
+            if( pinfo.original_id == H_pole_info.original_id ){
+                cout << "check this";
             }
             
             cout << " testing  : ( " << pinfo.original_id << ", " << H_pole_info.original_id << " )" << endl;
@@ -879,15 +888,24 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             // both of them
             if( pinfo.anisotropy.is_defined && H_pole_info.anisotropy.is_defined ){
 
-                Vec3d moved_pole =(t_align * t_origin).mul_3D_point( pinfo.geometry.pos );
+                Vec3d moved_pole =( t_align * t_origin ).mul_3D_point( pinfo.geometry.pos );
                 Vec3d to_H_pole = H_pole_info.geometry.pos - moved_pole;
                 Mat4x4d tr_to_H_pole = translation_Mat4x4d( to_H_pole );
                 
-                m_pole_anis_dir_aligned = mul_3D_dir(( tr_to_H_pole * t_align * t_origin ), pinfo.anisotropy.direction );
-                double anis_angle = get_angle( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction );
-                // debug
-                Vec3d m_anis_ortho = cross(m_pole_anis_dir_aligned, pinfo.geometry.normal );
-                double ortho_anis_angle = get_angle( m_anis_ortho, H_pole_info.anisotropy.direction );
+                Mat4x4d Tdir = ( tr_to_H_pole * t_align * t_origin );
+                
+                        m_pole_anis_dir_aligned = mul_3D_dir( Tdir, pinfo.anisotropy.direction );
+                double  anis_angle              = get_angle( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction );
+                
+                
+                cout << "applyng " << endl
+                << Tdir << endl
+                << " to "<< endl
+                << pinfo.anisotropy.direction << endl
+                << "results in " << m_pole_anis_dir_aligned << endl;
+
+                //test truncate anis_angle
+                anis_angle = truncateDouble2(anis_angle);
                 
                 if( pinfo.anisotropy.is_bilateral && H_pole_info.anisotropy.is_bilateral ){
                     no_steps    = 2;
@@ -900,27 +918,22 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                     curr_angle  = anis_angle;
                 }
                 
+
                 // debug
                 assert(  dot( pinfo.anisotropy.direction, pinfo.geometry.normal ) - 1.0 < 0.0000001 );
                 Plane alpha( H_pole_info.geometry.pos, H_pole_info.geometry.normal );
                 assert( alpha.OnPlane( H_pole_info.geometry.pos ));
 
                 assert( alpha.OnPlane( tr_to_H_pole.mul_3D_point( moved_pole )));
-                assert( alpha.OnPlane( H_pole_info.geometry.pos + m_pole_anis_dir_aligned ));
-                assert( alpha.OnPlane( H_pole_info.geometry.pos + H_pole_info.anisotropy.direction ));
+//                assert( alpha.OnPlane( H_pole_info.geometry.pos + m_pole_anis_dir_aligned ));
+//                assert( alpha.OnPlane( H_pole_info.geometry.pos + H_pole_info.anisotropy.direction ));
                 
                 cout
                 << "current angle " << curr_angle << endl
-                << "orth an angle " << M_PI_2 - ortho_anis_angle  << endl
                 << "before rotation around host axis " << endl
                 << pinfo.anisotropy.direction << pinfo.anisotropy.direction.length() << endl
                 << m_pole_anis_dir_aligned << m_pole_anis_dir_aligned.length() << endl
                 << H_pole_info.anisotropy.direction << H_pole_info.anisotropy.direction.length() << endl;
-                
-                // end - debug
-                if( fabs( dot( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction )) > 0.1 ){
-                    cout << "pssss ehi check here!" << endl;
-                }
             }
 //            curr_angle = -curr_angle;
             
@@ -948,6 +961,11 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 assert( !isnan( T[1][1] ));
                 
                 Module& t_module = this->candidateModule->getTransformedModule( T );
+                // end - debug
+                if( fabs( dot( t_module.getPoleInfo(M_pole).anisotropy.direction, H_pole_info.anisotropy.direction ) - 1.0 ) > 0.1 ){
+                    cout << "pssss ehi check here!" << endl;
+                }
+
 
                 
                 // skip if there is a collision.

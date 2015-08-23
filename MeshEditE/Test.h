@@ -49,10 +49,36 @@ CGLA::Vec3d     mul_3D_dir                      ( const CGLA::Mat4x4d &t, const 
 
 double          sphere_intersects               ( const CGLA::Vec3d &c1, double r1,
                                                   const CGLA::Vec3d &c2, double r2 );
-inline double          truncateDouble              ( double d ){
+
+inline double truncateDouble( double d ){
    return ( std::floor( d * ROUNDER ) / ROUNDER );
 }
 
+inline double truncateDouble( double d, size_t digits ){
+    size_t rounder = 10;
+    for( size_t i = 1; i < digits; ++i ){ rounder *= 10;}
+    double rounder_f = static_cast<double>( rounder );
+    return ( std::floor( d * rounder_f ) / rounder_f );
+}
+
+inline double truncateDouble2( double d ){ return truncateDouble( d, 2 ); }
+inline double truncateDouble3( double d ){ return truncateDouble( d, 3 ); }
+inline double truncateDouble4( double d ){ return truncateDouble( d, 4 ); }
+inline double truncateDouble5( double d ){ return truncateDouble( d, 5 ); }
+inline double truncateDouble6( double d ){ return truncateDouble( d, 6 ); }
+inline double truncateDouble7( double d ){ return truncateDouble( d, 7 ); }
+inline void truncateVec3d( CGLA::Vec3d& v ){
+    v[0] = truncateDouble6( v[0] );
+    v[1] = truncateDouble6( v[1] );
+    v[2] = truncateDouble6( v[2] );
+}
+
+inline void checkMat4( CGLA::Mat4x4d M ){
+    assert( isfinite( M[0][0] )); assert( isfinite( M[0][1] )); assert( isfinite( M[0][2] ));     assert( isfinite( M[0][3] ));
+    assert( isfinite( M[1][0] )); assert( isfinite( M[1][1] )); assert( isfinite( M[1][2] ));     assert( isfinite( M[1][3] ));
+    assert( isfinite( M[2][0] )); assert( isfinite( M[2][1] )); assert( isfinite( M[2][2] ));     assert( isfinite( M[2][3] ));
+    assert( isfinite( M[3][0] )); assert( isfinite( M[3][1] )); assert( isfinite( M[3][2] ));     assert( isfinite( M[3][3] ));
+}
 
 
 
