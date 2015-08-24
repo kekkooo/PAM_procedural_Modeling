@@ -20,6 +20,7 @@
 
 #include "Plane.h"
 #include "eigenv.h"
+#include "Test.h"
 
 using namespace std;
 using namespace HMesh;
@@ -224,6 +225,8 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geo
         }
     }
     
+    M->sanityCheck();
+    
     assert( M->poleInfoMap.size() == this->poleInfoMap.size( ));
     
     M->skeleton = new Skeleton();    
@@ -296,6 +299,13 @@ bool Module::poleCanMatch( const PoleInfo& p1, const PoleInfo& p2){
     }
     return true;
 }
+    
+    void Module::sanityCheck(){
+        for( const auto& item : poleInfoMap ){
+            checkVec3( item.second.geometry.normal );
+            if( item.second.anisotropy.is_defined){ checkVec3( item.second.anisotropy.direction ); }
+        }
+    }
     
 
 }

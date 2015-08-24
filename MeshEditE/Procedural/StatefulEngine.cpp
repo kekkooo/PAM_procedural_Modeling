@@ -955,16 +955,23 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 #endif
                 T = tr_to_H_pole * rot * t_align * t_origin;
 
+                checkMat4( t_origin );
+                checkMat4( t_align );
+                checkMat4( rot );
+                checkMat4( tr_to_H_pole );
+                checkMat4( T );
+
 #ifdef TRACE
                 cout << "complete transform" << endl <<  T;
 #endif
-                assert( !isnan( T[1][1] ));
                 
                 Module& t_module = this->candidateModule->getTransformedModule( T );
                 // end - debug
                 if( fabs( dot( t_module.getPoleInfo(M_pole).anisotropy.direction, H_pole_info.anisotropy.direction ) - 1.0 ) > 0.1 ){
                     cout << "pssss ehi check here!" << endl;
                 }
+                
+                
 
 
                 
@@ -976,7 +983,8 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 }
                 
                 cout << "after rotation around host axis " << endl
-                << t_module.getPoleInfo(M_pole).anisotropy.direction << t_module.getPoleInfo(M_pole).anisotropy.direction.length() << endl
+                << t_module.getPoleInfo(M_pole).anisotropy.direction
+                << t_module.getPoleInfo(M_pole).anisotropy.direction.length() << endl
                 << H_pole_info.anisotropy.direction << H_pole_info.anisotropy.direction.length() << endl;
 
 

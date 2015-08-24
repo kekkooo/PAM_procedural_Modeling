@@ -73,6 +73,10 @@ inline void truncateVec3d( CGLA::Vec3d& v ){
     v[2] = truncateDouble6( v[2] );
 }
 
+inline void checkVec3( CGLA::Vec3d v ){
+    assert( isfinite( v[0] )); assert( isfinite( v[1] )); assert( isfinite( v[2] ));
+}
+
 inline void checkMat4( CGLA::Mat4x4d M ){
     assert( isfinite( M[0][0] )); assert( isfinite( M[0][1] )); assert( isfinite( M[0][2] ));     assert( isfinite( M[0][3] ));
     assert( isfinite( M[1][0] )); assert( isfinite( M[1][1] )); assert( isfinite( M[1][2] ));     assert( isfinite( M[1][3] ));

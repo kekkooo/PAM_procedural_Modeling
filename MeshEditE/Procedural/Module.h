@@ -131,6 +131,10 @@ public:
         inline const PoleInfoMap& getPoleInfoMap()const{ return poleInfoMap; }
     
         static bool poleCanMatch( const PoleInfo& p1, const PoleInfo& p2);
+    
+    
+        void sanityCheck();
+    
 private:
     void    BuildPoleInfo();
     void    LoadPoleConfig( std::string path );

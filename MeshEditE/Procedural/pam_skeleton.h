@@ -296,9 +296,9 @@ namespace Procedural{
             
             // build edge_info structure
             HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges(m);
-            for(auto h: m.halfedges())
-                if(edge_info[h].is_rib()) {
-                    number_rib_edges(m, edge_info, h);
+            for( auto h: m.halfedges() )
+                if( edge_info[h].is_rib( )) {
+                    number_rib_edges( m, edge_info, h );
                     break;
                 }
             
@@ -339,7 +339,7 @@ namespace Procedural{
                         assert(edge_info[w.halfedge()].is_junction());
                         assert(edge_info[w.opp().halfedge()].is_junction());
                         HMesh::HalfEdgeID curr      = w.halfedge(),
-                        opp       = w.opp().halfedge();
+                                          opp       = w.opp().halfedge();
                         HMesh::VertexID   curr_v    = w.vertex();
                         
                         visited[curr]        = true;
@@ -564,7 +564,7 @@ namespace Procedural{
         void reAlignIDs( const HMesh::VertexIDRemap& vremap ){
 
             std::map< HMesh::VertexID, NodeID> remapped;
-            for( auto item : poleToNode ){
+            for( auto& item : poleToNode ){
                 assert(vremap.count( item.first ) > 0 );
                 remapped[ vremap.at( item.first )] = item.second;
             }
@@ -634,7 +634,7 @@ namespace Procedural{
         void merge( const Skeleton &other, std::vector< std::pair< HMesh::VertexID, HMesh::VertexID > >& other_this_matches ){
             
             std::vector< NodeID > this_pole_nodes, other_pole_nodes;
-            for( auto item : other_this_matches ){
+            for( auto& item : other_this_matches ){
                 
                 assert( poleToNode.count( item.second ) > 0 );
                 assert( other.poleToNode.count( item.first ) > 0 );
