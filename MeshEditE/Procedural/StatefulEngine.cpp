@@ -46,7 +46,6 @@ StatefulEngine::StatefulEngine()
     unsigned seed   = chrono::system_clock::now().time_since_epoch().count();
     randomizer.seed( seed );
     treeIsValid     = false;
-
 }
 
 /********** UTILITIS **********/
@@ -54,20 +53,17 @@ StatefulEngine::StatefulEngine()
 /// returns true if L < R
 bool IdDistPair_comparer( IdDistPair &l, IdDistPair &r ) { return ( l.second < r.second ); }
 
-
 void StatefulEngine::buildRandomRotation( CGLA::Mat4x4d &t ){
     // must be initialized
-    float rand_max =  static_cast<float>( randomizer.max( )); //RAND_MAX / ( M_PI * 2.0 );
-    float x1 = static_cast<float>( randomizer( )) / rand_max,
-    x2 = static_cast<float>( randomizer( )) / rand_max,
-    x3 = static_cast<float>( randomizer( )) / rand_max;
+    float   rand_max =  static_cast<float>( randomizer.max( )); //RAND_MAX / ( M_PI * 2.0 );
+    float   x1       = static_cast<float>( randomizer( )) / rand_max,
+            x2       = static_cast<float>( randomizer( )) / rand_max,
+            x3       = static_cast<float>( randomizer( )) / rand_max;
     
     last_x1 = x1;   last_x2 = x2;   last_x3 = x3;
     
     t = ModuleAlignment::random_rotation_matrix_arvo( x1, x2, x3 );
 }
-
-
 
 void StatefulEngine::buildMainStructureKdTree(){
     assert( this->m != NULL );
@@ -75,6 +71,7 @@ void StatefulEngine::buildMainStructureKdTree(){
     
     this->tree = new kD_Tree();
     ModuleAlignment::build_manifold_kdtree( (*this->m), mainStructure->getFreePoleSet(), *this->tree );
+    
     for( auto& vid : mainStructure->getFreePoleSet( )){
         assert( is_pole( *m, vid ));
     }
@@ -108,17 +105,9 @@ void StatefulEngine::matchModuleToHost( Module &candidate, VertexMatchMap& M_pol
         assert( mainStructure->getFreePoleSet().count(foundID) > 0 );
         
         if( have_found ){
-#ifdef TRACE
-            cout << " HAVE FOUND "<< endl;
-#endif
-//            Vec3d n_candidate = vertex_normal( *m, foundID );
-//            n_candidate.normalize();
-//            size_t valence = Geometry::valence( *m, foundID );
             const PoleInfo& host_pole_info  = mainStructure->getPoleInfo( foundID );
             const Vec3d&    n_candidate     = host_pole_info.geometry.normal;
             size_t          valence         = host_pole_info.geometry.valence;
-
-
             
             // add only if match is valid
 #ifdef TRACE
@@ -246,9 +235,10 @@ bool StatefulEngine::findSecondClosest( const VertexID &pole, const PoleGeometry
     while ( !done && it != ids_and_dists.end( ) )
     {        
         // check if normals are compatible
-        Vec3d n_candidate = vertex_normal( *m, it->first );
-        n_candidate.normalize();
-
+//        Vec3d n_candidate = vertex_normal( *m, it->first );
+//        n_candidate.normalize();
+        Vec3d n_candidate = mainStructure->getPoleInfo(it->first).geometry.normal;
+        
         done    = (( assigned.count( it->first ) == 0 )
                   && opposite_directions( pgi.normal, n_candidate ))
                   && Geometry::valence( *m, it->first ) == pgi.valence;
@@ -289,20 +279,21 @@ void StatefulEngine::buildNormalsAlignmentTransform( const Module& module, const
         Vec3d mn = module.getPoleInfo( match.first ).geometry.normal;
         Vec3d hn = mainStructure->getPoleInfo( match.second ).geometry.normal;
         
-        truncateVec3d( mn );
-        truncateVec3d( hn );
-        
         assert( !( isnan( mn[0] ) || isnan( mn[1] ) || isnan( mn[2] )));
         assert( !( isnan( hn[0] ) || isnan( hn[1] ) || isnan( hn[2] )));
         
         if( !( isfinite( centroid[0] ) && isfinite( centroid[1] ) && isfinite( centroid[2] ))){
-            Vec3d why_are_you_inf = module.getPoleInfo(match.first).geometry.pos;
+            Vec3d why_are_you_inf = module.getPoleInfo( match.first ).geometry.pos;
             cout << why_are_you_inf;
         }
         
         module_vec  += mn;
         host_vec    += hn;
     }
+    
+    truncateVec3d( module_vec );
+    truncateVec3d( host_vec );
+
     
 #ifdef TRACE
     cout << "module vector :" << endl << module_vec << endl;
@@ -426,8 +417,11 @@ void StatefulEngine::glueCurrent(){
 //#endif
     
     applyRandomTransform();
+    candidateModule->updateDirections( *m );
     applyOptimalAlignment();
+    candidateModule->updateDirections( *m );
     alignModuleNormalsToHost();
+    candidateModule->updateDirections( *m );
 
     
     // glue_matches
@@ -642,7 +636,7 @@ bool StatefulEngine::testMultipleTransformations(){
     vector< matchesAndCost >                matches_vector;
     vector< Mat4x4d >                       Ts;
     vector< pair< size_t, ExtendedCost >>   stats;
-    map<size_t, CandidateSubsetInfo>       best_subsets_for_valence;
+    map<size_t, CandidateSubsetInfo>        best_subsets_for_valence;
     size_t                                  max_valence = 0;
 
     
@@ -712,7 +706,7 @@ bool StatefulEngine::testMultipleTransformations(){
                     ( module_pole_info.geometry.pos - host_pole_info.geometry.pos ).length();
                 
                 info.distance_normal_angle +=
-                    dot( module_pole_info.geometry.normal, host_pole_info.geometry.normal ) + 1.0;
+                    normal_distance( dot( module_pole_info.geometry.normal, host_pole_info.geometry.normal ));
                 
                 // calculation of the cost relative to the alignmento of the preferred direction
                 // needs to be explained
@@ -722,9 +716,12 @@ bool StatefulEngine::testMultipleTransformations(){
                     
                     // if anisotropy is bilateral for both I need to consider as Optimal also if directions are opposite
                     if( module_pole_info.anisotropy.is_bilateral && host_pole_info.anisotropy.is_bilateral ){
-                        info.distance_alignment += fabs( dot_value - 1.0 );
+                        info.distance_alignment += bilateral_anisotropy_distance( dot_value );
                     }else{
-                        info.distance_alignment += ( dot_value - 1.0 ) * ( -1.0);
+                        // if it works
+                        // this should be used also for the bilateral case. but it needs a re-formulation
+                        info.distance_alignment += anisotropy_distance( dot_value );
+//                        ( dot_value - 1.0 ) * ( -1.0);
                     }
                 }
             }
@@ -840,8 +837,8 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
     
     size_t no_candidates = _candidates.size();
     size_t no_m_poles    = candidateModule->poleList.size();
-    size_t H_starter = randomizer() % no_candidates;
-    Mat4x4d t_origin = translation_Mat4x4d( - candidateModule->bsphere_center );
+    size_t H_starter     = randomizer() % no_candidates;
+    Mat4x4d t_origin     = translation_Mat4x4d( - candidateModule->bsphere_center );
     
     for( int i = 0; i < no_candidates; ++i ){
         
@@ -849,7 +846,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
         VertexID H_pole = _candidates[ actual_i ];
 //        VertexID H_pole = _candidates[ 0 ];
         
-        const PoleInfo& H_pole_info = mainStructure->getPoleInfo(H_pole);
+        const PoleInfo& H_pole_info = mainStructure->getPoleInfo( H_pole );
         
         size_t M_starter = randomizer() % no_M_poles;
         // MODULE POLES LOOP
@@ -860,11 +857,6 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             VertexID M_pole = candidateModule->poleList[ actual_j ];
 //            VertexID M_pole = candidateModule->poleList[ 0 ];
             
-#ifdef TRACE
-            cout << " polo : " << M_pole << endl;
-#endif
-            
-
             assert( candidateModule->getPoleInfoMap().count( M_pole ) > 0 );
             const PoleInfo& pinfo  = candidateModule->getPoleInfo( M_pole );
             
@@ -898,13 +890,16 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             // both of them
             if( pinfo.anisotropy.is_defined && H_pole_info.anisotropy.is_defined ){
 
-                Vec3d moved_pole =( t_align * t_origin ).mul_3D_point( pinfo.geometry.pos );
-                Vec3d to_H_pole = H_pole_info.geometry.pos - moved_pole;
+                Vec3d moved_pole     = ( t_align * t_origin ).mul_3D_point( pinfo.geometry.pos );
+                Vec3d to_H_pole      = H_pole_info.geometry.pos - moved_pole;
                 Mat4x4d tr_to_H_pole = translation_Mat4x4d( to_H_pole );
                 
                 Mat4x4d Tdir = ( tr_to_H_pole * t_align * t_origin );
                 
                         m_pole_anis_dir_aligned = mul_3D_dir( Tdir, pinfo.anisotropy.direction );
+                
+                truncateVec3d( m_pole_anis_dir_aligned );
+                
                 double  anis_angle              = get_angle( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction );
                 
                 
@@ -977,11 +972,10 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 
                 Module& t_module = this->candidateModule->getTransformedModule( T );
                 // end - debug
-                if( fabs( dot( t_module.getPoleInfo(M_pole).anisotropy.direction, H_pole_info.anisotropy.direction ) - 1.0 ) > 0.1 ){
+                double anis_dot_after_rotation = dot( t_module.getPoleInfo(M_pole).anisotropy.direction, H_pole_info.anisotropy.direction );
+                if( anisotropy_distance( anis_dot_after_rotation ) < ARITH_EPS ){
                     cout << "pssss ehi check here!" << endl;
                 }
-                
-                
                 
                 // skip if there is a collision.
                 // need to improve it

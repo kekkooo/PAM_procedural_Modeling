@@ -57,8 +57,12 @@ inline double truncateDouble( double d ){
 inline double truncateDouble( double d, size_t digits ){
     size_t rounder = 10;
     for( size_t i = 1; i < digits; ++i ){ rounder *= 10;}
-    double rounder_f = static_cast<double>( rounder );
-    return ( std::floor( d * rounder_f ) / rounder_f );
+    double eps          = 5.0 / rounder;
+    double rounder_f    = static_cast<double>( rounder );
+    double rounded      = ( std::floor( d * rounder_f ) / rounder_f );
+    if ( fabs( rounded ) < eps  )  { return 0.0; }
+    if ( fabs( 1.0 - rounded ) < eps  )  { return 1.0; }
+    return rounded;
 }
 
 inline double truncateDouble2( double d ){ return truncateDouble( d, 2 ); }
@@ -68,9 +72,9 @@ inline double truncateDouble5( double d ){ return truncateDouble( d, 5 ); }
 inline double truncateDouble6( double d ){ return truncateDouble( d, 6 ); }
 inline double truncateDouble7( double d ){ return truncateDouble( d, 7 ); }
 inline void truncateVec3d( CGLA::Vec3d& v ){
-    v[0] = truncateDouble4( v[0] );
-    v[1] = truncateDouble4( v[1] );
-    v[2] = truncateDouble4( v[2] );
+    v[0] = truncateDouble5( v[0] );
+    v[1] = truncateDouble5( v[1] );
+    v[2] = truncateDouble5( v[2] );
 }
 
 inline void truncateMat4x4d( CGLA::Mat4x4d& M ){
@@ -116,6 +120,32 @@ inline void mat4Copy( const CGLA::Mat4x4d& source, CGLA::Mat4x4d& dest ){
     dest[3][0] = source[3][0];  dest[3][1] = source[3][1]; dest[3][2] = source[3][2];  dest[3][3] = source[3][3];
     checkMat4( dest );
 }
+
+#define SIGMA 0.2
+// defined as the fidelity term in polycut
+// f(1) -> 0
+inline double anisotropy_distance( double dot ){
+    double exponent = -0.5 * pow( ( dot - 1 )/SIGMA, 2.0 );
+    return ( 1.0 - pow ( M_E, exponent ));
+    
+}
+
+// f(1) -> 0; f(-1) -> 0; f(0) -> 1
+inline double bilateral_anisotropy_distance( double dot ){
+    double exponent = -0.5 * pow( ( fabs( dot ) - 1 )/SIGMA, 2.0 );
+    return ( 1.0 - pow ( M_E, exponent ));
+    
+}
+
+// f(-1) -> 0
+inline double normal_distance( double dot ){
+    double exponent = -0.5 * pow( ( dot + 1 )/SIGMA, 2.0 );
+    return ( 1.0 - pow ( M_E, exponent ));
+    
+}
+
+
+
 
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )

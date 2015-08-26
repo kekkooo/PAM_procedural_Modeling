@@ -121,7 +121,7 @@ struct CandidateSubsetInfo{
             double valence_divider = static_cast<double>( sum );
             total_cost /= valence_divider;
             if( trunc ){
-                total_cost = std::floor( total_cost * MY_ROUNDER ) / MY_ROUNDER;
+                truncateDouble5( total_cost );
             }
         }
     }

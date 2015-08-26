@@ -191,8 +191,8 @@ CGLA::Mat4x4d alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 )
     
     double d = dot( v1, v2 );
     
-    bool parallel = fabs( 1 - dot( v1, v2 )) < GEO_EPS;
-    bool opposite = dot( v1, v2 ) < -GEO_EPS;
+    bool parallel = anisotropy_distance( dot( v1, v2 )) < ARITH_EPS;
+    bool opposite = normal_distance( dot( v1, v2 ))     < ARITH_EPS;
 
     // se non sono paralleli, allineai
     if( !parallel ){
@@ -225,7 +225,7 @@ CGLA::Mat4x4d alt_get_alignment_for_2_vectors ( CGLA::Vec3d v1, CGLA::Vec3d v2 )
         Mat4x4d rot_to_y, rot;
         Mat4x4f rot_yf = identity_Mat4x4f();
         
-        bool parallel_to_y = fabs( 1 - fabs( dot( vi, y_axis ))) < GEO_EPS;
+        bool parallel_to_y = normal_distance( dot( vi, y_axis )) < ARITH_EPS;
 
         if( !parallel_to_y ){
             Quaternion q;

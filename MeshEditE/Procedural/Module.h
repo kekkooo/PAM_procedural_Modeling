@@ -123,14 +123,19 @@ public:
     
         Module& getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geometry = false );
         void reAlignIDs( HMesh::VertexIDRemap &remapper );
+        void updateDirections( const HMesh::Manifold& main_mesh );
     
         const PoleInfo&    getPoleInfo( HMesh::VertexID p ) const;
-        bool isPole( HMesh::VertexID v );
+            bool isPole( HMesh::VertexID v );
         const Skeleton& getSkeleton() const;
 
+    
+    
         inline const PoleInfoMap& getPoleInfoMap()const{ return poleInfoMap; }
     
+    
         static bool poleCanMatch( const PoleInfo& p1, const PoleInfo& p2);
+    
     
     
         void sanityCheck();
@@ -139,6 +144,7 @@ private:
     void    BuildPoleInfo();
     void    LoadPoleConfig( std::string path );
     void    getPoleAnisotropy( HMesh::VertexID pole, CGLA::Vec3d& dir,  HMesh::VertexID neighbor ) const;
+    
     
     
 /************************************************

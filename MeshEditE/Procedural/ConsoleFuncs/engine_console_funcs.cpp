@@ -211,7 +211,7 @@ toolbox_step_result toolbox_step( Procedural::Toolbox &t, StatefulEngine &s ){
         float t2_1 = timer.get_secs();
         
         s.glueCurrent();
-        printDebug( s );
+//        printDebug( s );
         
         float t3 = timer.get_secs();
         cout << "glueing done in : " << (t3-t2_1) << "s" << endl;

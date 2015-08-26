@@ -98,6 +98,7 @@ namespace Procedural{
                 CGLA::Vec3d normal = vertex_normal( mani, v );
                 normal.normalize();
                 freePoleInfoMap[v].geometry.normal = normal ;
+                truncateVec3d( freePoleInfoMap[v].geometry.normal );
                 
 
             }

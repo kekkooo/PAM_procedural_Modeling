@@ -8,6 +8,7 @@
 
 #include "graph_match.h"
 #include <MeshEditE/Procedural/Helpers/geometric_properties.h>
+#include "Test.h"
 
 //#include "geometric_properties.h"
 using namespace std;
@@ -52,11 +53,11 @@ void fill_graph( const PoleList &poles, const PoleInfoMap& poleInfo, GraphStruct
         
         CGLA::Vec3d n1 = poleInfo.at( v1 ).geometry.normal,
                     n2 = poleInfo.at( v2 ).geometry.normal;
-        n1.normalize();
-        n2.normalize();
+        
 #warning consider using squared length
         double distance = ( poleInfo.at( v1 ).geometry.pos - poleInfo.at( v2 ).geometry.pos ).length();
-        double cos      = dot( n1, n2 ) + 1.0;
+//        double cos      = dot( n1, n2 ) + 1.0;
+        double cos      = anisotropy_distance( dot( n1, n2 ));
         // since cos is in the range [-1, 1] and I use differences, I apply an offset to the range [ 0, 2 ]
         
         assert( distance > 0 );

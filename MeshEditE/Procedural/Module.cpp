@@ -137,6 +137,7 @@ void Module::BuildPoleInfo(){
             pi.geometry.pos     = m->pos( vid );
             Vec3d n             = vertex_normal( *m, vid );
             n.normalize();
+            truncateVec3d( n );
             pi.geometry.normal  = n;
 
             this->poleList.push_back( vid );
@@ -158,7 +159,7 @@ void Module::getPoleAnisotropy( VertexID pole, Vec3d &dir, VertexID neighbor ) c
     
     dir = projected - poleInfoMap.at( pole ).geometry.pos;
     dir.normalize();
-    
+    truncateVec3d( dir );
     cout <<
     "pole ID      : " << pole << endl <<
     "plane normal : " << poleInfoMap.at(pole).geometry.normal << endl <<
@@ -172,6 +173,18 @@ void Module::getPoleAnisotropy( VertexID pole, Vec3d &dir, VertexID neighbor ) c
 //    m->pos( neighbor ) = projected;
 }
 
+    
+void Module::updateDirections( const HMesh::Manifold& main_mesh ){
+    
+    for( VertexID v : this->poleList ){
+        CGLA::Vec3d normal = vertex_normal( main_mesh, v );
+        normal.normalize();
+        poleInfoMap[v].geometry.normal = normal ;
+        truncateVec3d( poleInfoMap[v].geometry.normal );
+        // should be done also for anisotropy direction.
+    }
+        
+}
     
 Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geometry )
 {
@@ -195,6 +208,7 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geo
         M->poleInfoMap[vid].anisotropy.is_defined   = poleInfoMap[vid].anisotropy.is_defined;
         M->poleInfoMap[vid].anisotropy.direction    = mul_3D_dir( T, poleInfoMap[vid].anisotropy.direction );
         M->poleInfoMap[vid].anisotropy.direction.normalize();
+        
         M->poleInfoMap[vid].anisotropy.is_bilateral = poleInfoMap[vid].anisotropy.is_bilateral;
         M->poleInfoMap[vid].anisotropy.directionID  = poleInfoMap[vid].anisotropy.directionID;
         
@@ -203,6 +217,10 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geo
         M->poleInfoMap[vid].isFree                  = poleInfoMap[vid].isFree;
         M->poleInfoMap[vid].can_connect_to_self     = poleInfoMap[vid].can_connect_to_self;
         M->poleInfoMap[vid].isActive                = poleInfoMap[vid].isActive;
+        
+        // truncate directions
+        truncateVec3d( M->poleInfoMap[vid].geometry.normal );
+        truncateVec3d( M->poleInfoMap[vid].anisotropy.direction );
         
         bool assert_pos =
             isnan( M->poleInfoMap[vid].geometry.pos[0] ) ||

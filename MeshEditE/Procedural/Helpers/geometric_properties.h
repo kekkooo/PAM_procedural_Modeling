@@ -15,6 +15,7 @@
 #include "polarize.h"
 #include <set>
 #include <cmath>
+#include <Test.h>
 
 
 namespace Procedural{
@@ -71,7 +72,13 @@ CGLA::Vec3d     vec_from_edge( const HMesh::Manifold& m, HMesh::HalfEdgeID he );
 CGLA::Vec3d     vec_from_verts( const HMesh::Manifold& m, HMesh::VertexID v1, HMesh::VertexID v2  );
         
 
-inline bool opposite_directions( const CGLA::Vec3d& v1, const CGLA::Vec3d& v2) { return (  CGLA::dot(v1, v2) < -0.00001); }
+//inline bool opposite_directions( const CGLA::Vec3d& v1, const CGLA::Vec3d& v2) { return (  CGLA::dot(v1, v2) < -0.00001); }
+        
+inline bool opposite_directions( const CGLA::Vec3d& v1, const CGLA::Vec3d& v2){
+    double dot  = CGLA::dot( v1, v2 );
+    double dist = normal_distance( dot );
+    return (  dist < 0.0001 );
+}
 
 }}
 
