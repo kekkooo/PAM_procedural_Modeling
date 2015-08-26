@@ -153,6 +153,7 @@ public:
 
     CGLA::Vec3d         bsphere_center;
     double              bsphere_radius;
+    Moduletype          type;
     
 private :
     PoleInfoMap         poleInfoMap;

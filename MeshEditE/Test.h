@@ -68,10 +68,33 @@ inline double truncateDouble5( double d ){ return truncateDouble( d, 5 ); }
 inline double truncateDouble6( double d ){ return truncateDouble( d, 6 ); }
 inline double truncateDouble7( double d ){ return truncateDouble( d, 7 ); }
 inline void truncateVec3d( CGLA::Vec3d& v ){
-    v[0] = truncateDouble6( v[0] );
-    v[1] = truncateDouble6( v[1] );
-    v[2] = truncateDouble6( v[2] );
+    v[0] = truncateDouble4( v[0] );
+    v[1] = truncateDouble4( v[1] );
+    v[2] = truncateDouble4( v[2] );
 }
+
+inline void truncateMat4x4d( CGLA::Mat4x4d& M ){
+    M[0][0] = truncateDouble4( M[0][0] );
+    M[0][1] = truncateDouble4( M[0][1] );
+    M[0][2] = truncateDouble4( M[0][2] );
+    M[0][3] = truncateDouble4( M[0][3] );
+
+    M[1][0] = truncateDouble4( M[1][0] );
+    M[1][1] = truncateDouble4( M[1][1] );
+    M[1][2] = truncateDouble4( M[1][2] );
+    M[1][3] = truncateDouble4( M[1][3] );
+    
+    M[2][0] = truncateDouble4( M[2][0] );
+    M[2][1] = truncateDouble4( M[2][1] );
+    M[2][2] = truncateDouble4( M[2][2] );
+    M[2][3] = truncateDouble4( M[2][3] );
+
+    M[3][0] = truncateDouble4( M[3][0] );
+    M[3][1] = truncateDouble4( M[3][1] );
+    M[3][2] = truncateDouble4( M[3][2] );
+    M[3][3] = truncateDouble4( M[3][3] );
+}
+
 
 inline void checkVec3( CGLA::Vec3d v ){
     assert( isfinite( v[0] )); assert( isfinite( v[1] )); assert( isfinite( v[2] ));
@@ -84,7 +107,15 @@ inline void checkMat4( CGLA::Mat4x4d M ){
     assert( isfinite( M[3][0] )); assert( isfinite( M[3][1] )); assert( isfinite( M[3][2] ));     assert( isfinite( M[3][3] ));
 }
 
-
+inline void mat4Copy( const CGLA::Mat4x4d& source, CGLA::Mat4x4d& dest ){
+ 
+    checkMat4( source );
+    dest[0][0] = source[0][0];  dest[0][1] = source[0][1]; dest[0][2] = source[0][2];  dest[0][3] = source[0][3];
+    dest[1][0] = source[1][0];  dest[1][1] = source[1][1]; dest[1][2] = source[1][2];  dest[1][3] = source[1][3];
+    dest[2][0] = source[2][0];  dest[2][1] = source[2][1]; dest[2][2] = source[2][2];  dest[2][3] = source[2][3];
+    dest[3][0] = source[3][0];  dest[3][1] = source[3][1]; dest[3][2] = source[3][2];  dest[3][3] = source[3][3];
+    checkMat4( dest );
+}
 
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )
@@ -93,6 +124,7 @@ T            in_range                        ( T value, T low, T high )
     if( value > high ) return high;
     return value;
 }
+
 
 
 

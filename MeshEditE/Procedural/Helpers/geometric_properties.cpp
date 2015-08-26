@@ -102,7 +102,7 @@ bool is_singularity ( Manifold& m, VertexID v )
         
 
 // this function is though to be used only for PAMs
-Vec3d face_normal ( Manifold& m, FaceID f)
+Vec3d face_normal ( const Manifold& m, FaceID f)
 {
     assert( m.in_use( f ));
     
@@ -134,7 +134,7 @@ Vec3d face_normal ( Manifold& m, FaceID f)
     }
 }
 
-Vec3d vertex_normal ( Manifold& m, VertexID v)
+Vec3d vertex_normal ( const Manifold& m, VertexID v)
 {
     Walker w = m.walker(v);
     Vec3d vn(0);

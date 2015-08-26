@@ -35,9 +35,11 @@ Module::Module( std::string path, std::string config, Moduletype mType ){
     assert( f.good() );
     
     this->m = new Manifold();
+    m->clear();
     
     obj_load( path, *this->m );
     bsphere( *m, bsphere_center, bsphere_radius );
+    this->type = mType;
     BuildPoleInfo();
     LoadPoleConfig( config );
     
@@ -129,12 +131,14 @@ void Module::BuildPoleInfo(){
     for( VertexID vid : m->vertices() ){
         if( is_pole( *m, vid )){
             PoleInfo pi;
+            pi.moduleType       = this->type;
             pi.original_id      = vid;
             pi.geometry.valence = valence( *m, vid );
             pi.geometry.pos     = m->pos( vid );
             Vec3d n             = vertex_normal( *m, vid );
             n.normalize();
             pi.geometry.normal  = n;
+
             this->poleList.push_back( vid );
             this->poleSet.insert( vid );
             this->poleInfoMap[vid] = pi;
@@ -185,13 +189,16 @@ Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geo
         M->poleInfoMap[vid].original_id             = poleInfoMap[vid].original_id;
         M->poleInfoMap[vid].geometry.pos            = T.mul_3D_point( poleInfoMap[vid].geometry.pos );
         M->poleInfoMap[vid].geometry.normal         = mul_3D_dir( T, poleInfoMap[vid].geometry.normal );
+        M->poleInfoMap[vid].geometry.normal.normalize();
         M->poleInfoMap[vid].geometry.valence        = poleInfoMap[vid].geometry.valence;
 
         M->poleInfoMap[vid].anisotropy.is_defined   = poleInfoMap[vid].anisotropy.is_defined;
         M->poleInfoMap[vid].anisotropy.direction    = mul_3D_dir( T, poleInfoMap[vid].anisotropy.direction );
+        M->poleInfoMap[vid].anisotropy.direction.normalize();
         M->poleInfoMap[vid].anisotropy.is_bilateral = poleInfoMap[vid].anisotropy.is_bilateral;
         M->poleInfoMap[vid].anisotropy.directionID  = poleInfoMap[vid].anisotropy.directionID;
         
+        M->poleInfoMap[vid].moduleType              = poleInfoMap[vid].moduleType;
         M->poleInfoMap[vid].age                     = poleInfoMap[vid].age;
         M->poleInfoMap[vid].isFree                  = poleInfoMap[vid].isFree;
         M->poleInfoMap[vid].can_connect_to_self     = poleInfoMap[vid].can_connect_to_self;

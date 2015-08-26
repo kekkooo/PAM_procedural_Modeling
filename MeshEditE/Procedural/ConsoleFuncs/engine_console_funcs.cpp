@@ -1,4 +1,4 @@
-//
+ //
 //  engine_console_funcs.cpp
 //  MeshEditE
 //
@@ -21,8 +21,10 @@
 #include <MeshEditE/Procedural/Toolbox.h>
 #include <MeshEditE/Procedural/Helpers/manifold_copy.h>
 
+#include<MeshEditE/Procedural/Helpers/geometric_properties.h>
 #include<MeshEditE/Procedural/Helpers/misc.h>
 #include<polarize.h>
+
 
 
 using namespace std;
@@ -32,6 +34,7 @@ using namespace GLGraphics;
 using namespace Util;
 
 using namespace Procedural::Engines;
+using namespace Procedural::Geometry;
 using namespace Procedural;
 
 #define BASE_NO_TESTS 10
@@ -155,6 +158,25 @@ struct toolbox_step_result{
     inline bool ok() { return has_next && can_glue && enough_free_poles ; }
 };
 
+void printDebug( const StatefulEngine &engine ){
+    for( const auto& item : engine.mainStructure->getPoleInfoMap()){
+        
+        cout
+        << "pole :" << item.first
+        << "pos : " << endl
+        << item.second.geometry.pos << " #### on manifold " << endl
+        << engine.m->pos( item.first ) << endl;
+        
+        CGLA::Vec3d normal = vertex_normal( *( engine.m ), item.first );
+        normal.normalize();
+        cout
+        << "normal " << endl
+        << item.second.geometry.normal << " #### on manifold " << endl
+        << normal << endl;
+        
+    }
+}
+
 toolbox_step_result toolbox_step( Procedural::Toolbox &t, StatefulEngine &s ){
     toolbox_step_result result;
     result.has_next = t.hasNext();
@@ -189,6 +211,7 @@ toolbox_step_result toolbox_step( Procedural::Toolbox &t, StatefulEngine &s ){
         float t2_1 = timer.get_secs();
         
         s.glueCurrent();
+        printDebug( s );
         
         float t3 = timer.get_secs();
         cout << "glueing done in : " << (t3-t2_1) << "s" << endl;

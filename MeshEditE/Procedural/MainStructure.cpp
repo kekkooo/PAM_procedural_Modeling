@@ -12,11 +12,14 @@
 #include <set>
 #include <algorithm>
 
+#include<MeshEditE/Procedural/Helpers/geometric_properties.h>
+
 #include "Test.h"
 
 using namespace std;
 using namespace HMesh;
 using namespace Procedural;
+using namespace Procedural::Geometry;
 
 namespace Procedural{
     
@@ -68,7 +71,7 @@ namespace Procedural{
         skel->reAlignIDs( remapper );
     }
     
-    void MainStructure::glueModule( Module &m, vector<Match> &matches ){
+    void MainStructure::glueModule( const HMesh::Manifold& mani, Module &m, vector<Match> &matches ){
         set<VertexID> glued_m_poles;
         set<VertexID> glued_h_poles;
         
@@ -90,7 +93,13 @@ namespace Procedural{
             else{
                 freePoles.push_back( v );
                 freePolesSet.insert( v );
-                freePoleInfoMap[v] = m.getPoleInfo( v );
+                freePoleInfoMap[v]              = m.getPoleInfo( v );
+                freePoleInfoMap[v].geometry.pos = mani.pos( v );
+                CGLA::Vec3d normal = vertex_normal( mani, v );
+                normal.normalize();
+                freePoleInfoMap[v].geometry.normal = normal ;
+                
+
             }
         }
         // remove from freePoles the host poles involved  and put them into gluedPoles

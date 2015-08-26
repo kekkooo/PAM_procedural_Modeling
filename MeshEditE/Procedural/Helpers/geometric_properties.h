@@ -23,8 +23,8 @@ namespace Procedural{
 //typedef std::pair< int, double > DistanceMetrics;
 typedef int DistanceMetrics;
 
-CGLA::Vec3d     face_normal( HMesh::Manifold& m, HMesh::FaceID f );
-CGLA::Vec3d     vertex_normal( HMesh::Manifold& m, HMesh::VertexID v );
+CGLA::Vec3d     face_normal( const HMesh::Manifold& m, HMesh::FaceID f );
+CGLA::Vec3d     vertex_normal( const HMesh::Manifold& m, HMesh::VertexID v );
 
 CGLA::Vec3d     ring_barycenter( HMesh::Manifold& m, HMesh::HalfEdgeID h );
 CGLA::Vec3d     ring_barycenter( HMesh::Manifold& m, HMesh::HalfEdgeID h, std::vector< HMesh::VertexID > &vertices );

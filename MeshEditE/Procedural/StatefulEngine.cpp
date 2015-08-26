@@ -274,6 +274,7 @@ void StatefulEngine::buildOptimalAlignmentTransform( const Module& module, const
     }
     svd_rigid_motion( module_pos, host_pos, r, t );
     T = t * r;
+    truncateMat4x4d( T );
     checkMat4( T );
 }
 
@@ -325,6 +326,7 @@ void StatefulEngine::buildNormalsAlignmentTransform( const Module& module, const
             T         = tr_back * t_align * tr_origin;
     
     checkMat4( T );
+    truncateMat4x4d( T );
     
 #ifdef TRACE
     cout << "Best Match Normal Alignment " << endl << T << endl;
@@ -436,7 +438,7 @@ void StatefulEngine::glueCurrent(){
     double bsphere_radius;
     bsphere( *m, bsphere_center, bsphere_radius );
     mainStructure->setBoundingSphere( bsphere_center, bsphere_radius );
-    mainStructure->glueModule( *candidateModule, best_match.getMatchInfo().matches );
+    mainStructure->glueModule( *m, *candidateModule, best_match.getMatchInfo().matches );
     
     IDRemap glue_remap;
     
@@ -487,7 +489,7 @@ void StatefulEngine::actualGlueing(){
         // glue_matches
         Helpers::ModuleAlignment::glue_matches( *m, remapped_matches );
         // mainStructure->glueModule
-        mainStructure->glueModule( *candidateModule, remapped_matches );
+        mainStructure->glueModule( *m, *candidateModule, remapped_matches );
         
         IDRemap glue_remap;
         
@@ -514,7 +516,7 @@ void StatefulEngine::setHost( Manifold &host ){
     
     Module *starter = new Module( *m, 0 );
     std::vector<Procedural::Match> matches;
-    mainStructure->glueModule( *starter, matches);
+    mainStructure->glueModule( *m, *starter, matches);
     
     debugColorization();
 }
@@ -530,7 +532,7 @@ void StatefulEngine::setHostFromModule( Procedural::Module &starter, HMesh::Mani
     bsphere( *m, bsphere_center, bsphere_radius );
     mainStructure->setBoundingSphere( bsphere_center, bsphere_radius );
     
-    mainStructure->glueModule( starter, matches);
+    mainStructure->glueModule( *m, starter, matches);
     debugColorization();
 }
 
@@ -693,7 +695,10 @@ bool StatefulEngine::testMultipleTransformations(){
             buildOptimalAlignmentTransform( step1, info.subset_match, info.T_align );
             Module& step2 = step1.getTransformedModule( info.T_align );
             buildNormalsAlignmentTransform( step2, info.subset_match, info.T_normals );
-            info.T_complete         = info.T_normals * info.T_align * info.T_random;
+//            info.T_complete         = info.T_normals * info.T_align * info.T_random;
+            mat4Copy( info.T_normals * info.T_align * info.T_random, info.T_complete );
+            checkMat4( info.T_complete );
+            truncateMat4x4d( info.T_complete );
             info.transformed_module = info.transformed_module = step2.getTransformedModule( info.T_normals );
             // calculate costs
             cout <<  "\t *** subset " << count++ << endl;
@@ -722,35 +727,39 @@ bool StatefulEngine::testMultipleTransformations(){
                         info.distance_alignment += ( dot_value - 1.0 ) * ( -1.0);
                     }
                 }
-                
-                info.calculateTotalCost( true );
-                
-                
-                // save the less expensive subsets clustered by valence.
-                if( best_subsets_for_valence.count( info.matchValence() ) == 0 ){
-                    best_subsets_for_valence[info.matchValence()] = info;
-                }
-                else{
-//                    if( info.getTotalCost() < best_subsets_for_valence[info.matchValence()].getTotalCost()){
-                    if( CandidateSubsetInfo::betterThen( info, best_subsets_for_valence[info.matchValence()] )){
-                        best_subsets_for_valence[info.matchValence()] = info;                        
-                    }
-                }
-                
-                if( info.matchValence() > max_valence ) { max_valence = info.matchValence(); }
-                
-                cout
-                << "match with valence : " << info.matchValence()
-                << " with cost : ( " << info.distance_cost
-                << ", " << info.distance_normal_angle
-                << ", " << info.distance_alignment << " ) => "
-                << info.getTotalCost( )  << endl
-                << "****************************************" << endl   ;
-
             }
+            
+            info.calculateTotalCost( true );
+            
+            
+            // save the less expensive subsets clustered by valence.
+            if( best_subsets_for_valence.count( info.matchValence() ) == 0 ){
+                best_subsets_for_valence[info.matchValence()] = info;
+            }
+            else{
+//                    if( info.getTotalCost() < best_subsets_for_valence[info.matchValence()].getTotalCost()){
+                if( CandidateSubsetInfo::betterThen( info, best_subsets_for_valence[info.matchValence()] )){
+                    best_subsets_for_valence[info.matchValence()] = info;                        
+                }
+            }
+            
+            if( info.matchValence() > max_valence ) { max_valence = info.matchValence(); }
+            
+            cout
+            << "match with valence : " << info.matchValence()
+            << " with cost : ( " << info.distance_cost
+            << ", " << info.distance_normal_angle
+            << ", " << info.distance_alignment << " ) => "
+            << info.getTotalCost( )  << endl
+            << "****************************************" << endl   ;
+            
         }
     }
-    assert( best_subsets_for_valence.count( max_valence ) > 0 );
+//    assert( best_subsets_for_valence.count( max_valence ) > 0 );
+    if( best_subsets_for_valence.size() == 0  ){
+        consolidate();
+        return false;
+    }
     CandidateSubsetInfo best_subset = best_subsets_for_valence[max_valence];
     
     for( int i = max_valence; i > 0; --i ){
@@ -772,7 +781,8 @@ bool StatefulEngine::testMultipleTransformations(){
         }
     }
     match_info      mi;
-    mi.random_transform = best_subset.T_random;
+//    mi.random_transform = best_subset.T_random;
+    mat4Copy( best_subset.T_random, mi.random_transform );
     mi.matches = std::move( best_subset.subset_match );
     best_match.setMatchInfo( mi );
     
@@ -972,8 +982,6 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 }
                 
                 
-
-
                 
                 // skip if there is a collision.
                 // need to improve it

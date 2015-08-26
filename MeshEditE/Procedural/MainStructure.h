@@ -11,6 +11,7 @@
 
 #include "Module.h"
 
+#include <GEL/HMesh/Manifold.h>
 #include <stdio.h>
 #include <set>
 
@@ -38,7 +39,7 @@ class MainStructure{
 public:
     MainStructure();
     // those methods work only on a logical basis not on a geometrical one
-    void glueModule( Module &m, std::vector<Match> &matches  );
+    void glueModule( const HMesh::Manifold& mani,  Module &m, std::vector<Match> &matches  );
     void reAlignIDs( HMesh::VertexIDRemap &remapper );
     void setBoundingSphere( CGLA::Vec3d center, double radius );
     bool isColliding( const Module& m ) const;

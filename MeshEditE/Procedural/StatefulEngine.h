@@ -84,10 +84,10 @@ struct MatchInfoProxy{
         }
 };
         
-#define DISTANCE_WEIGHT 0.001
+#define DISTANCE_WEIGHT 0.01
 #define NORMAL_WEIGHT 1.0
 #define ALIGNMENT_WEIGHT 1.0
-#define MY_ROUNDER 100000.0
+#define MY_ROUNDER 10000.0
 #define MY_EPSILON 1.0/MY_ROUNDER
 #define MATCH_PENALTY 0.0001
 
@@ -147,10 +147,10 @@ struct CandidateSubsetInfo{
         if( equal ){
             if( lhs.matchValence() == rhs.matchValence( )){
 
-                return ( lhs.valenceSum() < rhs.valenceSum( ));
+                return ( lhs.valenceSum() > rhs.valenceSum( ));
             }
             else{
-                return lhs.matchValence() < rhs.matchValence();
+                return lhs.matchValence() > rhs.matchValence();
             }
         }
         else{

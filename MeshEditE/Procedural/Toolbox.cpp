@@ -75,6 +75,8 @@ namespace Procedural {
             mInfo->no_pieces            = mNoPieces;
             mInfo->probability          = mProbability;
             mInfo->name                 = mName;
+            mInfo->type                 = mType;
+
             this->modules.push_back( mInfo );
             total_pieces += mNoPieces;
         }
@@ -123,6 +125,19 @@ namespace Procedural {
             size_t attempt = randomizer() % total_pieces;
             done = ( attempt <= modules[index]->no_pieces );
         }
+        
+        
+        // DEBUG
+//        bool flag = true;
+//        if( flag ){
+//            index = 0;
+//        }
+//        else{
+//            index = 1;
+//        }
+//        flag = !flag;
+        
+        // END DEBUG
         
         modules[index]->no_pieces   -= 1;
         total_pieces                -= 1;

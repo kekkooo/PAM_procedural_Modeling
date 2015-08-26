@@ -20,6 +20,7 @@ namespace Procedural{
         float           probability = 1.0;
         size_t          no_pieces   = 0;
         std::string     name;
+        Moduletype      type        = 0;
     };
     
 class Toolbox{
