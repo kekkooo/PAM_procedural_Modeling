@@ -266,10 +266,15 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
     // realign poleList
     PoleInfoMap p;
     for( int i = 0; i < poleList.size(); ++i ){
-        VertexID newID          = remapper[poleList[i]];
-                 p[newID]       = poleInfoMap[poleList[i]];
-                 poleList[i]    = newID;
-#warning it is necessary to realign also other IDs ( pole original_id and anisotropy_directionID
+        VertexID oldID = poleList[i];
+        VertexID aniID = poleInfoMap[oldID].anisotropy.directionID;
+        
+        VertexID newAnisID = remapper[aniID];
+        VertexID newID      = remapper[oldID];
+        
+        p[newID]       = poleInfoMap[poleList[i]];
+        poleList[i]    = newID;
+        p[newID].anisotropy.directionID = newAnisID;
     }
     poleInfoMap = std::move( p );
     Skeleton* temp = skeleton;

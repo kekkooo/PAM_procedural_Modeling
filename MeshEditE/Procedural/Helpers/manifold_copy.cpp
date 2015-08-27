@@ -36,9 +36,18 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
     // save each vertexID of m into m_IDs_set, and its poles into m_poles
     for( VertexID v : m.vertices( )) {
         m_IDs_set.insert( v );
-        if( is_pole( m, v )) {  m_poles.insert( v ); }
+        if( is_pole( m, v )) {
+            m_poles.insert( v );
+            
+            // save the pole onering along with it.
+            Walker w = m.walker( v );
+            while( !w.full_circle( )){
+                m_poles.insert(w.vertex());
+                w = w.circulate_vertex_ccw();
+            }
+        }
     }
-    // for each face of source save the connnectivity and add it to destination
+    // for each face of other save the connnectivity and add it to m
     for( auto f : other.faces( ))
     {
         vector< Vec3d > vs;
@@ -46,15 +55,16 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
         int             steps   = -1;
         VertexID        pole    = InvalidVertexID;
         
+        // iterate along the face borders in order to know which are the neighbouring faces
+        // and save them along with the number of steps needed to get there
         while( !w.full_circle( ))
         {
-            if( face_steps_map.count(f) == 0 ) { face_steps_map[f] = vector< FaceID >(); }
+            if( face_steps_map.count( f ) == 0 ) { face_steps_map[f] = vector< FaceID >(); }
             face_steps_map[f].push_back( w.opp().face() );
             
-            if( is_pole( other, w.prev().vertex())){
+            if( is_pole( other, w.prev().vertex( ))){
                 steps = vs.size();
                 pole  = w.prev().vertex();
-//                cout << "pole found at : \t" << pole << " # \t" << other.pos(pole) << "\t val : " << valency(other, pole) <<  endl;
             }
             
             // prendo il prev, perché altrimenti parto una rotazione avanti
@@ -63,14 +73,14 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
             
             // if vertex is pole, keep its step number
         }
-//        cout << steps << " # " << vs.size() << " # " << vs.size() - steps - 1 << endl ;
+
         steps = vs.size() - steps - 1;
         
-        size_t pre_size = m.no_vertices();
+        // add the face keeping track of the number of m's vertices before and after the face addition
+        size_t  pre_size    = m.no_vertices();
+        FaceID  new_f       = m.add_face( vs );
+        size_t  post_size   = m.no_vertices();
         
-        FaceID  new_f = m.add_face( vs );
-        
-        size_t post_size = m.no_vertices();
         assert( pre_size + vs.size() == post_size );
         
         if( pole != InvalidVertexID ){
@@ -83,7 +93,6 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
             if( possibleNewIDs.count( pole ) == 0){
                 possibleNewIDs[pole] = vector<VertexID>();
             }
-//            cout << "same pole in M at : " << *end << " # \t" << m.pos(*end) << endl;
             possibleNewIDs[pole].push_back( *end );
         }
         
@@ -92,19 +101,20 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
         assert(new_f != InvalidFaceID );
         old_to_new_faces[f] = new_f;
     }
-    // for each face of source - merge the faces using as reference the number of steps
+    // for each face of other - merge the faces using as reference the number of steps
     // needed to the walker to get the right edge
     for( auto f : other.faces( ))
     {
         FaceID  new_f       = old_to_new_faces[f];
         auto    neighbors   = face_steps_map[f];
         Walker  fw          = m.walker( new_f );
+        
         for( int steps = 0; steps < neighbors.size(); ++steps )
         {
-            //                    if( fw.opp().face() != InvalidFaceID ) continue;
             // find the neighor face
             FaceID old_f_neighbor = neighbors[steps];
             FaceID new_neighbor   = old_to_new_faces[old_f_neighbor];
+            
             // find N that is the index at face_steps_map[old_f_neighbor that gives f
             int i = 0;
             for(  ; i < neighbors.size() && face_steps_map[old_f_neighbor][i] != f; ++i ); // loops without doing anything
@@ -124,7 +134,6 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
         int sum = 0;
         for( VertexID candidate : item.second ){
             if ( m.in_use( candidate )){
-//                cout << candidate << " # " << m.pos(candidate) << endl;
                 ++sum;
                 other_to_m_pre_cleanup[item.first] = candidate;
             }
@@ -134,13 +143,33 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
     
     // test
     map<VertexID, VertexID> poleNeighborRemap;
+    
+    // for each pole of other copied to m
     for( auto item : other_to_m_pre_cleanup  ){
         Walker o_walker = other.walker( item.first );
         Walker m_walker = m.walker( item.second );
         
-        Vec3d m_starter_pos = m.pos( m_walker.vertex() );
-        for( ; ( other.pos(o_walker.vertex()) - m_starter_pos).length() > 0.00001; o_walker = o_walker.circulate_vertex_ccw()  );
-        assert( !o_walker.full_circle());
+        Vec3d   m_starter_pos       = m.pos( m_walker.vertex() );
+        bool    starter_not_found   = true;
+        
+        // loop until you find a correspondance between the neighbors of the pole on the two manifolds
+        while( starter_not_found ){
+            
+            Vec3d   o_pos               = other.pos( o_walker.vertex( ));
+                    starter_not_found   = ( o_pos - m_starter_pos ).length() > 0.00001;
+            if ( starter_not_found ){
+                o_walker = o_walker.circulate_vertex_ccw();
+            }
+        }
+    
+        Vec3d o_pos = other.pos( o_walker.vertex( ));
+        
+        assert(( o_pos - m_starter_pos ).length() < 0.00002 );
+        assert( !o_walker.full_circle( ));
+        
+        // once the corresponding vertices have been found, iterate the pole one-ring
+        // and save the remapping.
+        
         while( !m_walker.full_circle()){
             
             poleNeighborRemap[o_walker.vertex()] = m_walker.vertex();
@@ -149,6 +178,7 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
             o_walker = o_walker.circulate_vertex_ccw();
         }
     }
+    // save it on the shared list.
     for( auto item : poleNeighborRemap  ){
         other_to_m_pre_cleanup[item.first] = item.second;
     }
@@ -160,10 +190,12 @@ void add_manifold( Manifold &m, Manifold& other, VertexIDRemap &m_poles_remap,
     
     // find which occurence of new pole ID is the good one and put it into the other_remap
     
+    // this remaps only the original vertices of m
     for( VertexID p : m_poles ){
         if( m_poles.count( p )) { m_poles_remap[p] = remap.vmap[p]; };
     }
     
+    // remap both the origina vertices of m and its onering
     for( const auto& item : other_to_m_pre_cleanup ){
         VertexID newID = remap.vmap[ item.second ];
         assert( newID != InvalidVertexID );

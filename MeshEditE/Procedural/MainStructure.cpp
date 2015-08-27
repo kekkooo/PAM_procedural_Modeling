@@ -59,8 +59,12 @@ namespace Procedural{
         freePolesSet.clear();
         
         for( int i = 0; i < freePoles.size(); ++i ){
-            VertexID newID = remapper[freePoles[i]];
+            
+            VertexID newID      = remapper[freePoles[i]];
+            VertexID aniID      = freePoleInfoMap[freePoles[i]].anisotropy.directionID;
+            VertexID newAniID   = remapper[aniID];
             p[newID] = freePoleInfoMap[freePoles[i]];
+            p[newID].anisotropy.directionID = newAniID;
             freePoles[i] = newID;
             freePolesSet.insert( newID );
         }
