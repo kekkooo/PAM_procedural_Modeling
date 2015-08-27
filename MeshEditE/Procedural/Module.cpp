@@ -181,6 +181,7 @@ void Module::updateDirections( const HMesh::Manifold& main_mesh ){
         normal.normalize();
         poleInfoMap[v].geometry.normal = normal ;
         truncateVec3d( poleInfoMap[v].geometry.normal );
+        poleInfoMap[v].geometry.pos = main_mesh.pos( v ) ;
         // should be done also for anisotropy direction.
     }
         

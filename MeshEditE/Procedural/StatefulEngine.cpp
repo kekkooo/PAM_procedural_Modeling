@@ -418,11 +418,13 @@ void StatefulEngine::glueCurrent(){
     
     applyRandomTransform();
     candidateModule->updateDirections( *m );
+    
     applyOptimalAlignment();
     candidateModule->updateDirections( *m );
+
     alignModuleNormalsToHost();
     candidateModule->updateDirections( *m );
-
+    
     
     // glue_matches
     Helpers::ModuleAlignment::glue_matches( *m, best_match.getMatchInfo().matches );

@@ -121,7 +121,7 @@ inline void mat4Copy( const CGLA::Mat4x4d& source, CGLA::Mat4x4d& dest ){
     checkMat4( dest );
 }
 
-#define SIGMA 0.2
+#define SIGMA 0.5
 // defined as the fidelity term in polycut
 // f(1) -> 0
 inline double anisotropy_distance( double dot ){
