@@ -144,9 +144,6 @@ inline double normal_distance( double dot ){
     
 }
 
-
-
-
 inline template<typename T>
 T            in_range                        ( T value, T low, T high )
 {

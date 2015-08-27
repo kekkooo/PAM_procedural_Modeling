@@ -291,8 +291,8 @@ void StatefulEngine::buildNormalsAlignmentTransform( const Module& module, const
         host_vec    += hn;
     }
     
-    truncateVec3d( module_vec );
-    truncateVec3d( host_vec );
+//    truncateVec3d( module_vec );
+//    truncateVec3d( host_vec );
 
     
 #ifdef TRACE
@@ -435,6 +435,7 @@ void StatefulEngine::glueCurrent(){
     bsphere( *m, bsphere_center, bsphere_radius );
     mainStructure->setBoundingSphere( bsphere_center, bsphere_radius );
     mainStructure->glueModule( *m, *candidateModule, best_match.getMatchInfo().matches );
+    mainStructure->updatePoleInfo( *m );
     
     IDRemap glue_remap;
     
@@ -721,12 +722,12 @@ bool StatefulEngine::testMultipleTransformations(){
                         info.distance_alignment += bilateral_anisotropy_distance( dot_value );
                     }else{
                         // if it works
-                        // this should be used also for the bilateral case. but it needs a re-formulation
                         info.distance_alignment += anisotropy_distance( dot_value );
-//                        ( dot_value - 1.0 ) * ( -1.0);
                     }
                 }
             }
+            
+            if( info.distance_alignment > 0.0001 ){ continue; }
             
             info.calculateTotalCost( true );
             
@@ -862,8 +863,6 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             assert( candidateModule->getPoleInfoMap().count( M_pole ) > 0 );
             const PoleInfo& pinfo  = candidateModule->getPoleInfo( M_pole );
             
-//            cout << "testing : " << pinfo.moduleType << " -> " << pinfo.original_id << " with "
-//            << H_pole_info.moduleType << " -> " << H_pole_info.original_id << endl;
 
             if( !( Module::poleCanMatch( pinfo, H_pole_info ))){
                 skipped += 16;
@@ -912,7 +911,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 << "results in " << m_pole_anis_dir_aligned << endl;
 
                 //test truncate anis_angle
-                anis_angle = truncateDouble2(anis_angle);
+                anis_angle = truncateDouble2( anis_angle );
                 
                 if( pinfo.anisotropy.is_bilateral && H_pole_info.anisotropy.is_bilateral ){
                     no_steps    = 2;
@@ -976,7 +975,8 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 // end - debug
                 double anis_dot_after_rotation = dot( t_module.getPoleInfo(M_pole).anisotropy.direction, H_pole_info.anisotropy.direction );
                 if( anisotropy_distance( anis_dot_after_rotation ) < ARITH_EPS ){
-                    cout << "pssss ehi check here!" << endl;
+                    cout << "pssss ehi check here! angle is : "
+                         << anis_dot_after_rotation << " # " << acos( anis_dot_after_rotation ) << endl;
                 }
                 
                 // skip if there is a collision.

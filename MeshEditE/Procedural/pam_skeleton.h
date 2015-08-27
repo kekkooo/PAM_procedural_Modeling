@@ -22,6 +22,7 @@
 #include <GEL/CGLA/Mat4x4d.h>
 
 #include "polarize.h"
+#include "Test.h"
 
 namespace Procedural{
     typedef size_t NodeID;
@@ -291,6 +292,7 @@ namespace Procedural{
             CGLA::Vec3d centroid;
             float      radius;
             HMesh::bsphere( m, centroid, radius );
+            
             bounding_sphere.center = centroid;
             bounding_sphere.radius = radius;
             

@@ -136,14 +136,16 @@ public:
     
         static bool poleCanMatch( const PoleInfo& p1, const PoleInfo& p2);
     
-    
+        static void getPoleAnisotropy( const CGLA::Vec3d& pole, const CGLA::Vec3d& normal,
+                                  const CGLA::Vec3d& neighbor, CGLA::Vec3d& dir );
+
     
         void sanityCheck();
     
 private:
     void    BuildPoleInfo();
     void    LoadPoleConfig( std::string path );
-    void    getPoleAnisotropy( HMesh::VertexID pole, CGLA::Vec3d& dir,  HMesh::VertexID neighbor ) const;
+
     
     
     

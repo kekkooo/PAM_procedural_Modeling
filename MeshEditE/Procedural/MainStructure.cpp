@@ -63,6 +63,9 @@ namespace Procedural{
             VertexID newID      = remapper[freePoles[i]];
             VertexID aniID      = freePoleInfoMap[freePoles[i]].anisotropy.directionID;
             VertexID newAniID   = remapper[aniID];
+            
+            assert( newID    != InvalidVertexID );
+            assert( newAniID != InvalidVertexID );
             p[newID] = freePoleInfoMap[freePoles[i]];
             p[newID].anisotropy.directionID = newAniID;
             freePoles[i] = newID;
@@ -169,5 +172,20 @@ namespace Procedural{
         skel->bounding_sphere.radius = radius;
     }
     
-    
+    void MainStructure::updatePoleInfo( const Manifold& mani ){
+
+        for( VertexID v : this->freePoles ){
+            CGLA::Vec3d normal = vertex_normal( mani, v );
+            normal.normalize();
+            freePoleInfoMap[v].geometry.normal = normal ;
+            truncateVec3d( freePoleInfoMap[v].geometry.normal );
+            freePoleInfoMap[v].geometry.pos = mani.pos( v ) ;
+            
+            Module::getPoleAnisotropy( freePoleInfoMap[v].geometry.pos, freePoleInfoMap[v].geometry.normal,
+                                       mani.pos( freePoleInfoMap[v].anisotropy.directionID ),
+                                       freePoleInfoMap[v].anisotropy.direction );
+            
+        }
+
+    }        
 }

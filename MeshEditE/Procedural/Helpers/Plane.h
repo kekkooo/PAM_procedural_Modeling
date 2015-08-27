@@ -123,7 +123,7 @@ public:
         return (( fabs(v) > PLANE_EPSILON ) and ( v < 0.0 ));
     }
     
-    Vec3d ortho( Vec3d point_on_plane, Vec3d point )
+    Vec3d ortho( const Vec3d& point_on_plane, const Vec3d& point )
     {
         if( OnPlane( point )){ return point; }
         
@@ -135,12 +135,26 @@ public:
         return p;
     }
     
+    Vec3d projectDirection( const Vec3d& point_on_plane, const Vec3d& point ){
+        Vec3d projected         = this->ortho( point_on_plane, point );
+        
+        Vec3d dir = projected - point_on_plane;
+        dir.normalize();
+
+        checkVec3( dir );
+        return dir;
+    }
+    
 private:
     double  _a, _b, _c, _d;
     double TestPoint( Vec3d p ) { return (p[0] * _a + p[1] * _b + p[2] * _c - _d); }
     
     
 };
+        
+        
+        
+
 
 }}
 

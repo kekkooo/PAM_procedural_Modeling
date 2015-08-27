@@ -109,11 +109,12 @@ void Module::LoadPoleConfig( std::string path ){
                     }
                     assert( neighbor != InvalidVertexID );
 
-                        
-                    Vec3d anisotropy( 0 );
-                    getPoleAnisotropy( pole, anisotropy, neighbor );
                     poleInfoMap[pole].anisotropy.directionID    = neighbor;
-                    poleInfoMap[pole].anisotropy.direction      = anisotropy;
+                    getPoleAnisotropy( poleInfoMap[pole].geometry.pos, poleInfoMap[pole].geometry.normal,
+                                      m->pos( poleInfoMap[pole].anisotropy.directionID ),
+                                      poleInfoMap[pole].anisotropy.direction );
+
+
                 }
                 done = true;
             }
@@ -148,29 +149,11 @@ void Module::BuildPoleInfo(){
 }
     
 
-void Module::getPoleAnisotropy( VertexID pole, Vec3d &dir, VertexID neighbor ) const{
+void Module::getPoleAnisotropy( const CGLA::Vec3d& pole, const CGLA::Vec3d& normal, const CGLA::Vec3d& neighbor, CGLA::Vec3d& dir ){    
     
-    assert( is_pole( *m, pole ));
-    
-    Plane p( poleInfoMap.at( pole ).geometry.pos, poleInfoMap.at( pole ).geometry.normal );
-    
-    Vec3d point_to_project  = m->pos( neighbor );
-    Vec3d projected         = p.ortho( poleInfoMap.at( pole ).geometry.pos, point_to_project );
-    
-    dir = projected - poleInfoMap.at( pole ).geometry.pos;
-    dir.normalize();
+    Plane p( pole, normal );
+    dir = p.projectDirection( pole, neighbor );
     truncateVec3d( dir );
-    cout <<
-    "pole ID      : " << pole << endl <<
-    "plane normal : " << poleInfoMap.at(pole).geometry.normal << endl <<
-    "pole pos     : " << poleInfoMap.at(pole).geometry.pos << endl <<
-    "neighbor ID  : " << neighbor << endl <<
-    "neighbor pos : " << point_to_project << endl <<
-    "projected    : " << projected << endl <<
-    "resulting dir: " << dir << endl << endl;
-
-//    // test :
-//    m->pos( neighbor ) = projected;
 }
 
     
@@ -182,9 +165,12 @@ void Module::updateDirections( const HMesh::Manifold& main_mesh ){
         poleInfoMap[v].geometry.normal = normal ;
         truncateVec3d( poleInfoMap[v].geometry.normal );
         poleInfoMap[v].geometry.pos = main_mesh.pos( v ) ;
-        // should be done also for anisotropy direction.
-    }
         
+        getPoleAnisotropy( poleInfoMap[v].geometry.pos, poleInfoMap[v].geometry.normal,
+                           main_mesh.pos( poleInfoMap[v].anisotropy.directionID ),
+                           poleInfoMap[v].anisotropy.direction );
+
+    }        
 }
     
 Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geometry )
@@ -272,6 +258,9 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
         VertexID newAnisID = remapper[aniID];
         VertexID newID      = remapper[oldID];
         
+        assert( newAnisID != InvalidVertexID );
+        assert( newID != InvalidVertexID );
+        
         p[newID]       = poleInfoMap[poleList[i]];
         poleList[i]    = newID;
         p[newID].anisotropy.directionID = newAnisID;
@@ -280,7 +269,6 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
     Skeleton* temp = skeleton;
     skeleton = new Skeleton();
     skeleton->copyAndRealignIDs( *temp, remapper );
-//    skeleton->reAlignIDs( remapper );
 }
 
 const PoleInfo& Module::getPoleInfo( HMesh::VertexID p ) const{

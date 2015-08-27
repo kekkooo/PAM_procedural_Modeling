@@ -45,6 +45,7 @@ public:
     bool isColliding( const Module& m ) const;
     void saveSkeleton( std::string path ) const;
     void saveBVH( std::string path ) const;
+    void updatePoleInfo( const HMesh::Manifold& mani );
     
     const Procedural::PoleList& getPoles() const;
     const Procedural::PoleList& getFreePoles() const;
