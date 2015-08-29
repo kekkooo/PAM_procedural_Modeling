@@ -254,6 +254,38 @@ bool StatefulEngine::findSecondClosest( const VertexID &pole, const PoleGeometry
 
 /********** APPLICATION OF TRANSFORMATIONS **********/
 
+void StatefulEngine::buildOneRingOptimalAlignmentTransform( const Module& module, const std::vector<Match>& matches,
+                                                           CGLA::Mat4x4d& T ){
+    Mat4x4d r, t;
+    vector< Vec3d>     host_pos, module_pos;
+    for( auto& match : matches ){
+        module_pos.push_back( module.getPoleInfo( match.first ).geometry.pos );
+        host_pos.push_back(   mainStructure->getPoleInfo( match.second ).geometry.pos );
+        
+        module_pos.push_back( m->pos( module.getPoleInfo(match.first).anisotropy.directionID ));
+        host_pos.push_back( m->pos( mainStructure->getPoleInfo( match.second ).anisotropy.directionID ));
+        
+//        Walker module_walker = m->walker( match.first );
+//        Walker host_walker   = m->walker( match.second );
+//        for( ; !module_walker.full_circle(); module_walker = module_walker.circulate_vertex_ccw( )){
+//            module_pos.push_back( m->pos( module_walker.vertex()));
+//        }
+//        
+//        for( ; !host_walker.full_circle(); host_walker = host_walker.circulate_vertex_ccw( )){
+//            host_pos.push_back( m->pos( host_walker.vertex()));
+//        }
+
+        
+    }
+    svd_rigid_motion( module_pos, host_pos, r, t );
+    T = t * r;
+    truncateMat4x4d( T );
+    checkMat4( T );
+
+}
+
+
+
 void StatefulEngine::buildOptimalAlignmentTransform( const Module& module, const std::vector<Match>& matches,
                                                     CGLA::Mat4x4d& T ){
     Mat4x4d r, t;
@@ -262,8 +294,16 @@ void StatefulEngine::buildOptimalAlignmentTransform( const Module& module, const
         module_pos.push_back( module.getPoleInfo( match.first ).geometry.pos );
         host_pos.push_back(   mainStructure->getPoleInfo( match.second ).geometry.pos );
     }
-    svd_rigid_motion( module_pos, host_pos, r, t );
-    T = t * r;
+    
+    if ( matches.size() > 1 ){
+        svd_rigid_motion( module_pos, host_pos, r, t );
+        T = t * r;
+    }
+    else{
+        Vec3d tr = host_pos.front() - module_pos.front();
+        T = translation_Mat4x4d( tr );
+    }
+
     truncateMat4x4d( T );
     checkMat4( T );
 }
@@ -282,17 +322,14 @@ void StatefulEngine::buildNormalsAlignmentTransform( const Module& module, const
         assert( !( isnan( mn[0] ) || isnan( mn[1] ) || isnan( mn[2] )));
         assert( !( isnan( hn[0] ) || isnan( hn[1] ) || isnan( hn[2] )));
         
-        if( !( isfinite( centroid[0] ) && isfinite( centroid[1] ) && isfinite( centroid[2] ))){
-            Vec3d why_are_you_inf = module.getPoleInfo( match.first ).geometry.pos;
-            cout << why_are_you_inf;
-        }
+        checkVec3( centroid );
         
         module_vec  += mn;
         host_vec    += hn;
     }
     
-//    truncateVec3d( module_vec );
-//    truncateVec3d( host_vec );
+    truncateVec3d( module_vec );
+    truncateVec3d( host_vec );
 
     
 #ifdef TRACE
@@ -337,10 +374,27 @@ void StatefulEngine::applyRandomTransform(){
     assert( candidateModule->poleList.size() > 0 );
 }
 
+void StatefulEngine::applyOneRingOptimalAlignmentTransform(){
+    Mat4x4d t;
+    buildOneRingOptimalAlignmentTransform( *candidateModule, best_match.getMatchInfo().matches, t );
+    
+#ifdef TRACE
+    cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
+#endif
+    
+    Module &tm = candidateModule->getTransformedModule( t );
+    candidateModule = &tm;
+    for( VertexID v : M_vertices ){
+        m->pos( v) = t.mul_3D_point( m->pos( v ));
+    }
+    assert( candidateModule->poleList.size() > 0 );
+}
 
 void StatefulEngine::applyOptimalAlignment(){
     Mat4x4d t;
+    
     buildOptimalAlignmentTransform( *candidateModule, best_match.getMatchInfo().matches, t );
+    
     
 #ifdef TRACE
     cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
@@ -424,7 +478,6 @@ void StatefulEngine::glueCurrent(){
 
     alignModuleNormalsToHost();
     candidateModule->updateDirections( *m );
-    
     
     // glue_matches
     Helpers::ModuleAlignment::glue_matches( *m, best_match.getMatchInfo().matches );
@@ -896,8 +949,11 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 Mat4x4d tr_to_H_pole = translation_Mat4x4d( to_H_pole );
                 
                 Mat4x4d Tdir = ( tr_to_H_pole * t_align * t_origin );
+//                truncateMat4x4d( Tdir );
                 
                         m_pole_anis_dir_aligned = mul_3D_dir( Tdir, pinfo.anisotropy.direction );
+                        moved_pole              = Tdir.mul_3D_point( pinfo.geometry.pos );
+                Vec3d   moved_normal            = mul_3D_dir( Tdir, pinfo.geometry.normal );
                 
                 truncateVec3d( m_pole_anis_dir_aligned );
                 
@@ -927,11 +983,14 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
 
                 // debug
                 assert(  dot( pinfo.anisotropy.direction, pinfo.geometry.normal ) - 1.0 < 0.0000001 );
+                assert(  dot( H_pole_info.anisotropy.direction, H_pole_info.geometry.normal ) - 1.0 < 0.0000001 );
                 Plane alpha( H_pole_info.geometry.pos, H_pole_info.geometry.normal );
+                Plane beta ( moved_pole, moved_normal );
+                cout << " plane alpha - main structure " << endl << alpha.toString() << endl;
+                cout << " plane beta  - main structure " << endl << beta.toString() << endl;
                 assert( alpha.OnPlane( H_pole_info.geometry.pos ));
-
-                assert( alpha.OnPlane( tr_to_H_pole.mul_3D_point( moved_pole )));
-//                assert( alpha.OnPlane( H_pole_info.geometry.pos + m_pole_anis_dir_aligned ));
+                assert( alpha.OnPlane( moved_pole ));
+//                assert( beta.OnPlane( moved_pole + m_pole_anis_dir_aligned ));
 //                assert( alpha.OnPlane( H_pole_info.geometry.pos + H_pole_info.anisotropy.direction ));
                 
                 cout
@@ -947,6 +1006,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             // build and save rotations
             for ( int i = 0; i < no_steps; ++i, curr_angle +=step ) {
                 Mat4x4d rot = get_rotation_mat4d( H_pole_info.geometry.normal, curr_angle );
+//                truncateMat4x4d( rot );
 
                 Vec3d m_pole_step2 = rot.mul_3D_point( m_pole_step1 );
                 
@@ -959,7 +1019,15 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 cout << "to_h_pole " << to_H_pole << endl
                 << "translation mat4 " << endl << tr_to_H_pole;
 #endif
+                
+                truncateMat4x4d( tr_to_H_pole );
+                truncateMat4x4d( t_align );
+                truncateMat4x4d( tr_to_H_pole );
+                truncateMat4x4d( t_origin );
+                
                 T = tr_to_H_pole * rot * t_align * t_origin;
+
+//                truncateMat4x4d( T );
 
                 checkMat4( t_origin );
                 checkMat4( t_align );
@@ -974,10 +1042,10 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 Module& t_module = this->candidateModule->getTransformedModule( T );
                 // end - debug
                 double anis_dot_after_rotation = dot( t_module.getPoleInfo(M_pole).anisotropy.direction, H_pole_info.anisotropy.direction );
-                if( anisotropy_distance( anis_dot_after_rotation ) < ARITH_EPS ){
+//                if( anisotropy_distance( anis_dot_after_rotation ) > ARITH_EPS ){
                     cout << "pssss ehi check here! angle is : "
                          << anis_dot_after_rotation << " # " << acos( anis_dot_after_rotation ) << endl;
-                }
+//                }
                 
                 // skip if there is a collision.
                 // need to improve it

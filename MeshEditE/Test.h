@@ -61,7 +61,11 @@ inline double truncateDouble( double d, size_t digits ){
     double rounder_f    = static_cast<double>( rounder );
     double rounded      = ( std::floor( d * rounder_f ) / rounder_f );
     if ( fabs( rounded ) < eps  )  { return 0.0; }
-    if ( fabs( 1.0 - rounded ) < eps  )  { return 1.0; }
+    // rounded could be negative
+    if ( fabs( 1.0 - rounded ) < eps  )
+    {
+        return ( rounded > 0.0 ? 1.0 : -1.0 );
+    }
     return rounded;
 }
 

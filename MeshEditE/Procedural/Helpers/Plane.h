@@ -10,11 +10,13 @@
 #define __MeshEditE__Plane__
 
 #include <iostream>
+#include <sstream>
+#include <string>
 #include <GEL/CGLA/Vec3d.h>
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
-#define PLANE_EPSILON 0.00001
+#define PLANE_EPSILON 0.00005
 
 using namespace CGLA;
 
@@ -111,7 +113,10 @@ public:
         _d *= -1;
     }
     
-    inline bool OnPlane( Vec3d point ) { return fabs(TestPoint(point)) < PLANE_EPSILON; }
+    inline bool OnPlane( Vec3d point ) {
+        double test_result = fabs( TestPoint( point ));
+        return  ( test_result < PLANE_EPSILON );
+    }
     inline bool OnPositiveSide( Vec3d point )
     {
         double v = TestPoint(point);
@@ -135,7 +140,7 @@ public:
         return p;
     }
     
-    Vec3d projectDirection( const Vec3d& point_on_plane, const Vec3d& point ){
+    Vec3d alt_projectDirection( const Vec3d& point_on_plane, const Vec3d& point ){
         Vec3d projected         = this->ortho( point_on_plane, point );
         
         Vec3d dir = projected - point_on_plane;
@@ -143,6 +148,30 @@ public:
 
         checkVec3( dir );
         return dir;
+    }
+    
+    
+    Vec3d projectDirection( const Vec3d& point_on_plane, const Vec3d& point ){
+        // project ray dir onto the skel orthogonal plane
+        // using the formula to obtain the projected vector W
+        // v is the vector I want to project, a is the plane, n_a is the plane normal
+        // r = n_a * (( v * n_a ) / ( n_a * n_a ))
+        // W = v - r;
+        
+        Vec3d v     = point - point_on_plane;
+        Vec3d na    = normal();
+        assert( fabs( 1.0 - na.length()) < PLANE_EPSILON );
+        Vec3d r     = na * CGLA::dot( v, na );
+        Vec3d dir   = v - r;
+        dir.normalize();
+        
+        return dir;
+    }
+    
+    std::string toString(){
+        std::stringstream oss;
+        oss << " A = " << _a << "; B = " << _b << "; C =" << _c << "; D = " << _d << std::endl;
+        return oss.str();
     }
     
 private:

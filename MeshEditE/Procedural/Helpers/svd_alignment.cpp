@@ -47,7 +47,7 @@ namespace Procedural {
             // assume weights are always 1
             // 1) find the centroid of the two point sets
             Vec3d p( 0.0, 0.0, 0.0 ),
-            q( 0.0, 0.0, 0.0 );
+                  q( 0.0, 0.0, 0.0 );
             
             for( Vec3d Pi : P ) { p += Pi; }
             for( Vec3d Qi : Q ) { q += Qi; }
@@ -85,10 +85,11 @@ namespace Procedural {
             CMatrix U, Sigma, V;
             SVD( S, U, Sigma, V);
             
-            CMatrix U_t         = U.Transposed(),
+            CMatrix U_t = U.Transposed(),
             V_t         = V.Transposed(),
             V_U_t       = ( V * U_t );
             double  det_V_U_t   = Det( V_U_t );
+            
             CMatrix M( 3, 3, 0 );
             M.set( 0, 0, 1.0 );
             M.set( 1, 1, 1.0 );
