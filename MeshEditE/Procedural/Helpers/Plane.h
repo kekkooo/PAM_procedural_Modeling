@@ -150,6 +150,15 @@ public:
         return dir;
     }
     
+    Vec3d projectDirection( const Vec3d& v ){
+        Vec3d na    = normal();
+        Vec3d r     = na * CGLA::dot( v, normal() );
+        Vec3d dir   = v - r;
+        dir.normalize();
+        
+        return dir;
+
+    }
     
     Vec3d projectDirection( const Vec3d& point_on_plane, const Vec3d& point ){
         // project ray dir onto the skel orthogonal plane

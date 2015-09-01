@@ -69,6 +69,21 @@ inline double truncateDouble( double d, size_t digits ){
     return rounded;
 }
 
+inline double round_to_near_one_zero( double d, size_t digits ){
+    size_t rounder = 10;
+    for( size_t i = 1; i < digits; ++i ){ rounder *= 10;}
+    double eps          = 5.0 / rounder;
+    double rounder_f    = static_cast<double>( rounder );
+    double rounded      = ( std::floor( d * rounder_f ) / rounder_f );
+    if ( fabs( rounded ) < eps  )  { return 0.0; }
+    // rounded could be negative
+    if ( fabs( 1.0 - rounded ) < eps  )
+    {
+        return ( rounded > 0.0 ? 1.0 : -1.0 );
+    }
+    return d;
+}
+
 inline double truncateDouble2( double d ){ return truncateDouble( d, 2 ); }
 inline double truncateDouble3( double d ){ return truncateDouble( d, 3 ); }
 inline double truncateDouble4( double d ){ return truncateDouble( d, 4 ); }
@@ -81,26 +96,51 @@ inline void truncateVec3d( CGLA::Vec3d& v ){
     v[2] = truncateDouble5( v[2] );
 }
 
-inline void truncateMat4x4d( CGLA::Mat4x4d& M ){
-    M[0][0] = truncateDouble4( M[0][0] );
-    M[0][1] = truncateDouble4( M[0][1] );
-    M[0][2] = truncateDouble4( M[0][2] );
-    M[0][3] = truncateDouble4( M[0][3] );
-
-    M[1][0] = truncateDouble4( M[1][0] );
-    M[1][1] = truncateDouble4( M[1][1] );
-    M[1][2] = truncateDouble4( M[1][2] );
-    M[1][3] = truncateDouble4( M[1][3] );
+inline void truncateMat4x4d( CGLA::Mat4x4d& M, bool soft = false ){
     
-    M[2][0] = truncateDouble4( M[2][0] );
-    M[2][1] = truncateDouble4( M[2][1] );
-    M[2][2] = truncateDouble4( M[2][2] );
-    M[2][3] = truncateDouble4( M[2][3] );
+    if( soft ){
+        M[0][0] = round_to_near_one_zero( M[0][0], 5 );
+        M[0][1] = round_to_near_one_zero( M[0][1], 5 );
+        M[0][2] = round_to_near_one_zero( M[0][2], 5 );
+        M[0][3] = round_to_near_one_zero( M[0][3], 5 );
+        
+        M[1][0] = round_to_near_one_zero( M[1][0], 5 );
+        M[1][1] = round_to_near_one_zero( M[1][1], 5 );
+        M[1][2] = round_to_near_one_zero( M[1][2], 5);
+        M[1][3] = round_to_near_one_zero( M[1][3], 5 );
+        
+        M[2][0] = round_to_near_one_zero( M[2][0], 5 );
+        M[2][1] = round_to_near_one_zero( M[2][1], 5);
+        M[2][2] = round_to_near_one_zero( M[2][2], 5 );
+        M[2][3] = round_to_near_one_zero( M[2][3], 5 );
+        
+        M[3][0] = round_to_near_one_zero( M[3][0], 5 );
+        M[3][1] = round_to_near_one_zero( M[3][1], 5 );
+        M[3][2] = round_to_near_one_zero( M[3][2], 5 );
+        M[3][3] = round_to_near_one_zero( M[3][3], 5 );
+    }
+    else{
+        M[0][0] = truncateDouble5( M[0][0] );
+        M[0][1] = truncateDouble5( M[0][1] );
+        M[0][2] = truncateDouble5( M[0][2] );
+        M[0][3] = truncateDouble5( M[0][3] );
+        
+        M[1][0] = truncateDouble5( M[1][0] );
+        M[1][1] = truncateDouble5( M[1][1] );
+        M[1][2] = truncateDouble5( M[1][2] );
+        M[1][3] = truncateDouble5( M[1][3] );
+        
+        M[2][0] = truncateDouble5( M[2][0] );
+        M[2][1] = truncateDouble5( M[2][1] );
+        M[2][2] = truncateDouble5( M[2][2] );
+        M[2][3] = truncateDouble5( M[2][3] );
+        
+        M[3][0] = truncateDouble5( M[3][0] );
+        M[3][1] = truncateDouble5( M[3][1] );
+        M[3][2] = truncateDouble5( M[3][2] );
+        M[3][3] = truncateDouble5( M[3][3] );
+    }
 
-    M[3][0] = truncateDouble4( M[3][0] );
-    M[3][1] = truncateDouble4( M[3][1] );
-    M[3][2] = truncateDouble4( M[3][2] );
-    M[3][3] = truncateDouble4( M[3][3] );
 }
 
 

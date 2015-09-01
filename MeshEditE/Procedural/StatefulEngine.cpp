@@ -724,7 +724,7 @@ bool StatefulEngine::testMultipleTransformations(){
         }
         
         std::vector< SubsetResult > results;
-        EdgeCost treshold = make_pair( 1.5, 1.5 );
+        EdgeCost treshold = make_pair( 100.5, 100.5 );
 
         get_subsets( *mainStructure, transformedModules[i], current_matches, results, treshold );
         
@@ -780,7 +780,7 @@ bool StatefulEngine::testMultipleTransformations(){
                 }
             }
             
-            if( info.distance_alignment > 0.0001 ){ continue; }
+            if( info.distance_alignment > 0.0005 ){ continue; }
             
             info.calculateTotalCost( true );
             
@@ -957,6 +957,11 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 
                 truncateVec3d( m_pole_anis_dir_aligned );
                 
+                Plane alpha( H_pole_info.geometry.pos, H_pole_info.geometry.normal );
+                cout << "before projecting on plane " << m_pole_anis_dir_aligned << endl;
+                m_pole_anis_dir_aligned = alpha.projectDirection( m_pole_anis_dir_aligned );
+                cout << "after projecting on plane " << m_pole_anis_dir_aligned << endl;
+                
                 double  anis_angle              = get_angle( m_pole_anis_dir_aligned, H_pole_info.anisotropy.direction );
                 
                 
@@ -967,7 +972,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 << "results in " << m_pole_anis_dir_aligned << endl;
 
                 //test truncate anis_angle
-                anis_angle = truncateDouble2( anis_angle );
+                anis_angle = truncateDouble3( anis_angle );
                 
                 if( pinfo.anisotropy.is_bilateral && H_pole_info.anisotropy.is_bilateral ){
                     no_steps    = 2;
@@ -984,7 +989,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 // debug
                 assert(  dot( pinfo.anisotropy.direction, pinfo.geometry.normal ) - 1.0 < 0.0000001 );
                 assert(  dot( H_pole_info.anisotropy.direction, H_pole_info.geometry.normal ) - 1.0 < 0.0000001 );
-                Plane alpha( H_pole_info.geometry.pos, H_pole_info.geometry.normal );
+//                Plane alpha( H_pole_info.geometry.pos, H_pole_info.geometry.normal );
                 Plane beta ( moved_pole, moved_normal );
                 cout << " plane alpha - main structure " << endl << alpha.toString() << endl;
                 cout << " plane beta  - main structure " << endl << beta.toString() << endl;
@@ -1007,6 +1012,14 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             for ( int i = 0; i < no_steps; ++i, curr_angle +=step ) {
                 Mat4x4d rot = get_rotation_mat4d( H_pole_info.geometry.normal, curr_angle );
 //                truncateMat4x4d( rot );
+                Vec3d rot_result = mul_3D_dir( rot, m_pole_anis_dir_aligned );
+                double rot_result_dot = dot( rot_result, H_pole_info.anisotropy.direction );
+                if( anisotropy_distance( rot_result_dot ) > ARITH_EPS ){
+                    rot = get_rotation_mat4d( H_pole_info.geometry.normal, -curr_angle );
+                }
+
+                
+
 
                 Vec3d m_pole_step2 = rot.mul_3D_point( m_pole_step1 );
                 
@@ -1020,10 +1033,10 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 << "translation mat4 " << endl << tr_to_H_pole;
 #endif
                 
-                truncateMat4x4d( tr_to_H_pole );
-                truncateMat4x4d( t_align );
-                truncateMat4x4d( tr_to_H_pole );
-                truncateMat4x4d( t_origin );
+//                truncateMat4x4d( tr_to_H_pole );
+//                truncateMat4x4d( t_align );
+//                truncateMat4x4d( tr_to_H_pole );
+//                truncateMat4x4d( t_origin );
                 
                 T = tr_to_H_pole * rot * t_align * t_origin;
 
@@ -1042,10 +1055,23 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 Module& t_module = this->candidateModule->getTransformedModule( T );
                 // end - debug
                 double anis_dot_after_rotation = dot( t_module.getPoleInfo(M_pole).anisotropy.direction, H_pole_info.anisotropy.direction );
-//                if( anisotropy_distance( anis_dot_after_rotation ) > ARITH_EPS ){
+                if( fabs( 1.0 - anis_dot_after_rotation ) > 0.03 ){
                     cout << "pssss ehi check here! angle is : "
-                         << anis_dot_after_rotation << " # " << acos( anis_dot_after_rotation ) << endl;
-//                }
+                         << anis_dot_after_rotation << " # " << acos( anis_dot_after_rotation ) << endl
+                         << " direction history " << endl;
+                    Vec3d step1 = mul_3D_dir( t_origin, pinfo.anisotropy.direction );
+                    Vec3d step2 = mul_3D_dir( t_align, step1 );
+                    Vec3d step3 = mul_3D_dir( rot, step2);
+                    Vec3d step4 = mul_3D_dir( tr_to_H_pole, step3);
+                    
+                    cout
+                        << pinfo.anisotropy.direction << endl
+                        << step1 << endl
+                        << step2 << endl
+                        << step3 << endl
+                        << step4 << endl
+                        << anis_dot_after_rotation;
+                }
                 
                 // skip if there is a collision.
                 // need to improve it
