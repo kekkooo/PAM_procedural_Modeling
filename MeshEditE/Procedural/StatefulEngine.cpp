@@ -265,15 +265,6 @@ void StatefulEngine::buildOneRingOptimalAlignmentTransform( const Module& module
         module_pos.push_back( m->pos( module.getPoleInfo(match.first).anisotropy.directionID ));
         host_pos.push_back( m->pos( mainStructure->getPoleInfo( match.second ).anisotropy.directionID ));
         
-//        Walker module_walker = m->walker( match.first );
-//        Walker host_walker   = m->walker( match.second );
-//        for( ; !module_walker.full_circle(); module_walker = module_walker.circulate_vertex_ccw( )){
-//            module_pos.push_back( m->pos( module_walker.vertex()));
-//        }
-//        
-//        for( ; !host_walker.full_circle(); host_walker = host_walker.circulate_vertex_ccw( )){
-//            host_pos.push_back( m->pos( host_walker.vertex()));
-//        }
 
         
     }
@@ -949,7 +940,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 Mat4x4d tr_to_H_pole = translation_Mat4x4d( to_H_pole );
                 
                 Mat4x4d Tdir = ( tr_to_H_pole * t_align * t_origin );
-//                truncateMat4x4d( Tdir );
+                truncateMat4x4d( Tdir );
                 
                         m_pole_anis_dir_aligned = mul_3D_dir( Tdir, pinfo.anisotropy.direction );
                         moved_pole              = Tdir.mul_3D_point( pinfo.geometry.pos );
@@ -993,8 +984,8 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 Plane beta ( moved_pole, moved_normal );
                 cout << " plane alpha - main structure " << endl << alpha.toString() << endl;
                 cout << " plane beta  - main structure " << endl << beta.toString() << endl;
-                assert( alpha.OnPlane( H_pole_info.geometry.pos ));
-                assert( alpha.OnPlane( moved_pole ));
+//                assert( alpha.OnPlane( H_pole_info.geometry.pos ));
+//                assert( alpha.OnPlane( moved_pole ));
 //                assert( beta.OnPlane( moved_pole + m_pole_anis_dir_aligned ));
 //                assert( alpha.OnPlane( H_pole_info.geometry.pos + H_pole_info.anisotropy.direction ));
                 
@@ -1011,7 +1002,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             // build and save rotations
             for ( int i = 0; i < no_steps; ++i, curr_angle +=step ) {
                 Mat4x4d rot = get_rotation_mat4d( H_pole_info.geometry.normal, curr_angle );
-//                truncateMat4x4d( rot );
+                truncateMat4x4d( rot );
                 Vec3d rot_result = mul_3D_dir( rot, m_pole_anis_dir_aligned );
                 double rot_result_dot = dot( rot_result, H_pole_info.anisotropy.direction );
                 if( anisotropy_distance( rot_result_dot ) > ARITH_EPS ){
@@ -1033,14 +1024,14 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 << "translation mat4 " << endl << tr_to_H_pole;
 #endif
                 
-//                truncateMat4x4d( tr_to_H_pole );
-//                truncateMat4x4d( t_align );
-//                truncateMat4x4d( tr_to_H_pole );
-//                truncateMat4x4d( t_origin );
+                truncateMat4x4d( tr_to_H_pole );
+                truncateMat4x4d( t_align );
+                truncateMat4x4d( tr_to_H_pole );
+                truncateMat4x4d( t_origin );
                 
                 T = tr_to_H_pole * rot * t_align * t_origin;
 
-//                truncateMat4x4d( T );
+                truncateMat4x4d( T );
 
                 checkMat4( t_origin );
                 checkMat4( t_align );
