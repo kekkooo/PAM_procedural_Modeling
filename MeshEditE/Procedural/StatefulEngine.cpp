@@ -254,40 +254,26 @@ bool StatefulEngine::findSecondClosest( const VertexID &pole, const PoleGeometry
 
 /********** APPLICATION OF TRANSFORMATIONS **********/
 
-void StatefulEngine::buildOneRingOptimalAlignmentTransform( const Module& module, const std::vector<Match>& matches,
-                                                           CGLA::Mat4x4d& T ){
+
+
+void StatefulEngine::buildOptimalAlignmentTransform( const Module& module, const std::vector<Match>& matches, CGLA::Mat4x4d& T ){
     Mat4x4d r, t;
-    vector< Vec3d>     host_pos, module_pos;
+    vector< Vec3d>     host_pos, module_pos, host_normals, module_normals;
+    vector<double>     weights( matches.size(), 1.0 );
     for( auto& match : matches ){
-        module_pos.push_back( module.getPoleInfo( match.first ).geometry.pos );
-        host_pos.push_back(   mainStructure->getPoleInfo( match.second ).geometry.pos );
+        module_pos.push_back(       module.getPoleInfo( match.first ).geometry.pos );
+        module_normals.push_back(   module.getPoleInfo(match.first).geometry.normal );
+        host_pos.push_back(         mainStructure->getPoleInfo( match.second ).geometry.pos );
+        host_normals.push_back(     mainStructure->getPoleInfo(match.second).geometry.normal );
         
-        module_pos.push_back( m->pos( module.getPoleInfo(match.first).anisotropy.directionID ));
-        host_pos.push_back( m->pos( mainStructure->getPoleInfo( match.second ).anisotropy.directionID ));
-        
-
-        
-    }
-    svd_rigid_motion( module_pos, host_pos, r, t );
-    T = t * r;
-    truncateMat4x4d( T );
-    checkMat4( T );
-
-}
-
-
-
-void StatefulEngine::buildOptimalAlignmentTransform( const Module& module, const std::vector<Match>& matches,
-                                                    CGLA::Mat4x4d& T ){
-    Mat4x4d r, t;
-    vector< Vec3d>     host_pos, module_pos;
-    for( auto& match : matches ){
-        module_pos.push_back( module.getPoleInfo( match.first ).geometry.pos );
-        host_pos.push_back(   mainStructure->getPoleInfo( match.second ).geometry.pos );
+        const Vec3d& mn = module.getPoleInfo(match.first).geometry.normal;
+        const Vec3d& hn = mainStructure->getPoleInfo(match.second).geometry.normal;
     }
     
     if ( matches.size() > 1 ){
-        svd_rigid_motion( module_pos, host_pos, r, t );
+//        svd_rigid_motion( m   odule_pos, host_pos, r, t );
+        svd_6d_rigid_motion( module_pos, host_pos, module_normals, host_normals, r, t );
+
         T = t * r;
     }
     else{
@@ -365,23 +351,8 @@ void StatefulEngine::applyRandomTransform(){
     assert( candidateModule->poleList.size() > 0 );
 }
 
-void StatefulEngine::applyOneRingOptimalAlignmentTransform(){
-    Mat4x4d t;
-    buildOneRingOptimalAlignmentTransform( *candidateModule, best_match.getMatchInfo().matches, t );
-    
-#ifdef TRACE
-    cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
-#endif
-    
-    Module &tm = candidateModule->getTransformedModule( t );
-    candidateModule = &tm;
-    for( VertexID v : M_vertices ){
-        m->pos( v) = t.mul_3D_point( m->pos( v ));
-    }
-    assert( candidateModule->poleList.size() > 0 );
-}
 
-void StatefulEngine::applyOptimalAlignment(){
+void StatefulEngine::applyOptimalAlignment(  ){
     Mat4x4d t;
     
     buildOptimalAlignmentTransform( *candidateModule, best_match.getMatchInfo().matches, t );
@@ -464,9 +435,9 @@ void StatefulEngine::glueCurrent(){
     applyRandomTransform();
     candidateModule->updateDirections( *m );
     
-    applyOptimalAlignment();
+    applyOptimalAlignment( );
     candidateModule->updateDirections( *m );
-
+    
     alignModuleNormalsToHost();
     candidateModule->updateDirections( *m );
     
@@ -736,7 +707,8 @@ bool StatefulEngine::testMultipleTransformations(){
             buildOptimalAlignmentTransform( step1, info.subset_match, info.T_align );
             Module& step2 = step1.getTransformedModule( info.T_align );
             buildNormalsAlignmentTransform( step2, info.subset_match, info.T_normals );
-//            info.T_complete         = info.T_normals * info.T_align * info.T_random;
+
+            //            info.T_complete         = info.T_normals * info.T_align * info.T_random;
             mat4Copy( info.T_normals * info.T_align * info.T_random, info.T_complete );
             checkMat4( info.T_complete );
             truncateMat4x4d( info.T_complete );

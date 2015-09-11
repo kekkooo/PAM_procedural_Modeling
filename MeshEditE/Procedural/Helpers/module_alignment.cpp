@@ -190,6 +190,7 @@ void apply_optimal_alignment( Manifold &m, const set<VertexID> &module_vs, match
 //    return;
     
 //    save_intermediate_result(m, TEST_PATH , 1);
+    
     svd_rigid_motion( m, module_p, m, host_v, R, T );
     Mat4x4d t = T * R;
     for( auto mv : module_vs ) { m.pos( mv ) = t.mul_3D_point( m.pos( mv )); }

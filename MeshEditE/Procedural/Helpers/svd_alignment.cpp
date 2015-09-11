@@ -11,6 +11,10 @@
 #include <GEL/LinAlg/Vector.h>
 #include <GEL/LinAlg/LapackFunc.h>
 
+#include <Eigen/Dense>
+#include <Eigen/SVD>
+
+
 using namespace HMesh;
 using namespace LinAlg;
 using namespace std;
@@ -40,9 +44,9 @@ namespace Procedural {
         }
         
         
-        
-        void svd_rigid_motion( vector<Vec3d> &P, vector<Vec3d> &Q, Mat4x4d &rot, Mat4x4d &translation ){
+        void svd_rigid_motion( const vector<Vec3d> &P, const vector<Vec3d> &Q, const vector<double> &weights, Mat4x4d &rot, Mat4x4d &translation ){
             assert( P.size() == Q.size( ));
+            assert( P.size() == weights.size( ));
             int n = P.size();
             // assume weights are always 1
             // 1) find the centroid of the two point sets
@@ -57,8 +61,8 @@ namespace Procedural {
             
             // 2) compute the centered vectors
             vector< Vec3d > xs, ys;
-            for( Vec3d& Pi : P ) { xs.push_back( Pi - p ); }
-            for( Vec3d& Qi : Q ) { ys.push_back( Qi - q ); }
+            for( const Vec3d& Pi : P ) { xs.push_back( Pi - p ); }
+            for( const Vec3d& Qi : Q ) { ys.push_back( Qi - q ); }
             
             // 3) compute D * D covariance matrix S = XWY_t
             // X and Y are 3 * n matrices that have x_i and y_i as their columns
@@ -74,7 +78,7 @@ namespace Procedural {
                 Y_t.set( i, 1, ys[i][1] );
                 Y_t.set( i, 2, ys[i][2] );
                 
-                W.set( i, i, 1.0 );
+                W.set( i, i, weights[i] );
             }
             CMatrix S = X * W * Y_t;
             // it should be 3 * 3
@@ -185,5 +189,110 @@ namespace Procedural {
             Vec3d   t           = q - rot.mul_3D_point( p );
                     translation = CGLA::translation_Mat4x4d( t );
         }
+        
+        
+        void svd_6d_rigid_motion( const std::vector<CGLA::Vec3d> &P, const std::vector<CGLA::Vec3d> &Q,
+                                 const std::vector<CGLA::Vec3d> &Pn, const std::vector<CGLA::Vec3d> &Qn,
+                                 CGLA::Mat4x4d &rot, CGLA::Mat4x4d &translation ){
+            assert( P.size() == Q.size( ));
+            assert( P.size() == Pn.size( ));
+            assert( P.size() == Qn.size( ));
+            size_t n = P.size();
+            
+            // convert point and normal to a 6D vector
+            // and calculate the centroid of the 6D points
+            typedef Eigen::VectorXd vec6D;
+            std::vector<Eigen::VectorXd> ps, qs;
+            Eigen::VectorXd cps, cqs;
+            cps << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+            cqs << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+            
+            for( int i = 0; i < P.size(); ++i ){
+                Eigen::VectorXd vp, vq;
+                const CGLA::Vec3d& pi   = P.at( i );
+                const CGLA::Vec3d& pni  = Pn.at( i );
+                const CGLA::Vec3d& qi   = Q.at( i );
+                const CGLA::Vec3d& qni  = Qn.at( i );
+                
+                vp << pi[0], pi[1], pi[2], pni[0], pni[1], pni[2];
+                vq << qi[0], qi[1], qi[2], qni[0], qni[1], qni[2];
+                cps = cps + vp;
+                cqs = cqs + vq;
+            }
+            
+            cps /= static_cast<double>( n );
+            cqs /= static_cast<double>( n );
+            
+            // 2) compute the centered vectors
+            std::vector<Eigen::VectorXd> xs, ys;
+            for( const auto& pi : ps) { Eigen::VectorXd xi = pi - cps; xs.push_back( xi ); }
+            for( const auto& qi : qs) { Eigen::VectorXd yi = qi - cqs; ys.push_back( yi ); }
+            
+            // 3) compute D * D covariance matrix S = XWY_t
+            // X and Y are 6 * n matrices that have x_i and y_i as their columns
+            // and W is diag( w0, w1, ..., wn ) ( in my case is I )
+
+            typedef Eigen::Matrix<double, 6,6> Mat6x6d;
+            Mat6x6d X, Y_t;
+            Mat6x6d W = Mat6x6d::Identity();
+            // set the X, Y matrices
+            for( int i = 0; i < n; ++i )
+            {
+                X( 0, i ) = xs[i]( 0 );
+                X( 1, i ) = xs[i]( 1 );
+                X( 2, i ) = xs[i]( 2 );
+                X( 3, i ) = xs[i]( 3 );
+                X( 4, i ) = xs[i]( 4 );
+                X( 5, i ) = xs[i]( 5 );
+                
+                Y_t( i, 0 ) = ys[i]( 0 );
+                Y_t( i, 1 ) = ys[i]( 1 );
+                Y_t( i, 2 ) = ys[i]( 2 );
+                Y_t( i, 3 ) = ys[i]( 3 );
+                Y_t( i, 4 ) = ys[i]( 4 );
+                Y_t( i, 5 ) = ys[i]( 5 );
+            }
+
+            
+            Mat6x6d S = X * W * Y_t;
+            // it should be 6 * 6
+
+            Mat6x6d U, Sigma, V;
+            Mat6x6d U_t, V_t;
+            
+            Eigen::JacobiSVD<Mat6x6d> svd( S, Eigen::ComputeFullU | Eigen::ComputeFullV );
+            
+            U = svd.matrixU();
+            V = svd.matrixV();
+            U_t = U.transpose();
+            V_t = V.transpose();
+
+            Mat6x6d V_U_t = V * U_t;
+            
+            double det_V_U_t = V_U_t.determinant();
+            
+            Mat6x6d M = Mat6x6d::Identity();
+            M( 5, 5 ) = det_V_U_t;
+            Mat6x6d R = V * M * U_t;
+            
+            
+            // go back to CGLA
+            rot = CGLA::Mat4x4d( 0.0 );
+            for( int i = 0; i < 3; ++i )
+            {
+                for( int j = 0; j < 3; ++j)
+                {
+                    rot[i][j] = R( i, j );
+                }
+            }
+            rot[3][3] = 1;
+            
+            Vec3d CGLA_cqs( cqs( 0 ), cqs( 1 ), cqs( 2 ));
+            Vec3d CGLA_cps( cps( 0 ), cps( 1 ), cps( 2 ));
+            
+            Vec3d   t   = CGLA_cqs - rot.mul_3D_point( CGLA_cps );
+            translation = CGLA::translation_Mat4x4d( t );
+        }
+
 
 }}

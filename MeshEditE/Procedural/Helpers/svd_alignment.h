@@ -19,7 +19,12 @@ namespace Procedural {
 
         double Det( LinAlg::CMatrix m );
         
-        void svd_rigid_motion( std::vector<CGLA::Vec3d> &P, std::vector<CGLA::Vec3d> &Q,
+        void svd_6d_rigid_motion( const std::vector<CGLA::Vec3d> &P, const std::vector<CGLA::Vec3d> &Q,
+                                  const std::vector<CGLA::Vec3d> &Pn, const std::vector<CGLA::Vec3d> &Qn,
+                                  CGLA::Mat4x4d &rot, CGLA::Mat4x4d &translation );
+        
+        void svd_rigid_motion( const std::vector<CGLA::Vec3d> &P, const std::vector<CGLA::Vec3d> &Q,
+                               const std::vector<double> &weights,
                                CGLA::Mat4x4d &rot, CGLA::Mat4x4d &translation );
 
         /// calculate the rigid transformation that aligns P w.r.t Q

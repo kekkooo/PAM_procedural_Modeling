@@ -83,12 +83,12 @@ namespace Procedural{
         set<VertexID> glued_h_poles;
         
         // for assert purposes
-        size_t  old_free_poles_size = freePoles.size(),
+        size_t  old_free_poles_size  = freePoles.size(),
                 old_glued_poles_size = gluedPoles.size();
         
         for( Match match : matches){
             assert( find( m.poleList.begin(), m.poleList.end(), match.first ) != m.poleList.end( ));
-            assert( find( freePoles.begin(), freePoles.end(), match.second ) != freePoles.end( ));
+            assert( find( freePoles.begin(), freePoles.end(), match.second )  != freePoles.end( ));
             glued_m_poles.insert( match.first );
             glued_h_poles.insert( match.second );
         }
@@ -102,14 +102,13 @@ namespace Procedural{
                 freePolesSet.insert( v );
                 freePoleInfoMap[v]              = m.getPoleInfo( v );
                 freePoleInfoMap[v].geometry.pos = mani.pos( v );
-                CGLA::Vec3d normal = vertex_normal( mani, v );
+                CGLA::Vec3d normal              = vertex_normal( mani, v );
                 normal.normalize();
                 freePoleInfoMap[v].geometry.normal = normal ;
                 truncateVec3d( freePoleInfoMap[v].geometry.normal );
-                
-
             }
         }
+        
         // remove from freePoles the host poles involved  and put them into gluedPoles
         for( VertexID v : glued_h_poles ){
             freePoles.erase( remove(freePoles.begin(), freePoles.end(), v));
@@ -118,6 +117,7 @@ namespace Procedural{
             assert( freePoleInfoMap.count(v) > 0 );
             freePoleInfoMap.erase( v );
         }
+        
         assert( glued_h_poles.size() == glued_m_poles.size() );
         assert( freePoles.size() == freePolesSet.size());
         assert( old_glued_poles_size + glued_m_poles.size() + glued_h_poles.size() == gluedPoles.size() );
@@ -137,11 +137,6 @@ namespace Procedural{
         /***** DEBUG AND SANITY CHECK ****/
         
         cout << glued_m_poles.size() << "-valent glueing at time : " << time << endl;
-        /*
-        for( const Match& match : matches ){
-            cout << "( " << match.first << ", " << match.second << " )  # ";
-        }
-         */
         cout << endl;
         cout << " num of free poles " << freePoles.size() << " # set : " << freePolesSet.size();
         cout << " num of glued poles " << gluedPoles.size() << endl;
@@ -151,8 +146,6 @@ namespace Procedural{
 
         skel->merge( m.getSkeleton(), matches );
 //        skel->saveToFile( "//Users//francescousai//Desktop//example.skel" );
-        
-
     }
     
     bool MainStructure::isColliding(const Module &m) const{

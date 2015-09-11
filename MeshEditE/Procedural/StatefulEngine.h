@@ -208,7 +208,6 @@ class StatefulEngine{
             void            glueModuleToHost();
             void            consolidate();
     
-            void            applyOneRingOptimalAlignmentTransform();
             void            applyRandomTransform();
             void            applyOptimalAlignment( );
             void            alignModuleNormalsToHost( );
@@ -245,9 +244,6 @@ class StatefulEngine{
             void            buildNormalsAlignmentTransform( const Module& module, const std::vector<Match>& matches,
                                                             CGLA::Mat4x4d& T );
     
-            void            buildOneRingOptimalAlignmentTransform( const Module& module, const std::vector<Match>& matches,
-                                                                   CGLA::Mat4x4d& T );
-
             void            debugColorization();
 
 

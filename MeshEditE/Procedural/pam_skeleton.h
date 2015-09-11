@@ -284,6 +284,19 @@ namespace Procedural{
         
         const ShapeBall& getCdHierarchy() const { return * cd_hierarchy; }
         
+        CGLA::Vec3d getSkelLeafDirection( HMesh::VertexID v ){
+            assert( poleToNode.count(v) > 0);
+            NodeID id = poleToNode[v];
+            assert( nodes[id].ID == id );
+            const SkelNode& leaf = nodes.at( id );
+            assert( leaf.neighbors.size() == 1 || nodes.size() == 1 );
+            const SkelNode& prev = nodes.at( *(leaf.neighbors.begin( )));
+            
+            CGLA::Vec3d dir = leaf.ball.center - prev.ball.center;
+            dir.normalize();
+            return dir;
+        }
+        
         void build( HMesh::Manifold& m, const std::set<HMesh::VertexID> &poleSet ){
             
             NodeID nodeID = 0;
@@ -641,7 +654,7 @@ namespace Procedural{
                 assert( poleToNode.count( item.second ) > 0 );
                 assert( other.poleToNode.count( item.first ) > 0 );
                 
-                this_pole_nodes.push_back( poleToNode[item.second] );
+                this_pole_nodes.push_back(  poleToNode[item.second] );
                 other_pole_nodes.push_back( other.poleToNode.at( item.first ));
             }
             
