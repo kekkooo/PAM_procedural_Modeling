@@ -301,9 +301,12 @@ void save_all_configurations( MeshEditor *me, const std::vector< std::string > &
     long ms = millis();
 
     ts.clear();
-    s.buildTransformationList( ts );
     
-    if( ts.size() <= 0 ){ cout << "there are no transformations available"; return; }
+//    s.buildTransformationList( ts );
+    s.testMultipleTransformations();
+    
+//    if( ts.size() <= 0 ){ cout << "there are no transformations available"; return; }
+    if( s.subsetsInfo.size() <= 0 ) { cout << "there are no transformations available"; return; }
     stringstream oss;
     oss << curr_toolbox << '_' << ms;
     string folder_name = oss.str();
@@ -312,9 +315,15 @@ void save_all_configurations( MeshEditor *me, const std::vector< std::string > &
     
     
     size_t count = 0;
-    for( const auto& T : ts ){
+//    for( const auto& T : ts ){
+    for( const auto& info : s.subsetsInfo ){
+        
+        auto& T = info.T_complete;
+    
         Manifold *tm = new Manifold();
         VertexIDRemap ___, ____;
+        
+        
         
         // copy geometry to clean manifold
         Procedural::Helpers::add_manifold( *tm, *(m->m), ___, ___, M_vertices );
@@ -330,7 +339,7 @@ void save_all_configurations( MeshEditor *me, const std::vector< std::string > &
         Procedural::Helpers::add_manifold( *(s.m), *(tm), ___, ___, M_vertices );
         //save
         stringstream oss;
-        oss << full_path << "/" << count << ".obj";
+        oss << full_path << "/" << count << "_" << info.subset_match.size() << ".obj";
         obj_save( oss.str(), *s.m );
 //        usleep(1000000);
 

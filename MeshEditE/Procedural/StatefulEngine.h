@@ -43,10 +43,10 @@ typedef std::map< HMesh::VertexID, HMesh::VertexID >                    VertexMa
 typedef GEL_Geometry::KDTree< CGLA::Vec3d, HMesh::VertexID >            kD_Tree;
         
 typedef std::pair< std::vector< Procedural::Match>,
-                                Procedural::GraphMatch::EdgeCost >      matchesAndCost;
-typedef std::pair<HMesh::VertexID, double>                              IdDistPair;
-typedef std::vector<IdDistPair>                                         IDsDistsVector;
-typedef std::pair<double, GraphMatch::EdgeCost>                         ExtendedCost;
+                                Procedural::GraphMatch::EdgeCost >          matchesAndCost;
+typedef std::pair<HMesh::VertexID, double>                                  IdDistPair;
+typedef std::vector<IdDistPair>                                             IDsDistsVector;
+typedef std::pair<double, GraphMatch::EdgeCost>                             ExtendedCost;
         
 inline bool operator <( const ExtendedCost& l, const ExtendedCost& r)
 {
@@ -99,7 +99,7 @@ struct CandidateSubsetInfo{
     Module                           transformed_module;
     CGLA::Mat4x4d                    T_random;
     CGLA::Mat4x4d                    T_align;
-    CGLA::Mat4x4d                    T_normals;
+//    CGLA::Mat4x4d                    T_normals;
     CGLA::Mat4x4d                    T_complete;
     double                           distance_cost              = 0.0;
     double                           distance_normal_angle      = 0.0;
@@ -160,7 +160,7 @@ struct CandidateSubsetInfo{
 
 
 private :
-    double                           total_cost                 = -1.0;
+    double total_cost   = -1.0;
 };
         
 struct CandidateInfo{

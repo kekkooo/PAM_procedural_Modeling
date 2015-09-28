@@ -58,6 +58,7 @@ namespace Procedural {
             assert( tb[i].HasMember( "probability" ));
             assert( tb[i].HasMember( "no_pieces" ));
             assert( tb[i].HasMember( "no_glueings" ));
+            assert( tb[i].HasMember( "connect_to_self" ));
             
             string mFilename    = tb[i]["filename"].GetString();
             string mConfig      = tb[i]["config"].GetString();
@@ -65,6 +66,7 @@ namespace Procedural {
             double mProbability = tb[i]["probability"].GetDouble();
             int    mNoPieces    = tb[i]["no_pieces"].GetInt();
             int    mNoGlueings  = tb[i]["no_glueings"].GetInt();
+            bool   mSelfConnect = tb[i]["connect_to_self"].GetBool();
             
             // get the name of the module
             string mName = Procedural::Helpers::Misc::get_filename_stem( mFilename );

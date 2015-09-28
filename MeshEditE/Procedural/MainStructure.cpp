@@ -61,13 +61,17 @@ namespace Procedural{
         for( int i = 0; i < freePoles.size(); ++i ){
             
             VertexID newID      = remapper[freePoles[i]];
-            VertexID aniID      = freePoleInfoMap[freePoles[i]].anisotropy.directionID;
-            VertexID newAniID   = remapper[aniID];
-            
             assert( newID    != InvalidVertexID );
-            assert( newAniID != InvalidVertexID );
             p[newID] = freePoleInfoMap[freePoles[i]];
-            p[newID].anisotropy.directionID = newAniID;
+            
+            if( freePoleInfoMap[freePoles[i]].anisotropy.is_defined ){
+                VertexID aniID      = freePoleInfoMap[freePoles[i]].anisotropy.directionID;
+                VertexID newAniID   = remapper[aniID];
+                assert( newAniID != InvalidVertexID );
+                p[newID].anisotropy.directionID = newAniID;
+            }
+
+            
             freePoles[i] = newID;
             freePolesSet.insert( newID );
         }
@@ -174,9 +178,11 @@ namespace Procedural{
             truncateVec3d( freePoleInfoMap[v].geometry.normal );
             freePoleInfoMap[v].geometry.pos = mani.pos( v ) ;
             
-            Module::getPoleAnisotropy( freePoleInfoMap[v].geometry.pos, freePoleInfoMap[v].geometry.normal,
-                                       mani.pos( freePoleInfoMap[v].anisotropy.directionID ),
-                                       freePoleInfoMap[v].anisotropy.direction );
+            if( freePoleInfoMap[v].anisotropy.is_defined ){
+                Module::getPoleAnisotropy( freePoleInfoMap[v].geometry.pos, freePoleInfoMap[v].geometry.normal,
+                                           mani.pos( freePoleInfoMap[v].anisotropy.directionID ),
+                                           freePoleInfoMap[v].anisotropy.direction );
+            }
             
         }
 

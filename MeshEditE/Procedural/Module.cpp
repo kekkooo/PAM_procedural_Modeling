@@ -166,11 +166,13 @@ void Module::updateDirections( const HMesh::Manifold& main_mesh ){
         truncateVec3d( poleInfoMap[v].geometry.normal );
         poleInfoMap[v].geometry.pos = main_mesh.pos( v ) ;
         
-        getPoleAnisotropy( poleInfoMap[v].geometry.pos, poleInfoMap[v].geometry.normal,
-                           main_mesh.pos( poleInfoMap[v].anisotropy.directionID ),
-                           poleInfoMap[v].anisotropy.direction );
+        if( poleInfoMap[v].anisotropy.is_defined ){
+            getPoleAnisotropy( poleInfoMap[v].geometry.pos, poleInfoMap[v].geometry.normal,
+                               main_mesh.pos( poleInfoMap[v].anisotropy.directionID ),
+                               poleInfoMap[v].anisotropy.direction );
+        }
 
-    }        
+    }
 }
     
 Module& Module::getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geometry )
@@ -253,17 +255,19 @@ void Module::reAlignIDs(HMesh::VertexIDRemap &remapper){
     PoleInfoMap p;
     for( int i = 0; i < poleList.size(); ++i ){
         VertexID oldID = poleList[i];
-        VertexID aniID = poleInfoMap[oldID].anisotropy.directionID;
         
-        VertexID newAnisID = remapper[aniID];
-        VertexID newID      = remapper[oldID];
-        
-        assert( newAnisID != InvalidVertexID );
+        VertexID newID = remapper[oldID];
         assert( newID != InvalidVertexID );
         
         p[newID]       = poleInfoMap[poleList[i]];
         poleList[i]    = newID;
-        p[newID].anisotropy.directionID = newAnisID;
+        
+        if( poleInfoMap[oldID].anisotropy.is_defined){
+            VertexID aniID = poleInfoMap[oldID].anisotropy.directionID;
+            VertexID newAnisID = remapper[aniID];
+            assert( newAnisID != InvalidVertexID );
+            p[newID].anisotropy.directionID = newAnisID;
+        }
     }
     poleInfoMap = std::move( p );
     Skeleton* temp = skeleton;
@@ -289,7 +293,7 @@ const Skeleton& Module::getSkeleton() const{
 bool Module::poleCanMatch( const PoleInfo& p1, const PoleInfo& p2){
 //    cout << "testing : " << p1.moduleType << " -> " << p1.original_id << " with "
 //                         << p2.moduleType << " -> " << p2.original_id << endl;
-
+    
     if( !p1.isActive ){
 //        cout << "KO ( " << p1.moduleType << ", " << p1.original_id << ") is not active" << endl;
         return false;

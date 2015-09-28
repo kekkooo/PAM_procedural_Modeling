@@ -437,9 +437,10 @@ void StatefulEngine::glueCurrent(){
     
     applyOptimalAlignment( );
     candidateModule->updateDirections( *m );
+
     
-    alignModuleNormalsToHost();
-    candidateModule->updateDirections( *m );
+//    alignModuleNormalsToHost();
+//    candidateModule->updateDirections( *m );
     
     // glue_matches
     Helpers::ModuleAlignment::glue_matches( *m, best_match.getMatchInfo().matches );
@@ -690,7 +691,11 @@ bool StatefulEngine::testMultipleTransformations(){
 
         get_subsets( *mainStructure, transformedModules[i], current_matches, results, treshold );
         
-        if( results.size() == 0 ){ /* std::cout << "result set is empty" << endl; */ continue; }
+//        if( results.size() == 0 ){ /* std::cout << "result set is empty" << endl; */ continue; }
+
+        // debug!!!!
+        if( results.size() < M_to_H.size() ){ /* std::cout << "result set is empty" << endl; */ continue; }
+
         // LEGACY
         assert( results.size() == 1 || results.front().matches.size() > results.back().matches.size( ));
 
@@ -703,22 +708,33 @@ bool StatefulEngine::testMultipleTransformations(){
             info.subset_match = item.matches;
             assert( info.subset_match.size() == item.matches.size( ));
             info.T_random           = Ts[i];
+            
+            //            Module& step1 = transformedModules[i];
+            //            buildOptimalAlignmentTransform( step1, info.subset_match, info.T_align );
+            //
+            //            Module& step2 = step1.getTransformedModule( info.T_align );
+            //            buildNormalsAlignmentTransform( step2, info.subset_match, info.T_normals );
+            
             Module& step1 = transformedModules[i];
             buildOptimalAlignmentTransform( step1, info.subset_match, info.T_align );
-            Module& step2 = step1.getTransformedModule( info.T_align );
-            buildNormalsAlignmentTransform( step2, info.subset_match, info.T_normals );
+            
+            mat4Copy( info.T_align * info.T_random, info.T_complete );
 
-            //            info.T_complete         = info.T_normals * info.T_align * info.T_random;
-            mat4Copy( info.T_normals * info.T_align * info.T_random, info.T_complete );
+//            mat4Copy( info.T_normals * info.T_align * info.T_random, info.T_complete );
+
             checkMat4( info.T_complete );
             truncateMat4x4d( info.T_complete );
-            info.transformed_module = info.transformed_module = step2.getTransformedModule( info.T_normals );
+
+//            info.transformed_module = step2.getTransformedModule( info.T_normals );
+
+            info.transformed_module = step1.getTransformedModule( info.T_align );
+
             // calculate costs
             cout <<  "\t *** subset " << count++ << endl;
             for( Match m : item.matches ){
                 
-                PoleInfo module_pole_info = info.transformed_module.getPoleInfo( m.first );
-                PoleInfo host_pole_info   = mainStructure->getPoleInfo( m.second );
+                const PoleInfo& module_pole_info = info.transformed_module.getPoleInfo( m.first );
+                const PoleInfo& host_pole_info   = mainStructure->getPoleInfo( m.second );
                 
                 info.module_ball_radius = candidateModule->bsphere_radius;
                 info.distance_cost +=
@@ -743,9 +759,16 @@ bool StatefulEngine::testMultipleTransformations(){
                 }
             }
             
-            if( info.distance_alignment > 0.0005 ){ continue; }
+//            if( info.distance_alignment > 0.0005 ){ continue; }
             
             info.calculateTotalCost( true );
+
+            subsetsInfo.push_back( info );
+            
+            cout << count << ") " << endl
+                 << info.distance_cost << ", "
+                << info.distance_alignment << ", "
+                << info.distance_normal_angle << endl;
             
             
             // save the less expensive subsets clustered by valence.
@@ -766,7 +789,7 @@ bool StatefulEngine::testMultipleTransformations(){
             << " with cost : ( " << info.distance_cost
             << ", " << info.distance_normal_angle
             << ", " << info.distance_alignment << " ) => "
-            << info.getTotalCost( )  << endl
+            << info.getTotalCost( )  << endl << endl
             << "****************************************" << endl   ;
             
         }
@@ -891,6 +914,7 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
             
             cout << " testing  : ( " << pinfo.original_id << ", " << H_pole_info.original_id << " )" << endl;
             
+            // this can be changed to use the new 6d svd rotation
             // align normals
             Mat4x4d t_align = alt_get_alignment_for_2_vectors( pinfo.geometry.normal, H_pole_info.geometry.normal );
             
@@ -980,9 +1004,6 @@ void StatefulEngine::buildTransformationList( vector< Mat4x4d> &transformations 
                 if( anisotropy_distance( rot_result_dot ) > ARITH_EPS ){
                     rot = get_rotation_mat4d( H_pole_info.geometry.normal, -curr_angle );
                 }
-
-                
-
 
                 Vec3d m_pole_step2 = rot.mul_3D_point( m_pole_step1 );
                 

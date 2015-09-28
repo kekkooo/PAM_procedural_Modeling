@@ -16,11 +16,12 @@
 namespace Procedural{
     
     struct ModuleInfo{
-        Module*         m           = NULL;
-        float           probability = 1.0;
-        size_t          no_pieces   = 0;
+        Module*         m                   = NULL;
+        float           probability         = 1.0;
+        size_t          no_pieces           = 0;
         std::string     name;
-        Moduletype      type        = 0;
+        Moduletype      type                = 0;
+        bool            can_connect_to_self = true;
     };
     
 class Toolbox{

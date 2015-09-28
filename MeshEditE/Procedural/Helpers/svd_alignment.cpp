@@ -192,8 +192,8 @@ namespace Procedural {
         
         
         void svd_6d_rigid_motion( const std::vector<CGLA::Vec3d> &P, const std::vector<CGLA::Vec3d> &Q,
-                                 const std::vector<CGLA::Vec3d> &Pn, const std::vector<CGLA::Vec3d> &Qn,
-                                 CGLA::Mat4x4d &rot, CGLA::Mat4x4d &translation ){
+                                  const std::vector<CGLA::Vec3d> &Pn, const std::vector<CGLA::Vec3d> &Qn,
+                                  CGLA::Mat4x4d &rot, CGLA::Mat4x4d &translation ){
             assert( P.size() == Q.size( ));
             assert( P.size() == Pn.size( ));
             assert( P.size() == Qn.size( ));
@@ -203,30 +203,73 @@ namespace Procedural {
             // and calculate the centroid of the 6D points
             typedef Eigen::VectorXd vec6D;
             std::vector<Eigen::VectorXd> ps, qs;
-            Eigen::VectorXd cps, cqs;
-            cps << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-            cqs << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+            Eigen::VectorXd cps(6), cqs(6);
+            cps.setZero();
+            cqs.setZero();
+//            cps << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+//            cqs << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
             
             for( int i = 0; i < P.size(); ++i ){
-                Eigen::VectorXd vp, vq;
+                Eigen::VectorXd vp(6), vq(6);
                 const CGLA::Vec3d& pi   = P.at( i );
                 const CGLA::Vec3d& pni  = Pn.at( i );
                 const CGLA::Vec3d& qi   = Q.at( i );
                 const CGLA::Vec3d& qni  = Qn.at( i );
                 
+                // the normal of vq should be opposed, since we want them to be aligned and opposite
                 vp << pi[0], pi[1], pi[2], pni[0], pni[1], pni[2];
-                vq << qi[0], qi[1], qi[2], qni[0], qni[1], qni[2];
+//                vq << qi[0], qi[1], qi[2], qni[0], qni[1], qni[2];
+                vq << qi[0], qi[1], qi[2], -qni[0], -qni[1], -qni[2];
+                
+                ps.push_back( vp );
+                qs.push_back( vq );
+                
                 cps = cps + vp;
+                
                 cqs = cqs + vq;
+
             }
             
             cps /= static_cast<double>( n );
             cqs /= static_cast<double>( n );
             
+//            Vec3d cp_normal( cps( 3 ), cps( 4 ), cps( 5 ));
+//            cp_normal.normalize();
+//            cps( 3 ) = cp_normal[0];
+//            cps( 4 ) = cp_normal[1];
+//            cps( 5 ) = cp_normal[2];
+//
+//            Vec3d cq_normal( cqs( 3 ), cqs( 4 ), cqs( 5 ));
+//            cq_normal.normalize();
+//            cqs( 3 ) = cq_normal[0];
+//            cqs( 4 ) = cq_normal[1];
+//            cqs( 5 ) = cq_normal[2];
+
+            
             // 2) compute the centered vectors
             std::vector<Eigen::VectorXd> xs, ys;
-            for( const auto& pi : ps) { Eigen::VectorXd xi = pi - cps; xs.push_back( xi ); }
-            for( const auto& qi : qs) { Eigen::VectorXd yi = qi - cqs; ys.push_back( yi ); }
+            for( const auto& pi : ps) {
+                Eigen::VectorXd xi = pi - cps;
+
+//                Vec3d xi_normal( xi( 3 ), xi( 4 ), xi( 5 ));
+//                xi_normal.normalize();
+//                xi( 3 ) = xi_normal[0];
+//                xi( 4 ) = xi_normal[1];
+//                xi( 5 ) = xi_normal[2];
+
+                xs.push_back( xi );
+            }
+            for( const auto& qi : qs) {
+                Eigen::VectorXd yi = qi - cqs;
+                
+//                Vec3d yi_normal( yi( 3 ), yi( 4 ), yi( 5 ));
+//                yi_normal.normalize();
+//                yi( 3 ) = yi_normal[0];
+//                yi( 4 ) = yi_normal[1];
+//                yi( 5 ) = yi_normal[2];
+
+                ys.push_back( yi );
+            }
             
             // 3) compute D * D covariance matrix S = XWY_t
             // X and Y are 6 * n matrices that have x_i and y_i as their columns
