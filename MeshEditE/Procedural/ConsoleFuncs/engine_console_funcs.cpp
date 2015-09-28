@@ -268,6 +268,24 @@ void step_toolbox( MeshEditor *me, const std::vector< std::string > &args ){
     toolbox_handle_result( t, result );
 }
 
+void deactivatePole( MeshEditor *me, const std::vector< std::string > &args ){
+
+    Manifold& m = me->active_mesh();
+    StatefulEngine &s = StatefulEngine::getCurrentEngine();
+    
+    
+    // consider only selected vertices that are not poles
+    for( VertexIDIterator vit = m.vertices_begin(); vit != m.vertices_end(); ++vit)
+    {
+        if ( me->get_vertex_selection()[*vit] && is_pole( m, *vit ))
+        {
+//            s.mainStructure->freePoleInfoMap[*vit].isActive = false;
+            s.mainStructure->deactivatePole( *vit );
+        }
+    }
+
+}
+
 
 
 
@@ -435,7 +453,6 @@ void print_pole_info( MeshEditor *me, const std::vector< std::string > &args ){
             me->printf( s.getMainStructure().getPoleInfo( id ).toString().c_str() );
         }
     }
-
 }
 
 namespace Procedural{
@@ -453,6 +470,8 @@ void register_engine_console_funcs( GLGraphics::MeshEditor* me )
     me->register_console_function( "engine.toolbox.load", load_toolbox, "engine.toolbox.load" );
     me->register_console_function( "engine.toolbox.empty", empty_toolbox, "engine.toolbox.empty" );
     me->register_console_function( "engine.toolbox.step", step_toolbox, "engine.toolbox.step" );
+    
+    me->register_console_function( "engine.toolbox.deactivate_pole", deactivatePole, "engine.toolbox.deactivate_pole" );
 
     
     // experimental - debug purposes

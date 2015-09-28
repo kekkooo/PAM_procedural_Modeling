@@ -53,6 +53,10 @@ public:
     const Procedural::PoleSet&  getFreePoleSet() const;
     const PoleInfo&             getPoleInfo( HMesh::VertexID p ) const;
     inline const PoleInfoMap&   getPoleInfoMap() const{ return freePoleInfoMap;}
+    inline void deactivatePole( HMesh::VertexID v ){
+        assert( freePoleInfoMap.count( v ) > 0 );
+        freePoleInfoMap[v].isActive = false;
+    }
     
 private:
 /************************************************

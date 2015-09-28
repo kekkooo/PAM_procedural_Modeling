@@ -72,7 +72,7 @@ namespace Procedural {
             string mName = Procedural::Helpers::Misc::get_filename_stem( mFilename );
 
             ModuleInfo* mInfo = new ModuleInfo;
-            mInfo->m                    = new Module( mFilename, mConfig, mType);
+            mInfo->m                    = new Module( mFilename, mConfig, mType, mSelfConnect );
             mInfo->m->no_of_glueings    = mNoGlueings;
             mInfo->no_pieces            = mNoPieces;
             mInfo->probability          = mProbability;

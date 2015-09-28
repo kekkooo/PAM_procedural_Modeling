@@ -89,6 +89,7 @@ struct PoleInfo{
     int                 age;                 // pole's starting age
     bool                isFree      = true;
     bool                isActive    = true;
+    bool                module_can_connect_to_self = true;
     bool                can_connect_to_self = true; /* can connect to an instance of the 
                                                      same pole on another module of the 
                                                      same exact type ( same file ) */
@@ -118,7 +119,7 @@ class Module{
 public:
          // this will instantiate the internal manifold structure and pole info using obj_load
         Module () { m = NULL; }
-        Module( std::string path, std::string config, Moduletype mType );
+        Module( std::string path, std::string config, Moduletype mType, bool module_can_connect_to_self = true );
         Module( HMesh::Manifold &manifold, Moduletype mType );
     
         Module& getTransformedModule( const CGLA::Mat4x4d &T, bool transform_geometry = false );
@@ -143,7 +144,7 @@ public:
         void sanityCheck();
     
 private:
-    void    BuildPoleInfo();
+    void    BuildPoleInfo( bool module_can_connect_to_self = true );
     void    LoadPoleConfig( std::string path );
 
     

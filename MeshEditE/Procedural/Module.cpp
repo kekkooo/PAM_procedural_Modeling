@@ -29,7 +29,7 @@ using namespace Procedural::Geometry;
 
 namespace Procedural{
 
-Module::Module( std::string path, std::string config, Moduletype mType ){
+Module::Module( std::string path, std::string config, Moduletype mType, bool module_can_connect_to_self ){
     cout << "trying to load file : " << path << endl;
     ifstream f( path );
     assert( f.good() );
@@ -40,7 +40,7 @@ Module::Module( std::string path, std::string config, Moduletype mType ){
     obj_load( path, *this->m );
     bsphere( *m, bsphere_center, bsphere_radius );
     this->type = mType;
-    BuildPoleInfo();
+    BuildPoleInfo( module_can_connect_to_self );
     LoadPoleConfig( config );
     
     this->skeleton = new Skeleton();
@@ -56,10 +56,11 @@ Module::Module( Manifold &manifold, Moduletype mType ){
     this->bsphere_center = centroid;
     this->bsphere_radius = radius;
     
-    BuildPoleInfo();
+    BuildPoleInfo( );
     
     this->skeleton = new Skeleton();
     this->skeleton->build( *m, this->poleSet );
+
 }
 
 void Module::LoadPoleConfig( std::string path ){
@@ -125,7 +126,7 @@ void Module::LoadPoleConfig( std::string path ){
 
 }
     
-void Module::BuildPoleInfo(){
+void Module::BuildPoleInfo( bool module_can_connect_to_self){
     
     assert( m != NULL );
     
@@ -136,6 +137,7 @@ void Module::BuildPoleInfo(){
             pi.original_id      = vid;
             pi.geometry.valence = valence( *m, vid );
             pi.geometry.pos     = m->pos( vid );
+            pi.module_can_connect_to_self = module_can_connect_to_self;
             Vec3d n             = vertex_normal( *m, vid );
             n.normalize();
             truncateVec3d( n );
@@ -294,32 +296,32 @@ bool Module::poleCanMatch( const PoleInfo& p1, const PoleInfo& p2){
 //    cout << "testing : " << p1.moduleType << " -> " << p1.original_id << " with "
 //                         << p2.moduleType << " -> " << p2.original_id << endl;
     
-    if( !p1.isActive ){
-//        cout << "KO ( " << p1.moduleType << ", " << p1.original_id << ") is not active" << endl;
-        return false;
-    }
+    if( !p1.isActive ){ cout << "pole not active" << endl; return false; }
     
-    if( !p2.isActive ){
-//        cout << "KO ( " << p2.moduleType << ", " << p2.original_id << ") is not active" << endl;
-        return false;
-    }
-
+    if( !p2.isActive ){ cout << "pole not active" << endl; return false; }
     
     // test valence
-    if( p1.geometry.valence != p2.geometry.valence ) {
-//        cout << "KO for valence (" << p1.geometry.valence << ", " << p2.geometry.valence << " )" << endl;
-        return false;
-    }
+    if( p1.geometry.valence != p2.geometry.valence ) { return false; }
 
     // test self connectability
     if( p1.moduleType == p2.moduleType ){
         if( p1.original_id == p2.original_id ){
             if( !( p1.can_connect_to_self && p2.can_connect_to_self )){
-//                cout << "KO connect_to_self" << endl;
+                cout << "pole cannot connect to self" << endl;
                 return false;
             }
         }
     }
+    
+    // test module self connect
+    if( p1.moduleType == p2.moduleType ){
+        if(!( p1.module_can_connect_to_self && p2.module_can_connect_to_self )){
+            cout << "module cannot connect to self" << endl;
+            return false;
+        }
+            
+    }
+    
     return true;
 }
     
