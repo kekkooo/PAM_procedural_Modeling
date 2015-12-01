@@ -251,6 +251,7 @@ namespace Procedural{
                 }
                 cd_hierarchy->bones[b.ID].ball.center = centroid / b.nodes.size();
                 cd_hierarchy->bones[b.ID].ball.radius = radius;
+                assert( cd_hierarchy->bones[b.ID].ball.radius > 0 );
             }
             
             // build joints ball
@@ -269,6 +270,7 @@ namespace Procedural{
                         if( rr > radius ){ radius = rr; }
                     }
                     cd_hierarchy->joints[n.ID].ball.radius = radius;
+                    assert( cd_hierarchy->joints[n.ID].ball.radius > 0 );
                 }
             }
         }
@@ -308,6 +310,7 @@ namespace Procedural{
             
             bounding_sphere.center = centroid;
             bounding_sphere.radius = radius;
+            assert( bounding_sphere.radius > 0 );
             
             // build edge_info structure
             HMesh::HalfEdgeAttributeVector<EdgeInfo> edge_info = label_PAM_edges(m);
@@ -591,6 +594,7 @@ namespace Procedural{
                 nodes[i].transform( T );
             }
             cd_hierarchy->transform( T );
+            assert( cd_hierarchy->ball.radius > 0 );
         }
         
         void copyNew( const Skeleton &other ){
@@ -622,6 +626,7 @@ namespace Procedural{
             cd_hierarchy = new ShapeBall();
             cd_hierarchy->ball.center = other.cd_hierarchy->ball.center;
             cd_hierarchy->ball.radius = other.cd_hierarchy->ball.radius;
+            assert( cd_hierarchy->ball.radius > 0 );
             
             for( const auto& item : other.cd_hierarchy->joints ){
                 cd_hierarchy->joints[item.first];
