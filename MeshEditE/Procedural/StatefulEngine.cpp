@@ -257,22 +257,32 @@ bool StatefulEngine::findSecondClosest( const VertexID &pole, const PoleGeometry
 
 
 void StatefulEngine::buildOptimalAlignmentTransform( const Module& module, const std::vector<Match>& matches, CGLA::Mat4x4d& T ){
+    if (matches.size() ==  1 ) {
+        T = CGLA::identity_Mat4x4d();
+        return;
+    }
     Mat4x4d r, t;
     vector< Vec3d>     host_pos, module_pos, host_normals, module_normals;
     vector<double>     weights( matches.size(), 1.0 );
     for( auto& match : matches ){
         module_pos.push_back(       module.getPoleInfo( match.first ).geometry.pos );
-        module_normals.push_back(   module.getPoleInfo(match.first).geometry.normal );
         host_pos.push_back(         mainStructure->getPoleInfo( match.second ).geometry.pos );
-        host_normals.push_back(     mainStructure->getPoleInfo(match.second).geometry.normal );
+        auto module_normal = module.getPoleInfo(match.first).geometry.normal;
+        auto host_normal   = mainStructure->getPoleInfo(match.second).geometry.normal;
+        module_normal.normalize();
+        host_normal.normalize();
+        
+        module_normals.push_back(   module_normal );
+        host_normals.push_back(     host_normal );
         
         const Vec3d& mn = module.getPoleInfo(match.first).geometry.normal;
         const Vec3d& hn = mainStructure->getPoleInfo(match.second).geometry.normal;
     }
     
     if ( matches.size() > 1 ){
-//        svd_rigid_motion( m   odule_pos, host_pos, r, t );
-        svd_6d_rigid_motion( module_pos, host_pos, module_normals, host_normals, r, t );
+//        svd_rigid_motion( module_pos, host_pos, weights, r, t );
+//        svd_6d_rigid_motion( module_pos, host_pos, module_normals, host_normals, r, t );
+        singlepass_svd_rigid_motion( module_pos, host_pos, module_normals, host_normals, 1.0, 0.5, r, t );
 
         T = t * r;
     }
@@ -385,12 +395,80 @@ void StatefulEngine::alignModuleNormalsToHost(){
     assert( candidateModule->poleList.size() > 0 );
 }
 
+void StatefulEngine::applySinglePassAlignment(){
+    
+    if(best_match.getMatchInfo().matches.size() == 1 ){
+        //        applyOptimalAlignment();
+        //        alignModuleNormalsToHost();
+        return;
+    }
+    
+    Mat4x4d R, T;
+    vector< VertexID > host_v, module_p;
+    vector< Vec3d>     host_pos, module_pos,
+    host_dir, module_dir;
+    
+    for( auto& match : best_match.getMatchInfo().matches ){
+        module_p.push_back( match.first );
+        host_v.push_back( match.second );
+        
+        const PoleInfo& pinfo = candidateModule->getPoleInfo( match.first );
+        const PoleInfo& hinfo = mainStructure->getPoleInfo( match.second );
+        
+        module_pos.push_back(   pinfo.geometry.pos );
+        host_pos.push_back(     hinfo.geometry.pos );
+        auto md = pinfo.geometry.normal,
+        hd = hinfo.geometry.normal;
+        md.normalize();
+        hd.normalize();
+        module_dir.push_back(   md );
+        host_dir.push_back(     hd );
+        
+        
+        // this should be always very near to ZERO
+        std::cout << "distance : " << ( hinfo.geometry.pos - m->pos( match.second )).length();
+        assert( fabs( ( hinfo.geometry.pos - m->pos( match.second )).length()) < 0.00001  );
+    }
+    
+    singlepass_svd_rigid_motion( module_pos , host_pos , module_dir, host_dir, 1.0, 0.5, R, T );
+    Mat4x4d t = T * R;
+    
+#ifdef TRACE
+    cout << "Best Match Optimal (SVD) Alignment " << endl << t << endl;
+#endif
+    
+    Module &tm = candidateModule->getTransformedModule( t );
+    candidateModule = &tm;
+    
+    // added for testing, not sure if it is to keep
+    Vec3d module_centroid(0,0,0), host_centroid(0,0,0);
+    for( auto& match : best_match.getMatchInfo().matches ){
+        module_centroid += candidateModule->getPoleInfo(match.first).geometry.pos;
+        host_centroid   += mainStructure->getPoleInfo(match.second).geometry.pos;
+    }
+    module_centroid /= (double)best_match.getMatchInfo().matches.size();
+    host_centroid   /= (double)best_match.getMatchInfo().matches.size();
+    Vec3d translation = host_centroid - module_centroid;
+    
+    //end
+    
+    for( VertexID v : M_vertices ){
+        m->pos( v ) = t.mul_3D_point( m->pos( v ));
+        // TESTING
+        m->pos( v ) += translation;
+        // END
+    }
+    assert( candidateModule->poleList.size() > 0 );
+}
+
 
 void StatefulEngine::alignUsingBestMatch( ){
     if( best_match.IsValid( )){
         applyRandomTransform();
-        applyOptimalAlignment( );
-        alignModuleNormalsToHost();
+//        applyOptimalAlignment( );
+//        alignModuleNormalsToHost();
+//        applySinglePassAlignment();
+        applySinglePassAlignment();
     }
     else{
         cout << "Warning : Best Match is not valid " << endl;
@@ -435,7 +513,9 @@ void StatefulEngine::glueCurrent(){
     applyRandomTransform();
     candidateModule->updateDirections( *m );
     
-    applyOptimalAlignment( );
+//    applyOptimalAlignment( );
+
+    applySinglePassAlignment();
     candidateModule->updateDirections( *m );
 
     
@@ -717,17 +797,10 @@ bool StatefulEngine::testMultipleTransformations(){
             
             Module& step1 = transformedModules[i];
             buildOptimalAlignmentTransform( step1, info.subset_match, info.T_align );
-            
-            mat4Copy( info.T_align * info.T_random, info.T_complete );
-
-//            mat4Copy( info.T_normals * info.T_align * info.T_random, info.T_complete );
-
-            checkMat4( info.T_complete );
-            truncateMat4x4d( info.T_complete );
-
-//            info.transformed_module = step2.getTransformedModule( info.T_normals );
 
             info.transformed_module = step1.getTransformedModule( info.T_align );
+            
+//            info.transformed_module = transformedModules[i];
 
             // calculate costs
             cout <<  "\t *** subset " << count++ << endl;
@@ -737,38 +810,43 @@ bool StatefulEngine::testMultipleTransformations(){
                 const PoleInfo& host_pole_info   = mainStructure->getPoleInfo( m.second );
                 
                 info.module_ball_radius = candidateModule->bsphere_radius;
-                info.distance_cost +=
-                    ( module_pole_info.geometry.pos - host_pole_info.geometry.pos ).length();
-                
-                info.distance_normal_angle +=
-                    normal_distance( dot( module_pole_info.geometry.normal, host_pole_info.geometry.normal ));
-                
-                // calculation of the cost relative to the alignmento of the preferred direction
-                // needs to be explained
-                if( module_pole_info.anisotropy.is_defined && host_pole_info.anisotropy.is_defined ){
-                    double dot_value = dot( module_pole_info.anisotropy.direction, host_pole_info.anisotropy.direction );
-                    cout << module_pole_info.anisotropy.direction << endl << host_pole_info.anisotropy.direction << endl << endl;
-                    
-                    // if anisotropy is bilateral for both I need to consider as Optimal also if directions are opposite
-                    if( module_pole_info.anisotropy.is_bilateral && host_pole_info.anisotropy.is_bilateral ){
-                        info.distance_alignment += bilateral_anisotropy_distance( dot_value );
-                    }else{
-                        // if it works
-                        info.distance_alignment += anisotropy_distance( dot_value );
-                    }
-                }
+//                info.distance_cost += ( module_pole_info.geometry.pos - host_pole_info.geometry.pos ).length();
+                info.distance_cost += DE_euclidean_distance( module_pole_info, host_pole_info );
+                info.fidelity_term += DA_fidelity_term( module_pole_info, host_pole_info, 0.2, 0.12 );
+
+                // the following should disappear
+//                info.distance_normal_angle += normal_distance( dot( module_pole_info.geometry.normal, host_pole_info.geometry.normal ));
+//                // calculation of the cost relative to the alignmento of the preferred direction
+//                // needs to be explained
+//                if( module_pole_info.anisotropy.is_defined && host_pole_info.anisotropy.is_defined ){
+//                    double dot_value = dot( module_pole_info.anisotropy.direction, host_pole_info.anisotropy.direction );
+//                    cout << module_pole_info.anisotropy.direction << endl << host_pole_info.anisotropy.direction << endl << endl;
+//                    
+//                    // if anisotropy is bilateral for both I need to consider as Optimal also if directions are opposite
+//                    if( module_pole_info.anisotropy.is_bilateral && host_pole_info.anisotropy.is_bilateral ){
+//                        info.distance_alignment += bilateral_anisotropy_distance( dot_value );
+//                    }else{
+//                        // if it works
+//                        info.distance_alignment += anisotropy_distance( dot_value );
+//                    }
+//                }
+                // up to here!!!
+                // need to substitute the cost with the one calculated with the formula presented in the thesis.
             }
             
 //            if( info.distance_alignment > 0.0005 ){ continue; }
             
-            info.calculateTotalCost( true );
+//            info.calculateTotalCost( true );
+            info.calculateTotalCost_asThesis();
+            cout << count << ")" << endl
+                 << info.distance_cost << ", " << info.fidelity_term << endl;
 
             subsetsInfo.push_back( info );
             
-            cout << count << ") " << endl
-                 << info.distance_cost << ", "
-                << info.distance_alignment << ", "
-                << info.distance_normal_angle << endl;
+//            cout << count << ") " << endl
+//                 << info.distance_cost << ", "
+//                << info.distance_alignment << ", "
+//                << info.distance_normal_angle << endl;
             
             
             // save the less expensive subsets clustered by valence.

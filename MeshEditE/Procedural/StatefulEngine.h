@@ -90,6 +90,10 @@ struct MatchInfoProxy{
 #define MY_ROUNDER 10000.0
 #define MY_EPSILON 1.0/MY_ROUNDER
 #define MATCH_PENALTY 0.0001
+        
+#define DISTANCE_WEIGHT_THESIS 1.0
+#define FIDELITY_WEIGHT_THESIS 1.0
+
 
         
         
@@ -104,6 +108,7 @@ struct CandidateSubsetInfo{
     double                           distance_cost              = 0.0;
     double                           distance_normal_angle      = 0.0;
     double                           distance_alignment         = 0.0;
+    double                           fidelity_term              = 0.0;
 
     void calculateTotalCost( bool trunc = false ){
         // set total_cost
@@ -126,6 +131,22 @@ struct CandidateSubsetInfo{
         }
     }
     
+    void calculateTotalCost_asThesis( bool trunc = false ){
+        double valenceMultiplier = getValenceMultiplier();
+        if( subset_match.size() == 1 ){
+            total_cost = distance_cost + fidelity_term + ( MATCH_PENALTY * valenceMultiplier );
+        }else{
+            total_cost = DISTANCE_WEIGHT_THESIS * ( distance_cost / module_ball_radius )
+                       + FIDELITY_WEIGHT_THESIS * fidelity_term;
+
+            total_cost *= valenceMultiplier;
+        }
+        if( trunc ){
+            truncateDouble5( total_cost );
+        }
+        
+    }
+    
     double getTotalCost(  ) const{
         assert( total_cost >= -GEO_EPS );
         return total_cost;
@@ -133,6 +154,12 @@ struct CandidateSubsetInfo{
     size_t matchValence() const {
         return subset_match.size();
     }
+    
+    double getValenceMultiplier(){
+        double valence_sum = static_cast<double>( valenceSum() );
+        return ( 1.0 / log2( valence_sum ));
+    }
+    
     
     size_t valenceSum() const {
         size_t sum = 0;
@@ -210,6 +237,7 @@ class StatefulEngine{
     
             void            applyRandomTransform();
             void            applyOptimalAlignment( );
+            void            applySinglePassAlignment();
             void            alignModuleNormalsToHost( );
             void            alignUsingBestMatch( );
             void            actualGlueing();

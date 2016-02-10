@@ -31,6 +31,12 @@ namespace Procedural {
         void svd_rigid_motion( HMesh::Manifold& m1, std::vector< HMesh::VertexID > &P,
                                HMesh::Manifold& m2, std::vector< HMesh::VertexID > &Q,
                                CGLA::Mat4x4d &rot, CGLA::Mat4x4d &translation );
+        
+        void singlepass_svd_rigid_motion(
+                                         std::vector<CGLA::Vec3d> &P, std::vector<CGLA::Vec3d> &Q,
+                                         std::vector<CGLA::Vec3d> &Pdir, std::vector<CGLA::Vec3d> &Qdir,
+                                         double pos_weight, double dir_weight,
+                                         CGLA::Mat4x4d &rot, CGLA::Mat4x4d &translation );
 }}
 
 #endif /* defined(__MeshEditE__svd_alignment__) */

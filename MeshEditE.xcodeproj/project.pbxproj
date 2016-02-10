@@ -42,11 +42,11 @@
 		595DC98E1995183400532C6A /* structural_console_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 595DC98C1995183400532C6A /* structural_console_functions.cpp */; };
 		5979AF6319825D92003E3697 /* Test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5979AF6119825D92003E3697 /* Test.cpp */; };
 		597D8D6D198FB90600CF1C64 /* additional_console_funcs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 597D8D6B198FB90600CF1C64 /* additional_console_funcs.cpp */; };
+		599A73881C66625100624A93 /* GEL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 599A73871C66625100624A93 /* GEL.framework */; };
 		59A70F1A1AEA352100E36E5C /* Module.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59A70F181AEA352100E36E5C /* Module.cpp */; };
 		59A70F201AEA3C1E00E36E5C /* MainStructure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59A70F1E1AEA3C1E00E36E5C /* MainStructure.cpp */; };
 		59A9AFD719E7E611006C9C3E /* graph_match.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59A9AFD519E7E611006C9C3E /* graph_match.cpp */; };
 		59ACAAFF1B04CE0D008D2E17 /* Toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59ACAAFD1B04CE0D008D2E17 /* Toolbox.cpp */; };
-		59B75D89197D25B100DD6462 /* GEL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59B75D88197D25B100DD6462 /* GEL.framework */; };
 		59B75D8A197D274600DD6462 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 0D5467C9180B805100DBC8B9 /* MainMenu.xib */; };
 		59B9B2171B2B9DCD003BE4EB /* collision_detection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59B9B2161B2B9DCD003BE4EB /* collision_detection.cpp */; };
 		59C171D91AD57FC800DB6A0A /* engine_console_funcs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59C171D71AD57FC800DB6A0A /* engine_console_funcs.cpp */; };
@@ -133,6 +133,7 @@
 		597D8D6C198FB90600CF1C64 /* additional_console_funcs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = additional_console_funcs.h; sourceTree = "<group>"; };
 		5982617F1B1C657100596B56 /* pam_skeleton.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pam_skeleton.h; sourceTree = "<group>"; };
 		598261821B2B515400596B56 /* collision_detection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = collision_detection.h; sourceTree = "<group>"; };
+		599A73871C66625100624A93 /* GEL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GEL.framework; path = ../../../../../../Library/Frameworks/GEL.framework; sourceTree = "<group>"; };
 		59A70F181AEA352100E36E5C /* Module.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Module.cpp; sourceTree = "<group>"; };
 		59A70F191AEA352100E36E5C /* Module.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Module.h; sourceTree = "<group>"; };
 		59A70F1E1AEA3C1E00E36E5C /* MainStructure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MainStructure.cpp; sourceTree = "<group>"; };
@@ -157,8 +158,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				0D3DBCB6181964E5000F640D /* Accelerate.framework in Frameworks */,
-				59B75D89197D25B100DD6462 /* GEL.framework in Frameworks */,
 				0D5467BD180B78D700DBC8B9 /* OpenGL.framework in Frameworks */,
+				599A73881C66625100624A93 /* GEL.framework in Frameworks */,
 				0D0F5B61180878B9003557E2 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -197,6 +198,7 @@
 		0D0F5B5F180878B9003557E2 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				599A73871C66625100624A93 /* GEL.framework */,
 				59B75D88197D25B100DD6462 /* GEL.framework */,
 				0D3DBCB5181964E5000F640D /* Accelerate.framework */,
 				0D5467BC180B78D700DBC8B9 /* OpenGL.framework */,
@@ -640,22 +642,23 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(USER_LIBRARY_DIR)/Frameworks",
-					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/GEL-erdyczmskotwakepnvdsplxfzfvs/Build/Products/Debug",
-					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/GEL-erdyczmskotwakepnvdsplxfzfvs/Build/Products/Release",
+					/Library/Frameworks/,
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "MeshEditE/MeshEditE-Prefix.pch";
 				HEADER_SEARCH_PATHS = (
 					"<Multiple",
 					"values>",
-					/Users/francescousai/Documents/Sviluppo/rapidjson/include/,
+					/Users/francescousai/Documents/Sviluppo/Libs/eigen/,
+					/Users/francescousai/Documents/Sviluppo/Libs/rapidjson/include/,
 				);
 				INFOPLIST_FILE = "MeshEditE/MeshEditE-Info.plist";
 				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CPLUSPLUSFLAGS = "-I.";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "/Users/francescousai/Documents/Sviluppo/Libs/CGAL_package/CGAL-4.3/include/ /Users/francescousai/Documents/Sviluppo/eigen";
+				USER_HEADER_SEARCH_PATHS = /Users/francescousai/Documents/Sviluppo/Libs/eigen;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -669,15 +672,16 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(USER_LIBRARY_DIR)/Frameworks",
-					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/GEL-erdyczmskotwakepnvdsplxfzfvs/Build/Products/Debug",
-					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/GEL-erdyczmskotwakepnvdsplxfzfvs/Build/Products/Release",
+					/Library/Frameworks/,
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "MeshEditE/MeshEditE-Prefix.pch";
 				HEADER_SEARCH_PATHS = (
 					"<Multiple",
 					"values>",
-					/Users/francescousai/Documents/Sviluppo/rapidjson/include/,
+					/Users/francescousai/Documents/Sviluppo/Libs/eigen/,
+					/Users/francescousai/Documents/Sviluppo/Libs/rapidjson/include/,
 				);
 				INFOPLIST_FILE = "MeshEditE/MeshEditE-Info.plist";
 				LIBRARY_SEARCH_PATHS = "";
@@ -685,7 +689,7 @@
 				OTHER_CPLUSPLUSFLAGS = "-I.";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				USER_HEADER_SEARCH_PATHS = "/Users/francescousai/Documents/Sviluppo/Libs/CGAL_package/CGAL-4.3/include/ /Users/francescousai/Documents/Sviluppo/eigen";
+				USER_HEADER_SEARCH_PATHS = /Users/francescousai/Documents/Sviluppo/Libs/eigen;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

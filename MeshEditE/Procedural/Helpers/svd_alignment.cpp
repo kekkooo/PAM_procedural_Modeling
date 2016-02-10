@@ -336,6 +336,120 @@ namespace Procedural {
             Vec3d   t   = CGLA_cqs - rot.mul_3D_point( CGLA_cps );
             translation = CGLA::translation_Mat4x4d( t );
         }
+        
+        void singlepass_svd_rigid_motion( vector <Vec3d> &P,    vector<Vec3d> &Q,
+                                         vector<Vec3d> &Pdir, vector<Vec3d> &Qdir,
+                                         double pos_weight, double dir_weight,
+                                         Mat4x4d &rot, Mat4x4d &translation ){
+            // some checks
+            assert( P.size() == Q.size() );
+            assert( P.size() == Pdir.size() );
+            // the following should be done for each direction, but I am going to to just that
+            // only to check if I forgot to normalize directions before calling.
+            assert( fabs( Pdir.front().length() - 1.0 ) < 0.00001 );
+            assert( fabs( Pdir.back().length() - 1.0 ) < 0.00001 );
+            assert( fabs( Qdir.front().length() - 1.0 ) < 0.00001 );
+            assert( fabs( Qdir.back().length() - 1.0 ) < 0.00001 );
+            
+            int n = P.size();
+            
+            // 1) find the centroid of the two point sets
+            Vec3d pc( 0.0, 0.0, 0.0 ), qc( 0.0, 0.0, 0.0 );
+            
+            for( Vec3d Pi : P ) { pc += Pi; }
+            for( Vec3d Qi : Q ) { qc += Qi; }
+            pc /= n;
+            qc /= n;
+            
+            // 2) compute the centered vectors
+            vector< Vec3d > xs, ys, xis, yis;
+            for( Vec3d& pj : P ) { xs.push_back( pj - pc ); }
+            for( Vec3d& qj : Q ) { ys.push_back( qj - qc ); }
+            
+            // compute the translated points xis and yis
+            // original points are just translated, hence directions are not affected
+            // compute Pi points as : xi_j = x_j + pdir_j
+            // and     Qi points as : yi_j = y_j - qdir_j
+            for( int i = 0; i < n; ++i ){
+                Vec3d pi = xs[i] + Pdir[i];
+                Vec3d qi = ys[i] - Qdir[i];
+                xis.push_back( pi );
+                yis.push_back( qi );
+                
+                Vec3d pi2 = xs[i] - Pdir[i];
+                Vec3d qi2 = ys[i] + Qdir[i];
+                xis.push_back( pi2 );
+                yis.push_back( qi2 );
+
+            }
+            // DEBUG
+            //            for( int i = 0; i < n; ++i ){
+            //                std::cout << xs[i] << std::endl;
+            //                std::cout << ys[i] << std::endl;
+            //                std::cout << xis[i] << std::endl;
+            //                std::cout << yis[i] << std::endl;
+            //            }
+            
+            // 3) compute D * D covariance matrix S = XWY_t
+            // X and Y are 3 * 2n matrices that have x_i and y_i as their columns
+            // and W is diag( w0, w1, ..., wn ) ( in my case is I )
+            int n2 = n + n;
+            //            LinAlg::CMatrix X( 3, n2, 0.0 ), W( n2, n2, 0.0 ), Y_t( n2, 3, 0.0 );
+            Eigen::MatrixXd X( 3, n2 ), Y_t( n2, 3 ), W(n2, n2);
+            Eigen::Matrix3d S;
+            W = Eigen::MatrixXd::Zero( n2, n2 );
+            
+            for( int i = 0; i < n; ++i )
+            {
+                X( 0, i )   = xs[i][0];
+                X( 1, i ) 	= xs[i][1];
+                X( 2, i )   = xs[i][2];
+                
+                Y_t( i, 0 ) = ys[i][0];
+                Y_t( i, 1 ) = ys[i][1];
+                Y_t( i, 2 ) = ys[i][2];
+                
+                W( i, i )   = pos_weight;
+            }
+            
+            for( int i = 0; i < n; ++i )
+            {
+                X( 0, n + i )       = xis[i][0];
+                X( 1, n + i )       = xis[i][1];
+                X( 2, n + i )       = xis[i][2];
+                
+                Y_t( n + i, 0 )     = yis[i][0];
+                Y_t( n + i, 1 )     = yis[i][1];
+                Y_t( n + i, 2 )     = yis[i][2];
+                
+                W( n + i, n + i )   = dir_weight;
+            }
+            
+            S = X * W * Y_t;
+            
+            Eigen::JacobiSVD<Eigen::MatrixXd> svd( S, Eigen::ComputeFullU | Eigen::ComputeFullV );
+            
+            Eigen::Matrix3d U_t, V, Sigma, VUt;
+            U_t = svd.matrixU().transpose();
+            V = svd.matrixV();//.transpose();
+            VUt = V * U_t;
+            double det_VUt = VUt.determinant();
+            Eigen::Matrix3d det_identity;
+            det_identity = Eigen::Matrix3d::Identity();
+            det_identity( 2, 2 ) = det_VUt;
+            Eigen::Matrix3d R = V * det_identity * U_t;
+            
+            // go back to CGLA
+            rot = CGLA::Mat4x4d( 0.0 );
+            for( int i = 0; i < 3; ++i ){
+                for( int j = 0; j < 3; ++j){
+                    rot[i][j] = R( i, j );
+                }
+            }
+            
+            Vec3d   t   = qc - rot.mul_3D_point( pc );
+            translation = CGLA::translation_Mat4x4d( t );
+        }
 
 
 }}

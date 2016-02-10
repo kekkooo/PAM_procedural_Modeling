@@ -110,6 +110,50 @@ struct PoleInfo{
     }
 };
     
+    inline double DE_euclidean_distance( const PoleInfo& pa, const PoleInfo& pb ){
+        return ( pb.geometry.pos - pa.geometry.pos ).length();
+    }
+    
+    inline double DA_normals( const PoleInfo& pa, const PoleInfo& pb, double sigma ){
+        double dot_result = dot( pa.geometry.normal, pb.geometry.normal );
+        double exponent = -0.5 * pow(( fabs( dot_result ) + 1 )/sigma, 2.0 );
+        return ( pow ( M_E, exponent ));
+    }
+    
+    inline double DA_alignments_g_function( const PoleInfo& pa, const PoleInfo& pb ){
+        assert( pa.anisotropy.is_defined == pb.anisotropy.is_defined );
+        if( !pa.anisotropy.is_defined ){ return 1.0; }
+        
+        assert( pa.anisotropy.is_defined );
+        assert( pa.anisotropy.is_bilateral == pb.anisotropy.is_bilateral );
+        
+        double dot_result = dot( pa.anisotropy.direction, pb.anisotropy.direction );
+        if( pa.anisotropy.is_bilateral ){
+            return ( fabs( dot_result ));   // anisotropy is bilateral
+        } else{
+            return dot_result;              // anisotropy is unilateral
+        }
+    }
+
+    inline double DA_alignments( const PoleInfo& pa, const PoleInfo& pb, double sigma ){
+        double g_result = DA_alignments_g_function( pa, pb );
+        double exponent = -0.5 * pow(( fabs( g_result ) - 1 )/sigma, 2.0 );
+        return ( pow ( M_E, exponent ));
+        
+    }
+    
+    inline double DA_fidelity_term( const PoleInfo& pa, const PoleInfo& pb, double sigma_normals, double sigma_alignments ){
+        double da_normals       = DA_normals(    pa, pb, sigma_normals );
+        double da_alignments    = DA_alignments( pa, pb, sigma_alignments );
+        double result           = 2.0 - da_normals - da_alignments;
+        return result;
+    }
+
+
+
+
+    
+    
 typedef std::map<HMesh::VertexID, PoleInfo>             PoleInfoMap;
 typedef std::vector< HMesh::VertexID>                   PoleList;
 typedef std::set< HMesh::VertexID >                     PoleSet;
