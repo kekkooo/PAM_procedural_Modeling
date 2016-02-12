@@ -4,13 +4,17 @@
 #include "Procedural/ConsoleFuncs/geometric_console_functions.h"
 #include "Procedural/ConsoleFuncs/structural_console_functions.h"
 #include "Procedural/ConsoleFuncs/engine_console_funcs.h"
+#include "pam_editor_console_funcs.hpp"
 #include <GEL/GLGraphics/MeshEditor.h>
 #include "Procedural/PMEngine.h"
+#include "Procedural/pam_editor.hpp"
 
 using namespace CGLA;
 using namespace GLGraphics;
 
 MeshEditor me;
+Procedural::PamEditor* pm;
+
 
 // ==================================
 #pragma mark ---- Error Reporting ----
@@ -136,21 +140,43 @@ GLenum glReportError (int where = -1)
     {
         switch ([theEvent keyCode])
         {
+            // ### aggiunte da me ###
             case 0 : // A
+            {
+                pm->rotate_selected_cw();
                 break;
-                // ### aggiunte da me ###
+            }
             case 46: // M
+            {
+                pm->set_mesh( &me.active_mesh() );
                 break;
+            }
             case 8: // C
                 break;
             case 14 : // E
                 break;
             case 1 : // S
+            {
+                for( HMesh::VertexID vid : me.active_mesh().vertices() ){
+                    if( me.get_vertex_selection()[vid] == 1 ){
+                        pm->add_to_selection( vid );
+                        break;
+                    }
+                }
                 break;
+            }
             case 2 : // D
+            {
+                pm->rotate_selected_ccw();
                 break;
+            }
+
             case 3 : // F
+            {
+                pm->clear_selection();
                 break;
+            }
+
             case 4 : // G
                 break;
             case 5 : // H
@@ -337,6 +363,9 @@ GLenum glReportError (int where = -1)
 
     Procedural::ConsoleFuncs::register_test_console_funcs(&me);
     Procedural::ConsoleFuncs::register_engine_console_funcs(&me);
+    Procedural::ConsoleFuncs::register_pam_editor_console_funcs(&me);
+    
+    pm = &Procedural::PamEditor::getCurrentPamEditor();
 
     
     NSLog(@"OpenGL Initialized");

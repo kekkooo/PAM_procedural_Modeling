@@ -187,7 +187,7 @@ public:
     
         void sanityCheck();
     
-private:
+//private:
     void    BuildPoleInfo( bool module_can_connect_to_self = true );
     void    LoadPoleConfig( std::string path );
 
@@ -208,7 +208,7 @@ public:
     double              bsphere_radius;
     Moduletype          type;
     
-private :
+//ùprivate :
     PoleInfoMap         poleInfoMap;
     Skeleton            *skeleton;
 

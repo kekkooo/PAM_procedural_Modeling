@@ -29,6 +29,7 @@
 		590FD2DA19E327E300EE8ACC /* patch_mapping.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 590FD2D819E327E300EE8ACC /* patch_mapping.cpp */; };
 		591065C71A0683CF00AD02AE /* module_alignment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 591065C51A0683CF00AD02AE /* module_alignment.cpp */; };
 		591065D11A0B852100AD02AE /* manifold_copy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 591065CF1A0B852100AD02AE /* manifold_copy.cpp */; };
+		592E9FB81C6DF9D0001FA54C /* pam_editor_console_funcs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 592E9FB61C6DF9D0001FA54C /* pam_editor_console_funcs.cpp */; };
 		593035C51AB8984D00E89A88 /* StatefulEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 593035C31AB8984D00E89A88 /* StatefulEngine.cpp */; };
 		593C31C619D16E420001026B /* svd_alignment.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 593C31C419D16E420001026B /* svd_alignment.cpp */; };
 		593C563919951E1F0008EAC4 /* geometric_console_functions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 593C563719951E1F0008EAC4 /* geometric_console_functions.cpp */; };
@@ -51,6 +52,11 @@
 		59B9B2171B2B9DCD003BE4EB /* collision_detection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59B9B2161B2B9DCD003BE4EB /* collision_detection.cpp */; };
 		59C171D91AD57FC800DB6A0A /* engine_console_funcs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59C171D71AD57FC800DB6A0A /* engine_console_funcs.cpp */; };
 		59C881901AB0C7AC0061E75C /* test_random_rotation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59C8818E1AB0C7AC0061E75C /* test_random_rotation.cpp */; };
+		59EE76EA1C6B50FB00793589 /* pam_editor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 59EE76E81C6B50FB00793589 /* pam_editor.cpp */; };
+		59EE76ED1C6B583000793589 /* libboost_system-mt-s.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 59EE76EB1C6B583000793589 /* libboost_system-mt-s.a */; };
+		59EE76EE1C6B583000793589 /* libboost_thread-mt-s.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 59EE76EC1C6B583000793589 /* libboost_thread-mt-s.a */; };
+		59EE76F11C6B5A0D00793589 /* libCGAL.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 59EE76EF1C6B584A00793589 /* libCGAL.a */; };
+		59EE76F31C6B5A2E00793589 /* libCGAL_Core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 59EE76F21C6B5A2E00793589 /* libCGAL_Core.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -104,6 +110,8 @@
 		591065C61A0683CF00AD02AE /* module_alignment.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = module_alignment.h; path = MeshEditE/Procedural/Helpers/module_alignment.h; sourceTree = SOURCE_ROOT; };
 		591065CF1A0B852100AD02AE /* manifold_copy.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = manifold_copy.cpp; sourceTree = "<group>"; };
 		591065D01A0B852100AD02AE /* manifold_copy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = manifold_copy.h; sourceTree = "<group>"; };
+		592E9FB61C6DF9D0001FA54C /* pam_editor_console_funcs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pam_editor_console_funcs.cpp; sourceTree = "<group>"; };
+		592E9FB71C6DF9D0001FA54C /* pam_editor_console_funcs.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = pam_editor_console_funcs.hpp; sourceTree = "<group>"; };
 		593035C31AB8984D00E89A88 /* StatefulEngine.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StatefulEngine.cpp; sourceTree = "<group>"; };
 		593035C41AB8984D00E89A88 /* StatefulEngine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StatefulEngine.h; sourceTree = "<group>"; };
 		593C31C419D16E420001026B /* svd_alignment.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = svd_alignment.cpp; sourceTree = "<group>"; };
@@ -149,6 +157,12 @@
 		59C8818E1AB0C7AC0061E75C /* test_random_rotation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = test_random_rotation.cpp; sourceTree = "<group>"; };
 		59C8818F1AB0C7AC0061E75C /* test_random_rotation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = test_random_rotation.h; sourceTree = "<group>"; };
 		59CD874E1B4D8A7300FF459F /* eigenv.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = eigenv.h; sourceTree = "<group>"; };
+		59EE76E81C6B50FB00793589 /* pam_editor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = pam_editor.cpp; sourceTree = "<group>"; };
+		59EE76E91C6B50FB00793589 /* pam_editor.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = pam_editor.hpp; sourceTree = "<group>"; };
+		59EE76EB1C6B583000793589 /* libboost_system-mt-s.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_system-mt-s.a"; path = "../../Libs/boost_1_59_0/BUILD109/lib/libboost_system-mt-s.a"; sourceTree = "<group>"; };
+		59EE76EC1C6B583000793589 /* libboost_thread-mt-s.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libboost_thread-mt-s.a"; path = "../../Libs/boost_1_59_0/BUILD109/lib/libboost_thread-mt-s.a"; sourceTree = "<group>"; };
+		59EE76EF1C6B584A00793589 /* libCGAL.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCGAL.a; path = "../../Libs/cgal-releases-CGAL-4.7/BUILD109/lib/libCGAL.a"; sourceTree = "<group>"; };
+		59EE76F21C6B5A2E00793589 /* libCGAL_Core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCGAL_Core.a; path = "../../Libs/cgal-releases-CGAL-4.7/BUILD109/lib/libCGAL_Core.a"; sourceTree = "<group>"; };
 		59EED0DE1BB93B60001341FA /* ModuleInfo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ModuleInfo.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -157,6 +171,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				59EE76ED1C6B583000793589 /* libboost_system-mt-s.a in Frameworks */,
+				59EE76EE1C6B583000793589 /* libboost_thread-mt-s.a in Frameworks */,
+				59EE76F31C6B5A2E00793589 /* libCGAL_Core.a in Frameworks */,
+				59EE76F11C6B5A0D00793589 /* libCGAL.a in Frameworks */,
 				0D3DBCB6181964E5000F640D /* Accelerate.framework in Frameworks */,
 				0D5467BD180B78D700DBC8B9 /* OpenGL.framework in Frameworks */,
 				599A73881C66625100624A93 /* GEL.framework in Frameworks */,
@@ -198,6 +216,10 @@
 		0D0F5B5F180878B9003557E2 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				59EE76F21C6B5A2E00793589 /* libCGAL_Core.a */,
+				59EE76EF1C6B584A00793589 /* libCGAL.a */,
+				59EE76EB1C6B583000793589 /* libboost_system-mt-s.a */,
+				59EE76EC1C6B583000793589 /* libboost_thread-mt-s.a */,
 				599A73871C66625100624A93 /* GEL.framework */,
 				59B75D88197D25B100DD6462 /* GEL.framework */,
 				0D3DBCB5181964E5000F640D /* Accelerate.framework */,
@@ -316,6 +338,8 @@
 				598261821B2B515400596B56 /* collision_detection.h */,
 				59B9B2161B2B9DCD003BE4EB /* collision_detection.cpp */,
 				59EED0DE1BB93B60001341FA /* ModuleInfo.h */,
+				59EE76E81C6B50FB00793589 /* pam_editor.cpp */,
+				59EE76E91C6B50FB00793589 /* pam_editor.hpp */,
 			);
 			name = Procedural;
 			path = MeshEditE/Procedural;
@@ -352,6 +376,8 @@
 				593C563819951E1F0008EAC4 /* geometric_console_functions.h */,
 				59C171D71AD57FC800DB6A0A /* engine_console_funcs.cpp */,
 				59C171D81AD57FC800DB6A0A /* engine_console_funcs.h */,
+				592E9FB61C6DF9D0001FA54C /* pam_editor_console_funcs.cpp */,
+				592E9FB71C6DF9D0001FA54C /* pam_editor_console_funcs.hpp */,
 			);
 			name = ConsoleFuncs;
 			path = MeshEditE/Procedural/ConsoleFuncs;
@@ -478,6 +504,7 @@
 				0D44677B180B0A7F00B27082 /* BasicOpenGLView.mm in Sources */,
 				59A70F1A1AEA352100E36E5C /* Module.cpp in Sources */,
 				593C563919951E1F0008EAC4 /* geometric_console_functions.cpp in Sources */,
+				59EE76EA1C6B50FB00793589 /* pam_editor.cpp in Sources */,
 				59ACAAFF1B04CE0D008D2E17 /* Toolbox.cpp in Sources */,
 				59B9B2171B2B9DCD003BE4EB /* collision_detection.cpp in Sources */,
 				0D0F5B74180878B9003557E2 /* AppDelegate.m in Sources */,
@@ -500,6 +527,7 @@
 				0D0F5B6D180878B9003557E2 /* main.m in Sources */,
 				595DC97519927F1300532C6A /* PM_basic_console_functions.cpp in Sources */,
 				5979AF6319825D92003E3697 /* Test.cpp in Sources */,
+				592E9FB81C6DF9D0001FA54C /* pam_editor_console_funcs.cpp in Sources */,
 				0D5467D0180B87D900DBC8B9 /* polarize.cpp in Sources */,
 				0D6FA577187C677000B26F84 /* HMeshParallelKit.cpp in Sources */,
 				0DD1DD1A18A29BC600D0069B /* heat_kernel_laplacian.cpp in Sources */,
@@ -652,9 +680,14 @@
 					"values>",
 					/Users/francescousai/Documents/Sviluppo/Libs/eigen/,
 					/Users/francescousai/Documents/Sviluppo/Libs/rapidjson/include/,
+					"/Users/francescousai/Documents/Sviluppo/Libs/cgal-releases-CGAL-4.7/BUILD109/include",
+					/Users/francescousai/Documents/Sviluppo/Libs/boost_1_59_0/BUILD109/include,
 				);
 				INFOPLIST_FILE = "MeshEditE/MeshEditE-Info.plist";
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = (
+					"/Users/francescousai/Documents/Sviluppo/Libs/cgal-releases-CGAL-4.7/BUILD109/lib",
+					/Users/francescousai/Documents/Sviluppo/Libs/boost_1_59_0/BUILD109/lib,
+				);
 				OTHER_CPLUSPLUSFLAGS = "-I.";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -682,9 +715,14 @@
 					"values>",
 					/Users/francescousai/Documents/Sviluppo/Libs/eigen/,
 					/Users/francescousai/Documents/Sviluppo/Libs/rapidjson/include/,
+					"/Users/francescousai/Documents/Sviluppo/Libs/cgal-releases-CGAL-4.7/BUILD109/include",
+					/Users/francescousai/Documents/Sviluppo/Libs/boost_1_59_0/BUILD109/include,
 				);
 				INFOPLIST_FILE = "MeshEditE/MeshEditE-Info.plist";
-				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_SEARCH_PATHS = (
+					"/Users/francescousai/Documents/Sviluppo/Libs/cgal-releases-CGAL-4.7/BUILD109/lib",
+					/Users/francescousai/Documents/Sviluppo/Libs/boost_1_59_0/BUILD109/lib,
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CPLUSPLUSFLAGS = "-I.";
 				OTHER_LDFLAGS = "";
